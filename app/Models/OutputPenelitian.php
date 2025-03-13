@@ -9,6 +9,9 @@ class OutputPenelitian extends Model
 {
     use HasFactory;
 
+
+
+    protected $table = 'output_penelitian';
     protected $primaryKey = 'kode';
     protected $keyType = 'string';
     public $incrementing = false;

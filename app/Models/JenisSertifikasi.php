@@ -8,6 +8,7 @@ class JenisSertifikasi extends Model
 {
     use HasFactory;
 
+    protected $table = 'jenis_sertifikasi';
     protected $primaryKey = 'kode';
     protected $keyType = 'string';
     public $incrementing = false;

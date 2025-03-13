@@ -9,6 +9,7 @@ class JenisTes extends Model
 {
     use HasFactory;
 
+    protected $table = 'jenis_tes';
     protected $primaryKey = 'kode';
     protected $keyType = 'string';
     public $incrementing = false;

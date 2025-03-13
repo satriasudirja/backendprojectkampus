@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class MediaPublikasi extends Model
 {
     use HasFactory;
-
+    protected $table = 'media_publikasi';
     protected $fillable = [
         'nama',
     ];

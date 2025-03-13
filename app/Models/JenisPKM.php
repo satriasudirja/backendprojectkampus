@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class JenisPKM extends Model
 {
     use HasFactory;
+    protected $table = 'jenis_pkm';
 
     protected $primaryKey = 'kode';
     protected $keyType = 'string';

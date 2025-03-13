@@ -9,6 +9,8 @@ class JenisSK extends Model
 {
     use HasFactory;
 
+    protected $table = 'jenis_sk';
+
     protected $primaryKey = 'kode';
     protected $keyType = 'string';
     public $incrementing = false;
