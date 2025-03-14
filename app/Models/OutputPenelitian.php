@@ -5,17 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class GelarAkademik extends Model
+class OutputPenelitian extends Model
 {
     use HasFactory;
 
-    protected $table = 'gelar_akademik';
-    protected $primaryKey = 'gelar';
+
+
+    protected $table = 'output_penelitian';
+    protected $primaryKey = 'kode';
     protected $keyType = 'string';
     public $incrementing = false;
-    
+
     protected $fillable = [
-        'gelar',
-        'nama_gelar',
+        'kode',
+        'output_penelitian',
     ];
 }
