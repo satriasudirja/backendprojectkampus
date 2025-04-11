@@ -49,5 +49,12 @@ class DatabaseSeeder extends Seeder
             JenisPublikasiSeeder::class,
 
         ]);
+        $this->call([
+            SimpegUserRoleSeeder::class,
+        ]);
+        $this->call([
+    SimpegUserSeeder::class,     // Kemudian seed user
+            // Tambahkan seeder lainnya di sini
+        ]);
     }
 }

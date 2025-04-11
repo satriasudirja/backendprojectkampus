@@ -16,5 +16,6 @@ class DaftarJenisLuaran extends Model
     protected $fillable = [
         'kode',
         'jenis_luaran',
+        'created_at'
     ];
 }
