@@ -16,11 +16,7 @@ class JenisSertifikasi extends Model
     protected $fillable = [
         'kode',
         'jenis_sertifikasi',
-        'kategorisertifikasi_id',
+        'kategorisertifikasi',
     ];
 
-    public function kategoriSertifikasi()
-    {
-        return $this->belongsTo(KategoriSertifikasi::class, 'kategorisertifikasi_id');
-    }
 }
