@@ -10,8 +10,7 @@ return new class extends Migration
     {
         Schema::create('jejangpendidikan', function (Blueprint $table) {
             $table->id(); 
-            $table->string('jenjang', 4); 
-            $table->string('nama', 20); 
+            $table->string('jenjang_singkatan', 5);  
             $table->string('jenjang_pendidikan', 30); 
             $table->text('nama_jenjang_pendidikan_en'); 
             $table->boolean('urutan_jenjang_pendidikan'); 

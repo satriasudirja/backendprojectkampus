@@ -10,12 +10,14 @@ class GelarAkademik extends Model
     use HasFactory;
 
     protected $table = 'gelar_akademik';
-    protected $primaryKey = 'gelar';
     protected $keyType = 'string';
     public $incrementing = false;
+    protected $primaryKey = 'id';
     
     protected $fillable = [
         'gelar',
         'nama_gelar',
+
+
     ];
 }
