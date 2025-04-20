@@ -13,19 +13,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-     
-
-
-
-
-
-
-
-
-
-
+        // User::factory(10)->create()
         //satria
         $this->call([
             JenisSKSeeder::class,
@@ -59,6 +47,7 @@ class DatabaseSeeder extends Seeder
         ]);
         $this->call([
             JenisPublikasiSeeder::class,
+
         ]);
         $this->call([
             SimpegUserRoleSeeder::class,

@@ -1,14 +1,21 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class MediaPublikasi extends Model
+class Suku extends Model
 {
     use HasFactory;
-    protected $table = 'media_publikasi';
+
+
+    protected $primaryKey = 'id'; 
+    public $incrementing = true; 
+    protected $keyType = 'integer'; 
+
+    
     protected $fillable = [
-        'nama',
+        'suku',
     ];
 }

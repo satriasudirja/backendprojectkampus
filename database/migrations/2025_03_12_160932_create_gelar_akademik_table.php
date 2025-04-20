@@ -8,7 +8,8 @@ class CreateGelarAkademikTable extends Migration
     public function up()
     {
         Schema::create('gelar_akademik', function (Blueprint $table) {
-            $table->string('gelar', 7)->primary();
+            $table->id();
+            $table->string('gelar', 7);
             $table->string('nama_gelar', 20);
             $table->timestamps();
         });
