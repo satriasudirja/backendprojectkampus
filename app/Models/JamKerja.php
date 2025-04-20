@@ -1,14 +1,18 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class KategoriSertifikasi extends Model
+class JamKerja extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'kategori_sertifikasi',
+        'jenis_jam_kerja',
+        'jam_normal',
+        'jam_datang',
+        'jam_pulang',
     ];
 }
