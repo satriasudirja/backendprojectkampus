@@ -11,13 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('simpeg_jenis_jabatan_struktural', function (Blueprint $table) {
-            $table->integer('id')->primary();
-            $table->string('kode', 6);
-            $table->string('jenis_jabatan_struktural', 30);
-            $table->timestamps();
+        Schema::table('simpeg_data_penelitian', function (Blueprint $table) {
+            //
+            $table->foreign('pegawai_id')->references('id')->on('simpeg_pegawai')->onDelete('cascade');
         });
-        
     }
 
     /**
@@ -25,6 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('simpeg_jenis_jabatan_struktural');
+        Schema::table('simpeg_data_penelitian', function (Blueprint $table) {
+            //
+            $table->dropForeign(['pegawai_id']);
+        });
     }
 };

@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_jabatan_fungsional', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->integer('id')->primary();
             
             // Relasi ke tabel referensi
-            $table->uuid('jabatan_fungsional_id');
-            $table->uuid('pegawai_id');
+            $table->integer('jabatan_fungsional_id');
+            $table->integer('pegawai_id');
             
             // Data penetapan jabatan
             $table->date('tmt_jabatan');

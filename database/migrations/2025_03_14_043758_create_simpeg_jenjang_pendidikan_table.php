@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('simpeg_jejang_pendidikan', function (Blueprint $table) {
+        Schema::create('simpeg_jenjang_pendidikan', function (Blueprint $table) {
             $table->id();
             $table->string('jenjang_singkatan', 5);  
             $table->string('jenjang_pendidikan', 30); 
@@ -22,6 +22,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('simpeg_jejang_pendidikan');
+        Schema::dropIfExists('simpeg_jenjang_pendidikan');
     }
 };

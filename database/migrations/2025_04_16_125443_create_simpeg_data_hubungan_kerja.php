@@ -27,34 +27,13 @@ return new class extends Migration
             // Metadata
             $table->date('tgl_input')->nullable();
             
-            // Foreign keys
-            // $table->int('hubungan_kerja_id');
-            // $table->int('status_aktif_id');
-            // $table->int('pegawai_id');
+            $table->integer('hubungan_kerja_id');
+            $table->integer('status_aktif_id');
+            $table->integer('pegawai_id');
             
             $table->timestamps();
 
-            // Relasi ke tabel referensi
-            // $table->foreign('hubungan_kerja_id')
-            //       ->references('id')
-            //       ->on('simpeg_ref_hubungan_kerja')
-            //       ->onDelete('restrict');
-
-            // $table->foreign('status_aktif_id')
-            //       ->references('id')
-            //       ->on('simpeg_ref_status')
-            //       ->onDelete('restrict');
-
-            // $table->foreign('pegawai_id')
-            //       ->references('id')
-            //       ->on('simpeg_pegawai')
-            //       ->onDelete('cascade');
-
-            // Indexes
-            // $table->index('no_sk');
-            // $table->index('pegawai_id');
-            // $table->index('tgl_awal');
-            // $table->index('tgl_akhir');
+          
         });
     }
 

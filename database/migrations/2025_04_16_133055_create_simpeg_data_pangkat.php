@@ -18,7 +18,7 @@ return new class extends Migration
             
             // Referensi
             $table->integer('jenis_sk_id');
-            $table->integer('jenis_kepangkatan_id'); // Diperbaiki dari 'jenis_kenalkan_pangkat_id'
+            $table->integer('jenis_kenaikan_pangkat_id'); // Diperbaiki dari 'jenis_kenalkan_pangkat_id'
             $table->integer('pangkat_id');
             
             // Data kepangkatan

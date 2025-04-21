@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_pendidikan_formal', function (Blueprint $table) {
             $table->integer('id')->primary();
-            $table->integer('pegawai_id');
-            $table->integer('jenjang_studi');
-            $table->integer('perguruan_tinggi_id');
-            $table->integer('prodi_perguruan_tinggi_id');
-            $table->integer('gelar_akademik_id');
+            $table->integer('pegawai_id')->unsigned();
+            $table->integer('jenjang_pendidikan_id')->unsigned();
+            $table->integer('perguruan_tinggi_id')->unsigned();
+            $table->integer('prodi_perguruan_tinggi_id')->unsigned();
+            $table->integer('gelar_akademik_id')->unsigned();
+
+
+
             $table->boolean('lokasi_studi');
             $table->string('nama_institusi', 100);
             $table->string('nisn', 30);
