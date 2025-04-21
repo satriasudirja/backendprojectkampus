@@ -7,7 +7,7 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('data_riwayat_pekerjaan', function (Blueprint $table) {
+        Schema::create('simpeg_data_riwayat_pekerjaan', function (Blueprint $table) {
             // Kolom utama
             $table->integer('id')->primary();
             $table->integer('pegawai_id');
@@ -42,6 +42,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('data_riwayat_pekerjaan');
+        Schema::dropIfExists('simpeg_data_riwayat_pekerjaan');
     }
 };
