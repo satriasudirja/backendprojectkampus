@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_diklat', function (Blueprint $table) {
             // Kolom utama
-            $table->int('id')->primary();
-            $table->int('pegawai_id');
+            $table->integer('id')->primary();
+            $table->integer('pegawai_id');
             // Informasi diklat
             $table->string('jenis_diklat', 100);
             $table->string('kategori_diklat', 150);

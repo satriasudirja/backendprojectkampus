@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_jabatan_fungsional', function (Blueprint $table) {
-            $table->int('id')->primary();
-            $table->int('jabatan_akademik_id');
-            $table->int('pangkat_id');
+            $table->integer('id')->primary();
+            $table->integer('jabatan_akademik_id');
+            $table->integer('pangkat_id');
             $table->string('kode', 5);
             $table->string('nama_jabatan_fungsional', 30);
             $table->string('kode_jabatan_akademik', 2);

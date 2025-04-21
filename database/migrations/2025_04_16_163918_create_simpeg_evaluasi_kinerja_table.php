@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_evaluasi_kinerja', function (Blueprint $table) {
-            $table->int('id')->primary();
-            $table->int('pegawai_id');
-            $table->int('penilai_id');
-            $table->int('atasan_penilai_id');
+            $table->integer('id')->primary();
+            $table->integer('pegawai_id');
+            $table->integer('penilai_id');
+            $table->integer('atasan_penilai_id');
             
             $table->string('jenis_kinerja'); //(dosen, pegawai)
 

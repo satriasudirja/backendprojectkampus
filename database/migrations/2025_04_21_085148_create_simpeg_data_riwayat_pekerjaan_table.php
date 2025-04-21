@@ -3,14 +3,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateDataRiwayatPekerjaanTable extends Migration
+return new class extends Migration
 {
     public function up()
     {
         Schema::create('data_riwayat_pekerjaan', function (Blueprint $table) {
             // Kolom utama
-            $table->int('id')->primary();
-            $table->int('pegawai_id');
+            $table->integer('id')->primary();
+            $table->integer('pegawai_id');
             
             // Informasi pekerjaan
             $table->string('bidang_usaha', 200);
@@ -44,4 +44,4 @@ class CreateDataRiwayatPekerjaanTable extends Migration
     {
         Schema::dropIfExists('data_riwayat_pekerjaan');
     }
-}
+};

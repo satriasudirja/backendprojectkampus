@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_pengabdian', function (Blueprint $table) {
-            $table->int('id')->primary();
-            $table->int('pegawai_id');
+            $table->integer('id')->primary();
+            $table->integer('pegawai_id');
             $table->string('jenis_kegiatan', 50);
             $table->string('status_pengajuan', 50);
             $table->date('tanggal_pengajuan');

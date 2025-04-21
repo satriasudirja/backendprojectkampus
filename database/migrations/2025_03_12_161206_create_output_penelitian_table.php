@@ -8,7 +8,7 @@ class CreateOutputPenelitianTable extends Migration
     public function up()
     {
         Schema::create('simpeg_master_output_penelitian', function (Blueprint $table) {
-            $table->int('id')->primary;
+            $table->id();
             $table->string('kode', 5);
             $table->string('output_penelitian', 100);
             $table->timestamps();

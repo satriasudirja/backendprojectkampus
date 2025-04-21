@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('simpeg_data_pelanggaran', function (Blueprint $table) {
+        Schema::create('simpeg_data_pelanggaran', function (Blueprint $table) {
             // Tambahkan relasi ke tabel pegawai
-            $table->int('id')->primary();
+            $table->integer('id')->primary();
             // $table->foreign('pegawai_id')
             //       ->references('id')
             //       ->on('simpeg_pegawai')
@@ -36,9 +36,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('simpeg_data_pelanggaran', function (Blueprint $table) {
-            $table->dropForeign(['pegawai_id']);
-            $table->dropForeign(['jenis_pelanggaran_id']);
-        });
+        // Schema::table('simpeg_data_pelanggaran', function (Blueprint $table) {
+           
+        // });
     }
 };

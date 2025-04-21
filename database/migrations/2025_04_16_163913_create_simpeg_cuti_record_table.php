@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_cuti_record', function (Blueprint $table) {
-            $table->int('id')->primary();
-            $table->int('pegawai_id');
-            $table->int('jenis_cuti_id');
+            $table->integer('id')->primary();
+            $table->integer('pegawai_id');
+            $table->integer('jenis_cuti_id');
             $table->string('no_urut_cuti', 50);
             $table->date('tgl_mulai');
             $table->date('tgl_selesai');

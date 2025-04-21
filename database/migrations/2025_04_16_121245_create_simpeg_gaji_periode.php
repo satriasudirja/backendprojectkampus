@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_gaji_periode', function (Blueprint $table) {
-            $table->int('id')->primary();
+            $table->integer('id')->primary();
             $table->string('nama_periode', 50);
             $table->date('tgl_mulai');
             $table->date('tgl_selesai');

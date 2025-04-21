@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_hubungan_kerja', function (Blueprint $table) {
-            $table->int('id')->primary();
+            $table->integer('id')->primary();
             
             // Data SK
             $table->string('no_sk', 50);
@@ -51,10 +51,10 @@ return new class extends Migration
             //       ->onDelete('cascade');
 
             // Indexes
-            $table->index('no_sk');
-            $table->index('pegawai_id');
-            $table->index('tgl_awal');
-            $table->index('tgl_akhir');
+            // $table->index('no_sk');
+            // $table->index('pegawai_id');
+            // $table->index('tgl_awal');
+            // $table->index('tgl_akhir');
         });
     }
 

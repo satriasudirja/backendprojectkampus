@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_berita', function (Blueprint $table) {
-            $table->int('id')->primary();
-            $table->int('unit_kerja_id'); // Diperbaiki dari 'unit_kenja_id' ke 'unit_kerja_id'
+            $table->integer('id')->primary();
+            $table->integer('unit_kerja_id'); // Diperbaiki dari 'unit_kenja_id' ke 'unit_kerja_id'
             $table->string('judul', 100);
             $table->text('konten')->nullable(); // Ditambahkan untuk konten berita
             $table->string('slug', 255)->unique(); // Ditambahkan untuk URL SEO-friendly

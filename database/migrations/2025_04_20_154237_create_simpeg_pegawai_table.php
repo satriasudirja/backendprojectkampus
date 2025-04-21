@@ -9,16 +9,15 @@ return new class extends Migration
     public function up()
     {
         Schema::create('simpeg_pegawai', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->integer('id')->primary();
             
-            // Foreign keys
-            $table->uuid('user_id')->nullable();
-            $table->uuid('unit_kerja_id')->nullable();
-            $table->uuid('kode_status_pernikahan')->nullable();
-            $table->uuid('status_aktif_id')->nullable();
-            $table->uuid('jabatan_akademik_id')->nullable();
-            $table->uuid('suku_id')->nullable();
-            
+           // Kolom relasi (tanpa foreign key constraint)
+           $table->integer('user_id')->nullable();
+           $table->integer('unit_kerja_id')->nullable();
+           $table->integer('kode_status_pernikahan')->nullable();
+           $table->integer('status_aktif_id')->nullable();
+           $table->integer('jabatan_akademik_id')->nullable();
+           $table->integer('suku_id')->nullable();
             // Data pribadi
             $table->string('nama', 255);
             $table->string('nip', 20)->unique();

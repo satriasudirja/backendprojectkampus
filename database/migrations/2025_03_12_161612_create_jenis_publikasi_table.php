@@ -9,7 +9,7 @@ class CreateJenisPublikasiTable extends Migration
     public function up()
     {
         Schema::create('simpeg_jenis_publikasi', function (Blueprint $table) {
-            $table->int('id')->primary();
+            $table->id();
             $table->string('kode', 5);
             $table->string('jenis_publikasi', 50);
             // $table->double('bobot', 1, 2)->nullable(); 

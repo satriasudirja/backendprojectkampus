@@ -3,20 +3,20 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateDataPendidikanTable extends Migration
+return new class extends Migration
 {
     public function up()
     {
         Schema::create('simpeg_data_pendidikan', function (Blueprint $table) {
             // Kolom utama
-            $table->int('id')->primary();
-            $table->int('pegawai_id'); // Diperbaiki dari 'pegawa1_id'
+            $table->integer('id')->primary();
+            $table->integer('pegawai_id'); // Diperbaiki dari 'pegawa1_id'
             
             // Informasi pengajuan
             $table->string('jenis_kegiatan', 50);
             $table->string('status_pengajuan', 50);
             $table->date('tanggal_pengajuan');
-            $table->string('sk_pengajuan', 50)->nullable(); // Diperbaiki dari 'sk_pengasan'
+            $table->string('sk_penugasan', 50)->nullable(); // Diperbaiki dari 'sk_pengasan'
             
             // Informasi pendidikan
             $table->string('perguruan_tinggi_sasaran', 100)->nullable();
@@ -50,4 +50,4 @@ class CreateDataPendidikanTable extends Migration
     {
         Schema::dropIfExists('simpeg_data_pendidikan');
     }
-}
+};

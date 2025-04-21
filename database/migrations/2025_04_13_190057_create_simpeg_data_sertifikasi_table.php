@@ -9,10 +9,10 @@ return new class extends Migration {
     public function up()
     {
         Schema::create('simpeg_data_setifikasi', function (Blueprint $table) {
-            $table->int('id')->primary();
-            $table->int('pegawai_id')->nullable();           
-            $table->int('jenis_sertifikasi_id')->nullable();  
-            $table->int('bidang_ilmu_id')->nullable();        
+            $table->integer('id')->primary();
+            $table->integer('pegawai_id')->nullable();           
+            $table->integer('jenis_sertifikasi_id')->nullable();  
+            $table->integer('bidang_ilmu_id')->nullable();        
             $table->string('no_sertifikasi', 50);
             $table->date('tgl_sertifikasi');
             $table->string('no_registrasi', 20);

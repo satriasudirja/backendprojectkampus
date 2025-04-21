@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_keluarga_pegawai', function (Blueprint $table) {
             // Kolom utama
-            $table->int('id')->primary();
-            $table->int('pegawai_id');
+            $table->integer('id')->primary();
+            $table->integer('pegawai_id');
             
             // Data umum keluarga
             $table->string('nama', 100);
