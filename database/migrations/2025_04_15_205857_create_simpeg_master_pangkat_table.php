@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_master_pangkat', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->int('id')->primary();
             $table->string('pangkat', 6);
             $table->string('nama_golongan', 30);
             $table->timestamps();

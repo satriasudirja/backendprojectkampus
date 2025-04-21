@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('simpeg_jenis_kenaikan_pangkat', function (Blueprint $table) {
-            $table->int('id')->primary();
-            $table->string('kode', 2);
-            $table->string('jenis_pangkat', 20);
+        Schema::create('simpeg_jenis_kehadiran', function (Blueprint $table) {
+            $table->id();
+            $table->string('kode_jenis', 2);
+            $table->string('nama_jenis', 50);
             $table->timestamps();
         });
-        
-        
     }
 
     /**
@@ -26,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('simpeg_jenis_kenaikan_pangkat');
+        Schema::dropIfExists('simpeg_jenis_kehadiran');
     }
 };

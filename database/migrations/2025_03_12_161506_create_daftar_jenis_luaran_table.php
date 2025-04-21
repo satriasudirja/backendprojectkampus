@@ -8,7 +8,8 @@ class CreateDaftarJenisLuaranTable extends Migration
     public function up()
     {
         Schema::create('daftar_jenis_luaran', function (Blueprint $table) {
-            $table->string('kode', 2)->primary();
+            $table->int('id', 2)->primary();
+            $table->string('kode', 5);
             $table->string('jenis_luaran', 50);
             $table->timestamps();
         });

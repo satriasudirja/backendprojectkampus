@@ -22,16 +22,16 @@ return new class extends Migration
             $table->date('tgl_proses')->nullable();
             $table->timestamps();
 
-            // Foreign keys
-            $table->foreign('pegawai_id')
-                ->references('id')
-                ->on('simpeg_pegawai')
-                ->onDelete('restrict');
+            // // Foreign keys
+            // $table->foreign('pegawai_id')
+            //     ->references('id')
+            //     ->on('simpeg_pegawai')
+            //     ->onDelete('restrict');
 
-            $table->foreign('periode_id')
-                ->references('id')
-                ->on('simpeg_gaji_periode')
-                ->onDelete('restrict');
+            // $table->foreign('periode_id')
+            //     ->references('id')
+            //     ->on('simpeg_gaji_periode')
+            //     ->onDelete('restrict');
 
             // Indexes
             $table->index(['pegawai_id', 'periode_id']);

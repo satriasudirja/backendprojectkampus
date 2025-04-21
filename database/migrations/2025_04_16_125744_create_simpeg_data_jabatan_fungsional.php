@@ -33,16 +33,16 @@ return new class extends Migration
             
             $table->timestamps();
 
-            // Foreign keys
-            $table->foreign('jabatan_fungsional_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jabatan_fungsional')
-                  ->onDelete('restrict');
+            // // Foreign keys
+            // $table->foreign('jabatan_fungsional_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_jabatan_fungsional')
+            //       ->onDelete('restrict');
 
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
 
             // Indexes
             $table->index('pegawai_id');

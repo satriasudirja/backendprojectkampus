@@ -8,8 +8,9 @@ class CreateJenisPelanggaranTable extends Migration
     public function up()
     {
         Schema::create('jenis_pelanggaran', function (Blueprint $table) {
-            $table->string('kode', 2)->primary();
-            $table->string('nama_pelanggaran', 20);
+            $table->id();
+            $table->string('kode', 5);
+            $table->string('nama_pelanggaran', 50);
             $table->timestamps();
         });
     }

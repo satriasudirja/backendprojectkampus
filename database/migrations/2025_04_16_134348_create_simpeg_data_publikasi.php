@@ -56,21 +56,21 @@ return new class extends Migration
             
             $table->timestamps();
 
-            // Foreign keys
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // // Foreign keys
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
                   
-            $table->foreign('jenis_publikasi_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jenis_publikasi')
-                  ->onDelete('restrict');
+            // $table->foreign('jenis_publikasi_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_jenis_publikasi')
+            //       ->onDelete('restrict');
                   
-            $table->foreign('jenis_layanan_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jenis_layanan')
-                  ->onDelete('restrict');
+            // $table->foreign('jenis_layanan_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_jenis_layanan')
+            //       ->onDelete('restrict');
 
             // Indexes
             $table->index('pegawai_id');

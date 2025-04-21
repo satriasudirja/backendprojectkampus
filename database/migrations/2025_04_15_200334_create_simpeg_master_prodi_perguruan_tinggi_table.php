@@ -24,9 +24,9 @@ return new class extends Migration
     {
         Schema::dropIfExists('simpeg_master_prodi_perguruan_tinggi');
         Schema::create('simpeg_master_prodi_perguruan_tinggi', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('perguruan_tinggi_id');
-            $table->uuid('jenjang_pendidikan_id');
+            $table->int('id')->primary();
+            $table->int('perguruan_tinggi_id');
+            $table->int('jenjang_pendidikan_id');
             $table->string('kode', 10);
             $table->string('nama_prodi', 100);
             $table->text('jenjang')->nullable();

@@ -19,16 +19,16 @@ return new class extends Migration
             $table->text('keterangan')->nullable();
             $table->timestamps();
 
-            // Foreign key constraints
-            $table->foreign('gaji_slip_id')
-                  ->references('id')
-                  ->on('simpeg_gaji_slip') // Asumsi nama tabel slip gaji
-                  ->onDelete('cascade');
+            // // Foreign key constraints
+            // $table->foreign('gaji_slip_id')
+            //       ->references('id')
+            //       ->on('simpeg_gaji_slip') // Asumsi nama tabel slip gaji
+            //       ->onDelete('cascade');
                   
-            $table->foreign('komponen_id')
-                  ->references('id')
-                  ->on('simpeg_komponen_gaji') // Asumsi nama tabel komponen gaji
-                  ->onDelete('restrict');
+            // $table->foreign('komponen_id')
+            //       ->references('id')
+            //       ->on('simpeg_komponen_gaji') // Asumsi nama tabel komponen gaji
+            //       ->onDelete('restrict');
         });
     }
 

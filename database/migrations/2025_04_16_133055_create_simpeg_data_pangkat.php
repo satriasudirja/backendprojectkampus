@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_pangkat', function (Blueprint $table) {
             // Kolom utama
-            $table->uuid('id')->primary(); // Diubah dari FK ke PK karena ini tabel utama
-            $table->uuid('pegawai_id');
+            $table->int('id')->primary(); // Diubah dari FK ke PK karena ini tabel utama
+            $table->int('pegawai_id');
             
             // Referensi
-            $table->uuid('jenis_sk_id');
-            $table->uuid('jenis_kepangkatan_id'); // Diperbaiki dari 'jenis_kenalkan_pangkat_id'
-            $table->uuid('pangkat_id');
+            $table->int('jenis_sk_id');
+            $table->int('jenis_kepangkatan_id'); // Diperbaiki dari 'jenis_kenalkan_pangkat_id'
+            $table->int('pangkat_id');
             
             // Data kepangkatan
             $table->date('tmt_pangkat');
@@ -42,26 +42,26 @@ return new class extends Migration
             
             $table->timestamps();
 
-            // Foreign keys
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // // Foreign keys
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
                   
-            $table->foreign('jenis_sk_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jenis_sk')
-                  ->onDelete('restrict');
+            // $table->foreign('jenis_sk_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_jenis_sk')
+            //       ->onDelete('restrict');
                   
-            $table->foreign('jenis_kepangkatan_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jenis_kepangkatan')
-                  ->onDelete('restrict');
+            // $table->foreign('jenis_kepangkatan_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_jenis_kepangkatan')
+            //       ->onDelete('restrict');
                   
-            $table->foreign('pangkat_id')
-                  ->references('id')
-                  ->on('simpeg_ref_pangkat')
-                  ->onDelete('restrict');
+            // $table->foreign('pangkat_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_pangkat')
+            //       ->onDelete('restrict');
 
             // Indexes
             $table->index('pegawai_id');

@@ -24,15 +24,15 @@ return new class extends Migration
             $table->timestamps();
 
             // Foreign key constraints
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
                   
-            $table->foreign('jenis_izin_id')
-                  ->references('id')
-                  ->on('simpeg_jenis_izin')
-                  ->onDelete('cascade');
+            // $table->foreign('jenis_izin_id')
+            //       ->references('id')
+            //       ->on('simpeg_jenis_izin')
+            //       ->onDelete('cascade');
         });
     }
 

@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('suku', function (Blueprint $table) {
             $table->id(); 
-            $table->text('suku'); 
+            $table->text('nama_suku'); 
             $table->timestamps(); 
         });
     }

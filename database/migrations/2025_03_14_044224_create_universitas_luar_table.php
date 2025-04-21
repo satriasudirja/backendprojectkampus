@@ -9,7 +9,8 @@ return new class extends Migration
     public function up()
     {
         Schema::create('universitas_luar', function (Blueprint $table) {
-            $table->string('kode', 6)->primary(); 
+            $table->int('id')->primary();
+            $table->string('kode', 10);
             $table->string('nama_universitas', 50); 
             $table->text('alamat'); 
             $table->string('no_telp', 20); 

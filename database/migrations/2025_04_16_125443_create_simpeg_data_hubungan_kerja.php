@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_hubungan_kerja', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->int('id')->primary();
             
             // Data SK
             $table->string('no_sk', 50);
@@ -28,27 +28,27 @@ return new class extends Migration
             $table->date('tgl_input')->nullable();
             
             // Foreign keys
-            $table->uuid('hubungan_kerja_id');
-            $table->uuid('status_aktif_id');
-            $table->uuid('pegawai_id');
+            // $table->int('hubungan_kerja_id');
+            // $table->int('status_aktif_id');
+            // $table->int('pegawai_id');
             
             $table->timestamps();
 
             // Relasi ke tabel referensi
-            $table->foreign('hubungan_kerja_id')
-                  ->references('id')
-                  ->on('simpeg_ref_hubungan_kerja')
-                  ->onDelete('restrict');
+            // $table->foreign('hubungan_kerja_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_hubungan_kerja')
+            //       ->onDelete('restrict');
 
-            $table->foreign('status_aktif_id')
-                  ->references('id')
-                  ->on('simpeg_ref_status')
-                  ->onDelete('restrict');
+            // $table->foreign('status_aktif_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_status')
+            //       ->onDelete('restrict');
 
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
 
             // Indexes
             $table->index('no_sk');

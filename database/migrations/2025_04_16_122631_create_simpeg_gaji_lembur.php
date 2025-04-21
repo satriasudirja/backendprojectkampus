@@ -23,11 +23,11 @@ return new class extends Migration
             $table->string('status', 20)->default('pending'); // pending, approved, rejected, paid
             $table->timestamps();
 
-            // Foreign key
-            $table->foreign('pegawai_id')
-                ->references('id')
-                ->on('simpeg_pegawai')
-                ->onDelete('cascade');
+            // // Foreign key
+            // $table->foreign('pegawai_id')
+            //     ->references('id')
+            //     ->on('simpeg_pegawai')
+            //     ->onDelete('cascade');
 
             // Indexes
             $table->index(['pegawai_id', 'tanggal']);

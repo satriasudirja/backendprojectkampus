@@ -34,15 +34,15 @@ return new class extends Migration
             $table->timestamps();
 
             // Foreign key constraints
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
 
-            $table->foreign('jabatan_akademik_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jabatan_akademik')
-                  ->onDelete('restrict');
+            // $table->foreign('jabatan_akademik_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_jabatan_akademik')
+            //       ->onDelete('restrict');
 
             // Indexes
             $table->index('pegawai_id');
