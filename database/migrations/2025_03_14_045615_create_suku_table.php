@@ -9,7 +9,7 @@ return new class extends Migration
     
     public function up()
     {
-        Schema::create('suku', function (Blueprint $table) {
+        Schema::create('simpeg_suku', function (Blueprint $table) {
             $table->id(); 
             $table->text('nama_suku'); 
             $table->timestamps(); 
@@ -19,6 +19,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('suku');
+        Schema::dropIfExists('simpeg_suku');
     }
 };

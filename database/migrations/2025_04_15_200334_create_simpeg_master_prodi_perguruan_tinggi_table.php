@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('simpeg_master_prodi_perguruan_tinggi', function (Blueprint $table) {
             $table->id();
+            $table->integer('perguruan_tinggi_id');
+            $table->integer('jenjang_pendidikan_id');
+            $table->string('kode', 10);
+            $table->string('nama_prodi', 100);
+            $table->text('jenjang')->nullable();
+            $table->text('alamat')->nullable();
+            $table->string('no_telp', 30)->nullable();
             $table->timestamps();
         });
     }
@@ -24,9 +31,9 @@ return new class extends Migration
     {
         Schema::dropIfExists('simpeg_master_prodi_perguruan_tinggi');
         Schema::create('simpeg_master_prodi_perguruan_tinggi', function (Blueprint $table) {
-            $table->int('id')->primary();
-            $table->int('perguruan_tinggi_id');
-            $table->int('jenjang_pendidikan_id');
+            $table->integer('id')->primary();
+            $table->integer('perguruan_tinggi_id');
+            $table->integer('jenjang_pendidikan_id');
             $table->string('kode', 10);
             $table->string('nama_prodi', 100);
             $table->text('jenjang')->nullable();
