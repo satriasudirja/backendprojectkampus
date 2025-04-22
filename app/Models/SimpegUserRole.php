@@ -20,6 +20,6 @@ class SimpegUserRole extends Model
      */
     public function jabatanAkademik()
     {
-        return $this->hasMany(JabatanAkademik::class, 'role_id');
+        return $this->hasMany(SimpegJabatanAkademik::class, 'role_id');
     }
 }
