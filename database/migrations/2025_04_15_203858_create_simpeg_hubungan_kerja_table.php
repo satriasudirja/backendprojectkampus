@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_hubungan_kerja', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id');
+            $table->string('kode', 2);
+            $table->string('nama_hub_kerja', 30);
+            $table->boolean('status_aktif');
+            $table->boolean('pns');
             $table->timestamps();
         });
     }
@@ -22,14 +26,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::create('simpeg_hubungan_kerja', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('kode', 2);
-            $table->string('nama_hub_kerja', 30);
-            $table->boolean('status_aktif');
-            $table->boolean('pns');
-            $table->timestamps();
-        });
+        Schema::dropIfExists('simpeg_hubungan_kerja');
         
     }
 };

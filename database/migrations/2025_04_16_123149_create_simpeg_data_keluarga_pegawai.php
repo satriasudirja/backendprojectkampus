@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_keluarga_pegawai', function (Blueprint $table) {
             // Kolom utama
-            $table->uuid('id')->primary();
-            $table->uuid('pegawai_id');
+            $table->bigIncrements('id');
+            $table->integer('pegawai_id');
             
             // Data umum keluarga
             $table->string('nama', 100);
@@ -46,10 +46,10 @@ return new class extends Migration
             $table->timestamps();
 
             // Foreign key
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
 
             // Indexes
             $table->index('pegawai_id');

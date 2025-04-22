@@ -8,8 +8,9 @@ class CreateJenisPenghargaanTable extends Migration
     public function up()
     {
         Schema::create('jenis_penghargaan', function (Blueprint $table) {
-            $table->string('kode', 4)->primary();
-            $table->string('penghargaan', 30);
+             $table->bigIncrements('id');
+            $table->string('kode', 5);
+            $table->string('nama_penghargaan', 50);
             $table->timestamps();
         });
     }

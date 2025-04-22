@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_gaji_lembur', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('pegawai_id');
+            $table->bigIncrements('id');
+            $table->integer('pegawai_id');
             $table->date('tanggal');
             $table->time('jam_mulai');
             $table->time('jam_selesai');
@@ -23,15 +23,15 @@ return new class extends Migration
             $table->string('status', 20)->default('pending'); // pending, approved, rejected, paid
             $table->timestamps();
 
-            // Foreign key
-            $table->foreign('pegawai_id')
-                ->references('id')
-                ->on('simpeg_pegawai')
-                ->onDelete('cascade');
+            // // Foreign key
+            // $table->foreign('pegawai_id')
+            //     ->references('id')
+            //     ->on('simpeg_pegawai')
+            //     ->onDelete('cascade');
 
-            // Indexes
-            $table->index(['pegawai_id', 'tanggal']);
-            $table->index('status');
+            // // Indexes
+            // $table->index(['pegawai_id', 'tanggal']);
+            // $table->index('status');
         });
     }
 

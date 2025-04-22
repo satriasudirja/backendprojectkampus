@@ -8,7 +8,7 @@ class CreateKategoriSertifikasiTable extends Migration
     public function up()
     {
         Schema::create('kategori_sertifikasi', function (Blueprint $table) {
-            $table->id();
+             $table->bigIncrements('id');
             $table->string('kategori_sertifikasi', 50);
             $table->timestamps();
         });

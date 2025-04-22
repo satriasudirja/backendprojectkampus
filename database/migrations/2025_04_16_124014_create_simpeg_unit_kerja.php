@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('simpeg_unit_kerja', function (Blueprint $table) {
             // Kolom utama
-            $table->uuid('id')->primary();
+            $table->bigIncrements('id');
             $table->string('kode_unit', 20)->unique();
             $table->string('nama_unit', 100);
             

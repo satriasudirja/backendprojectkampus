@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_publikasi', function (Blueprint $table) {
             // Kolom utama
-            $table->uuid('id')->primary();
-            $table->uuid('pegawai_id');
+            $table->bigIncrements('id');
+            $table->integer('pegawai_id');
             
             // Referensi
-            $table->uuid('jenis_publikasi_id');
-            $table->uuid('jenis_layanan_id'); // Diperbaiki dari 'jenis_luanan_id'
+            $table->integer('jenis_publikasi_id');
+            $table->integer('jenis_luaran_id'); // Diperbaiki dari 'jenis_luanan_id'
             
             // Data publikasi
             $table->text('judul');
@@ -56,21 +56,21 @@ return new class extends Migration
             
             $table->timestamps();
 
-            // Foreign keys
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // // Foreign keys
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
                   
-            $table->foreign('jenis_publikasi_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jenis_publikasi')
-                  ->onDelete('restrict');
+            // $table->foreign('jenis_publikasi_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_jenis_publikasi')
+            //       ->onDelete('restrict');
                   
-            $table->foreign('jenis_layanan_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jenis_layanan')
-                  ->onDelete('restrict');
+            // $table->foreign('jenis_layanan_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_jenis_layanan')
+            //       ->onDelete('restrict');
 
             // Indexes
             $table->index('pegawai_id');
