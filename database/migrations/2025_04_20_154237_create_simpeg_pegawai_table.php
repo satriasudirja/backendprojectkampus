@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('simpeg_pegawai', function (Blueprint $table) {
-            $table->integer('id')->primary();
+            $table->bigIncrements('id');
             
            // Kolom relasi (tanpa foreign key constraint)
            $table->integer('user_id')->nullable();

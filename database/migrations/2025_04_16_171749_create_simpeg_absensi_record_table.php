@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_absensi_record', function (Blueprint $table) {
-            $table->integer('id')->primary();
+            $table->bigIncrements('id');
             $table->integer('pegawai_id');
             $table->integer('setting_kehadiran_id');
             $table->integer('jenis_kehadiran_id');

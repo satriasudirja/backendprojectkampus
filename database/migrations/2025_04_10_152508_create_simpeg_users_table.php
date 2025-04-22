@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_users', function (Blueprint $table) {
-            $table->id();
+             $table->bigIncrements('id');
             $table->foreignId('role_id')
             ->constrained('simpeg_users_roles')
             ->onDelete('restrict');

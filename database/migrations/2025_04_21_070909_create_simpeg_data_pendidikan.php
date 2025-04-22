@@ -9,7 +9,7 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_pendidikan', function (Blueprint $table) {
             // Kolom utama
-            $table->integer('id')->primary();
+            $table->bigIncrements('id');
             $table->integer('pegawai_id'); // Diperbaiki dari 'pegawa1_id'
             
             // Informasi pengajuan

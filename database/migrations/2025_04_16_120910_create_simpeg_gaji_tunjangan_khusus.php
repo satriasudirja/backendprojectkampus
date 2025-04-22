@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_gaji_tunjangan_khusus', function (Blueprint $table) {
-            $table->integer('id')->primary();
+            $table->bigIncrements('id');
             $table->integer('pegawai_id');
             $table->integer('komponen_id');
             $table->float('jumlah', 8, 2); // float4 equivalent with 8 digits total and 2 decimal places

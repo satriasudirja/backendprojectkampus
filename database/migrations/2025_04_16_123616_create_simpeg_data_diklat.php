@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_diklat', function (Blueprint $table) {
             // Kolom utama
-            $table->integer('id')->primary();
+            $table->bigIncrements('id');
             $table->integer('pegawai_id');
             // Informasi diklat
             $table->string('jenis_diklat', 100);

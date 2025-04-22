@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_pelanggaran', function (Blueprint $table) {
             // Tambahkan relasi ke tabel pegawai
-            $table->integer('id')->primary();
+            $table->bigIncrements('id');
             $table->integer('pegawai_id');
             $table->integer('jenis_pelanggaran_id');
             $table->date('tgl_pelanggaran');

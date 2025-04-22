@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_status_pernikahan', function (Blueprint $table) {
-            $table->id();
+             $table->bigIncrements('id');
             $table->string('kode_status', 50);
             $table->string('nama_status', 50);
             $table->timestamps();

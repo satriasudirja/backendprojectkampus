@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_master_prodi_perguruan_tinggi', function (Blueprint $table) {
-            $table->id();
+             $table->bigIncrements('id');
             $table->integer('perguruan_tinggi_id');
             $table->integer('jenjang_pendidikan_id');
             $table->string('kode', 10);
@@ -31,7 +31,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('simpeg_master_prodi_perguruan_tinggi');
         Schema::create('simpeg_master_prodi_perguruan_tinggi', function (Blueprint $table) {
-            $table->integer('id')->primary();
+            $table->bigIncrements('id');
             $table->integer('perguruan_tinggi_id');
             $table->integer('jenjang_pendidikan_id');
             $table->string('kode', 10);

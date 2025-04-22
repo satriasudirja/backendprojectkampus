@@ -12,7 +12,7 @@ return new class extends Migration
     public function up()
 {
     Schema::create('simpeg_daftar_cuti', function (Blueprint $table) {
-        $table->id();
+         $table->bigIncrements('id');
         $table->string('kode', 5); // Kode varchar(3) primary key
         $table->string('nama_jenis_cuti', 50); // Nama Jenis Cuti varchar(20)
         $table->integer('standar_cuti'); // Standar Cuti (hari) int(2)

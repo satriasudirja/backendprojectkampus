@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_hubungan_kerja', function (Blueprint $table) {
-            $table->integer('id')->primary();
+            $table->bigIncrements('id');
             
             // Data SK
             $table->string('no_sk', 50);

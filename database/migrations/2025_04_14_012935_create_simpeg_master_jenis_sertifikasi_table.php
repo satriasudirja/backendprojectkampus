@@ -12,7 +12,7 @@ return new class extends Migration
         public function up()
         {
             Schema::create('simpeg_master_jenis_sertifikasi', function (Blueprint $table) {
-                $table->integer('id')->primary();
+                $table->bigIncrements('id');
                 $table->string('kode', 5);
                 $table->string('nama_sertifikasi', 50);
                 $table->string('jenis_sertifikasi', 50);
