@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('simpeg_jabatan_akademik', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('role_id')
-            ->constrained('simpeg_users_roles')
-            ->onDelete('restrict');
+            // $table->foreignId('role_id')
+            // ->constrained('simpeg_users_roles')
+            // ->onDelete('restrict');
+            $table->integer('role_id'); 
             $table->string('kode', 2); 
             $table->string('jabatan_akademik', 20); 
             $table->timestamps();

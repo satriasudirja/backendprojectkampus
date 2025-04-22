@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('simpeg_jabatan_akademik', function (Blueprint $table) {
             // Foreign key untuk role_id
             $table->foreign('role_id')
-                ->references('id')->on('simpeg_user_Role')
+                ->references('id')->on('simpeg_users_roles')
                 ->onDelete('restrict');
         });
     }

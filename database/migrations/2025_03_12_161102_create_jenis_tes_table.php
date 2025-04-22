@@ -9,7 +9,8 @@ class CreateJenisTesTable extends Migration
     public function up()
     {
         Schema::create('simpeg_daftar_jenis_test', function (Blueprint $table) {
-            $table->string('kode', 4)->primary();
+            $table->integer('id')->primary();
+            $table->string('kode', 4);
             $table->string('jenis_tes', 25);
             $table->double('nilai_minimal', 10, 5)->nullable(); // Boleh null biar sesuai sama seeder
             $table->double('nilai_maksimal', 10, 5)->nullable(); // Kalau ini juga mau null bisa dikasih nullable()

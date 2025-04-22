@@ -18,7 +18,7 @@ return new class extends Migration
             
             // Referensi
             $table->integer('jenis_publikasi_id');
-            $table->integer('jenis_layanan_id'); // Diperbaiki dari 'jenis_luanan_id'
+            $table->integer('jenis_luaran_id'); // Diperbaiki dari 'jenis_luanan_id'
             
             // Data publikasi
             $table->text('judul');
