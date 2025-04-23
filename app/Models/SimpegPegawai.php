@@ -3,14 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class SimpegPegawai extends Model
+class SimpegPegawai extends Authenticatable implements JWTSubject
 {
     // Nama tabel (jika tidak mengikuti konvensi Laravel)
     protected $table = 'simpeg_pegawai';
 
     // Karena primary key-nya bukan 'id' auto-increment
     protected $primaryKey = 'id';
+    protected $hidden = ['password'];
+    protected $guarded = [];
+    
+
     
 
     // Mass assignable attributes
@@ -118,6 +125,15 @@ class SimpegPegawai extends Model
     public function suku()
     {
         return $this->belongsTo(SimpegSuku::class, 'suku_id');
+    }
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+    
+    public function getJWTCustomClaims()
+    {
+        return [];
     }
 
 }
