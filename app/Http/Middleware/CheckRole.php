@@ -3,17 +3,21 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\SimpegUsersRole;
 
 class CheckRole
 {
-    public function handle(Request $request, Closure $next, ...$roles)
+    public function handle($request, Closure $next, ...$roles)
     {
-        $user = $request->user();
-        
-        if (!$user || !in_array($user->role_id, $roles)) {
-            abort(403, 'Unauthorized access');
+        $user = JWTAuth::parseToken()->authenticate();
+        $userRole = $user->jabatanAkademik->role->nama;
+
+        if (!in_array($userRole, $roles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke fitur ini'
+            ], 403);
         }
 
         return $next($request);

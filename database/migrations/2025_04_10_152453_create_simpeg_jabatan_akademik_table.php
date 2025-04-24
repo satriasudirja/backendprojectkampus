@@ -18,7 +18,7 @@ return new class extends Migration
             // ->onDelete('restrict');
             $table->integer('role_id'); 
             $table->string('kode', 2); 
-            $table->string('jabatan_akademik', 20); 
+            $table->string('jabatan_akademik', 50); 
             $table->timestamps();
         });
     }

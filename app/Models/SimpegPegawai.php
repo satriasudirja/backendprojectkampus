@@ -3,18 +3,22 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class SimpegPegawai extends Model
+class SimpegPegawai extends Authenticatable implements JWTSubject
 {
     // Nama tabel (jika tidak mengikuti konvensi Laravel)
     protected $table = 'simpeg_pegawai';
 
     // Karena primary key-nya bukan 'id' auto-increment
     protected $primaryKey = 'id';
-    public $incrementing = false;
+    protected $hidden = ['password'];
+    protected $guarded = [];
+    
 
-    // Jika primary key bukan tipe integer auto-increment
-    protected $keyType = 'int';
+    
 
     // Mass assignable attributes
     protected $fillable = [
@@ -100,17 +104,17 @@ class SimpegPegawai extends Model
 
     public function unitKerja()
     {
-        return $this->belongsTo(UnitKerja::class, 'unit_kerja_id');
+        return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id');
     }
 
     public function statusPernikahan()
     {
-        return $this->belongsTo(StatusPernikahan::class, 'kode_status_pernikahan');
+        return $this->belongsTo(SimpegStatusPernikahan::class, 'kode_status_pernikahan');
     }
 
     public function statusAktif()
     {
-        return $this->belongsTo(StatusAktif::class, 'status_aktif_id');
+        return $this->belongsTo(SimpegStatusAktif::class, 'status_aktif_id');
     }
 
     public function jabatanAkademik()
@@ -120,7 +124,16 @@ class SimpegPegawai extends Model
 
     public function suku()
     {
-        return $this->belongsTo(Suku::class, 'suku_id');
+        return $this->belongsTo(SimpegSuku::class, 'suku_id');
+    }
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+    
+    public function getJWTCustomClaims()
+    {
+        return [];
     }
 
 }
