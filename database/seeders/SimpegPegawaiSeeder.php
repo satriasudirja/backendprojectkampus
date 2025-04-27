@@ -18,7 +18,7 @@ class SimpegPegawaiSeeder extends Seeder
         $faker = Faker::create('id_ID');
 
         // Create a number of pegawai records
-        foreach (range(1, 10) as $index) {
+        foreach (range(1, 100) as $index) {
             // Get valid foreign keys first
             $jabatanAkademik = SimpegJabatanAkademik::inRandomOrder()->first();
             $unitKerja = SimpegUnitKerja::inRandomOrder()->first();

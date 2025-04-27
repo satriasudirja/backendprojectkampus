@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\SimpegDaftarCuti;
+use App\Models\SimpegDaftarJenisSk;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -23,6 +25,13 @@ class DatabaseSeeder extends Seeder
     SimpegUnitKerjaSeeder::class,
     SimpegStatusAktifSeeder::class,
     SimpegPegawaiSeeder::class,
+    SimpegBahasaSeeder::class,
+    SimpegJenisCutiSeeder::class,
+    SimpegDaftarJenisLuaranSeeder::class,
+    PkmSeeder::class,
+    SimpegDaftarJenisSkSeeder::class,
+    SimpegDaftarJenisTestSeeder::class,
+    SimpegDaftarJenisSkSeeder::class,
         ]);
 =======
         // User::factory(10)->create()

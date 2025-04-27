@@ -1,10 +1,23 @@
 <?php
 
 use App\Models\JenisSertifikasi;
+use App\Models\SimpegDaftarCuti;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SimpegSukuController;
+use App\Http\Controllers\Api\SimpegUserRoleController;
+use App\Http\Controllers\Api\SimpegUnitKerjaController;
+use App\Http\Controllers\Api\SimpegStatusPernikahanController;
+use App\Http\Controllers\Api\SimpegStatusAktifController;
+use App\Http\Controllers\Api\SimpegJabatanAkademikController;
+use App\Http\Controllers\Api\SimpegBahasaController;
+use App\Http\Controllers\Api\SimpegDaftarCutiController;
+use App\Http\Controllers\Api\SimpegDaftarJenisLuaranController;
+use App\Http\Controllers\Api\DaftarJenisPkmController;
+use App\Http\Controllers\Api\SimpegDaftarJenisSkController;
+use App\Http\Controllers\Api\SimpegDaftarJenisTestController;
 
 
 Route::prefix('auth')->group(function () {
@@ -25,7 +38,23 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:Admin')->prefix('admin')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
+           
+          
         });
+        Route::apiResource('suku', SimpegSukuController::class);
+        Route::apiResource('role', SimpegUserRoleController::class);
+        Route::apiResource('unit-kerja', SimpegUnitKerjaController::class);
+        Route::apiResource('status-pernikahan', SimpegStatusPernikahanController::class);
+        Route::apiResource('status-aktif', SimpegStatusAktifController::class);
+        Route::apiResource('jabatan-akademik', SimpegJabatanAkademikController::class);
+        Route::apiResource('bahasa', SimpegBahasaController::class);
+        Route::apiResource('daftar-cuti', SimpegDaftarCutiController::class);
+        Route::apiResource('jenis-luaran', SimpegDaftarJenisLuaranController::class);
+        Route::apiResource('jenis-luaran', SimpegDaftarJenisLuaranController::class);
+        Route::apiResource('jenis-pkm', DaftarJenisPkmController::class);
+        Route::apiResource('jenis-sk', SimpegDaftarJenisSkController::class);
+        Route::apiResource('jenis-test', SimpegDaftarJenisTestController::class);
+    
     });
     
     // Dosen Routes

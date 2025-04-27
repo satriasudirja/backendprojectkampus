@@ -23,6 +23,12 @@ class AuthController extends Controller
 
         $user = Auth::user();
         $role = $user->jabatanAkademik->role;
+        \DB::table('simpeg_login_logs')->insert([
+            'pegawai_id' => $user->id,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'logged_in_at' => now(),
+        ]);
 
         return $this->respondWithToken($token, $user, $role);
     }
@@ -64,15 +70,28 @@ class AuthController extends Controller
             ]
         ]);
     }
-
     public function logout()
     {
+        $user = Auth::user();  // Mendapatkan user yang sedang login
+        $log_id = \DB::table('simpeg_login_logs')
+            ->where('pegawai_id', $user->id)
+            ->whereNull('logged_out_at')  // Pastikan belum ada waktu logout
+            ->value('id');
+    
+        // Update waktu logout di login log
+        \DB::table('simpeg_login_logs')
+            ->where('id', $log_id)
+            ->update(['logged_out_at' => now()]);
+    
+        // Logout JWT
         Auth::logout();
+    
         return response()->json([
             'success' => true,
             'message' => 'Berhasil logout'
         ]);
     }
+    
 
     public function refresh()
     {
