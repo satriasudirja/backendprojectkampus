@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\SimpegDaftarCuti;
 use App\Models\SimpegDaftarJenisSk;
+use App\Models\SimpegDaftarJenisTest;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -31,6 +32,7 @@ class DatabaseSeeder extends Seeder
     SimpegDaftarJenisSkSeeder::class,
     SimpegDaftarJenisTestSeeder::class,
     SimpegDaftarJenisSkSeeder::class,
+    SimpegDaftarJenisTestSeeder::class,
         ]);
     }
 }
