@@ -2,26 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class JamKerja extends Model
+class SimpegJamKerja extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
     protected $table = 'simpeg_jam_kerja';
     protected $primaryKey = 'id';
-    protected $keyType = 'string';
     public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'jenis_jam_kerja',
         'jam_normal',
         'jam_datang',
-        'jam_pulang'
+        'jam_pulang',
     ];
 
     protected $casts = [
-        'jam_normal' => 'boolean'
+        'jam_normal' => 'boolean',
     ];
 }

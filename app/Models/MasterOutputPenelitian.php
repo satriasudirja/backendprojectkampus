@@ -2,17 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class JenisPelanggaran extends Model
+class MasterOutputPenelitian extends Model
 {
-    protected $table = 'simpeg_jenis_pelanggaran';
+    use HasFactory;
+
+    protected $table = 'master_output_penelitian';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
         'kode',
-        'nama_pelanggaran'
+        'output_penelitian'
     ];
 }

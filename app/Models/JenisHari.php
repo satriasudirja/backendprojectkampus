@@ -5,23 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class JamKerja extends Model
+class JenisHari extends Model
 {
     use HasFactory;
 
-    protected $table = 'simpeg_jam_kerja';
+    protected $table = 'simpeg_jenis_hari';
     protected $primaryKey = 'id';
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
-        'jenis_jam_kerja',
-        'jam_normal',
-        'jam_datang',
-        'jam_pulang'
+        'kode',
+        'nama_hari',
+        'jenis_hari'
     ];
 
     protected $casts = [
-        'jam_normal' => 'boolean'
+        'jenis_hari' => 'boolean'
     ];
 }

@@ -5,39 +5,39 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class IzinRecord extends Model
+class TunjanganKhusus extends Model
 {
     use HasFactory;
 
-    protected $table = 'simpeg_izin_record';
+    protected $table = 'simpeg_gaji_tunjangan_khusus';
     protected $primaryKey = 'id';
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
         'pegawai_id',
-        'jenis_izin_id',
-        'alasan',
+        'komponen_id',
+        'jumlah',
         'tgl_mulai',
         'tgl_selesai',
-        'jumlah_izin',
-        'file_pendukung',
-        'status_pengajuan'
+        'keterangan'
     ];
 
     protected $casts = [
         'tgl_mulai' => 'date',
         'tgl_selesai' => 'date',
-        'jumlah_izin' => 'integer'
+        'jumlah' => 'float'
     ];
 
+    // Relasi ke pegawai
     public function pegawai()
     {
         return $this->belongsTo(Pegawai::class);
     }
 
-    public function jenisIzin()
+    // Relasi ke komponen gaji
+    public function komponen()
     {
-        return $this->belongsTo(JenisIzin::class);
+        return $this->belongsTo(KomponenGaji::class);
     }
 }

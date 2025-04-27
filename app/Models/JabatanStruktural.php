@@ -2,17 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class JabatanStruktural extends Model
+class SimpegJabatanStruktural extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
     protected $table = 'simpeg_jabatan_struktural';
     protected $primaryKey = 'id';
-    protected $keyType = 'string';
     public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'unit_kerja_id',
@@ -26,32 +26,31 @@ class JabatanStruktural extends Model
         'is_pimpinan',
         'aktif',
         'keterangan',
-        'parent_jabatan'
+        'parent_jabatan',
     ];
 
     protected $casts = [
-        'beban_sks' => 'integer',
         'is_pimpinan' => 'boolean',
-        'aktif' => 'boolean'
+        'aktif' => 'boolean',
     ];
 
     public function unitKerja()
     {
-        return $this->belongsTo(UnitKerja::class);
+        return $this->belongsTo(UnitKerja::class, 'unit_kerja_id');
     }
 
     public function jenisJabatanStruktural()
     {
-        return $this->belongsTo(JenisJabatanStruktural::class);
+        return $this->belongsTo(JenisJabatanStruktural::class, 'jenis_jabatan_struktural_id');
     }
 
     public function pangkat()
     {
-        return $this->belongsTo(Pangkat::class);
+        return $this->belongsTo(Pangkat::class, 'pangkat_id');
     }
 
     public function eselon()
     {
-        return $this->belongsTo(Eselon::class);
+        return $this->belongsTo(Eselon::class, 'eselon_id');
     }
 }

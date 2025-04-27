@@ -5,18 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class JenisPenghargaan extends Model
+class MasterGelarAkademik extends Model
 {
     use HasFactory;
 
-    protected $table = 'jenis_penghargaan';
+    protected $table = 'master_gelar_akademik';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'id',
-        'kode',
-        'nama_penghargaan'
+        'gelar',
+        'nama_gelar'
     ];
 }

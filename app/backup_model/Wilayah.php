@@ -8,6 +8,8 @@ class Wilayah extends Model
 {
     protected $table = 'wilayah';
     protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'integer';
 
     protected $fillable = [
         'kode_negara',
@@ -22,7 +24,7 @@ class Wilayah extends Model
         'jenis_wilayah'
     ];
 
-    // Scope untuk pencarian
+    // Scope untuk pencarian wilayah
     public function scopeProvinsi($query)
     {
         return $query->whereNotNull('kode_provinsi')
@@ -51,5 +53,24 @@ class Wilayah extends Model
         }
 
         return $query;
+    }
+
+    // Relasi ke dirinya sendiri untuk hierarki wilayah
+    public function provinsi()
+    {
+        return $this->whereNotNull('kode_provinsi')
+                   ->whereNull('kode_kab_kota')
+                   ->whereNull('kode_kecamatan');
+    }
+
+    public function kabupatenKota()
+    {
+        return $this->whereNotNull('kode_kab_kota')
+                   ->whereNull('kode_kecamatan');
+    }
+
+    public function kecamatan()
+    {
+        return $this->whereNotNull('kode_kecamatan');
     }
 }

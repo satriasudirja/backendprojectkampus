@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class JenisPelanggaran extends Model
+class SimpegJenisPelanggaran extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'simpeg_jenis_pelanggaran';
     protected $primaryKey = 'id';
     public $incrementing = false;
@@ -13,6 +16,6 @@ class JenisPelanggaran extends Model
 
     protected $fillable = [
         'kode',
-        'nama_pelanggaran'
+        'nama_pelanggaran',
     ];
 }

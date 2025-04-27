@@ -9,13 +9,14 @@ class JenisPublikasi extends Model
 {
     use HasFactory;
 
-    protected $primaryKey = 'kode';
-    protected $keyType = 'string';
+    protected $table = 'jenis_publikasi';
+    protected $primaryKey = 'id';
     public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
         'kode',
-        'jenis_publikasi',
-        'bobot',
+        'jenis_publikasi'
     ];
 }

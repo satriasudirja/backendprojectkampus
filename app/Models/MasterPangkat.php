@@ -2,17 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class JenisPelanggaran extends Model
+class MasterPangkat extends Model
 {
-    protected $table = 'simpeg_jenis_pelanggaran';
+    use HasFactory;
+
+    protected $table = 'master_pangkat';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
-        'kode',
-        'nama_pelanggaran'
+        'id',
+        'pangkat',
+        'nama_golongan'
     ];
 }

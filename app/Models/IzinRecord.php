@@ -2,17 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class IzinRecord extends Model
+class SimpegIzinRecord extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
     protected $table = 'simpeg_izin_record';
     protected $primaryKey = 'id';
-    protected $keyType = 'string';
     public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'pegawai_id',
@@ -22,22 +22,21 @@ class IzinRecord extends Model
         'tgl_selesai',
         'jumlah_izin',
         'file_pendukung',
-        'status_pengajuan'
+        'status_pengajuan',
     ];
 
     protected $casts = [
         'tgl_mulai' => 'date',
         'tgl_selesai' => 'date',
-        'jumlah_izin' => 'integer'
     ];
 
     public function pegawai()
     {
-        return $this->belongsTo(Pegawai::class);
+        return $this->belongsTo(Pegawai::class, 'pegawai_id');
     }
 
     public function jenisIzin()
     {
-        return $this->belongsTo(JenisIzin::class);
+        return $this->belongsTo(JenisIzin::class, 'jenis_izin_id');
     }
 }

@@ -5,11 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class JenisPenghargaan extends Model
+class RumpunBidangIlmu extends Model
 {
     use HasFactory;
 
-    protected $table = 'jenis_penghargaan';
+    protected $table = 'rumpun_bidang_ilmu';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -17,6 +17,8 @@ class JenisPenghargaan extends Model
     protected $fillable = [
         'id',
         'kode',
-        'nama_penghargaan'
+        'nama_bidang',
+        'parent_category',
+        'sub_parent_category'
     ];
 }

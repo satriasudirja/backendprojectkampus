@@ -2,17 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class JabatanFungsional extends Model
+class SimpegJabatanFungsional extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
     protected $table = 'simpeg_jabatan_fungsional';
     protected $primaryKey = 'id';
-    protected $keyType = 'string';
     public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'jabatan_akademik_id',
@@ -23,20 +23,16 @@ class JabatanFungsional extends Model
         'pangkat',
         'angka_kredit',
         'usia_pensiun',
-        'keterangan'
-    ];
-
-    protected $casts = [
-        'usia_pensiun' => 'integer'
+        'keterangan',
     ];
 
     public function jabatanAkademik()
     {
-        return $this->belongsTo(JabatanAkademik::class);
+        return $this->belongsTo(JabatanAkademik::class, 'jabatan_akademik_id');
     }
 
     public function pangkat()
     {
-        return $this->belongsTo(Pangkat::class);
+        return $this->belongsTo(Pangkat::class, 'pangkat_id');
     }
 }

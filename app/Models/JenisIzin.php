@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class JenisIzin extends Model
+class SimpegJenisIzin extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'simpeg_jenis_izin';
     protected $primaryKey = 'id';
     public $incrementing = false;
@@ -17,15 +20,15 @@ class JenisIzin extends Model
         'jenis_izin',
         'status_presensi',
         'izin_max',
-        'potong_cuti'
+        'potong_cuti',
     ];
 
     protected $casts = [
-        'potong_cuti' => 'boolean'
+        'potong_cuti' => 'boolean',
     ];
 
     public function jenisKehadiran()
     {
-        return $this->belongsTo(JenisKehadiran::class);
+        return $this->belongsTo(JenisKehadiran::class, 'jenis_kehadiran_id');
     }
 }

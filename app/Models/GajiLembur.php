@@ -5,23 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Lembur extends Model
+class GajiLembur extends Model
 {
     use HasFactory;
 
-    protected $table = 'simpeg_gaji_lembur';
+    protected $table = 'gaji_lembur';
     protected $primaryKey = 'id';
-    protected $keyType = 'string';
     public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
         'pegawai_id',
         'tanggal',
         'jam_mulai',
         'jam_selesai',
         'durasi',
         'upah_perjam',
-        'total_upah',
+        'total_upah', // Diperbaiki dari 'total_upal'
         'status'
     ];
 
@@ -34,9 +35,8 @@ class Lembur extends Model
         'total_upah' => 'float'
     ];
 
-    // Relasi ke pegawai
     public function pegawai()
     {
-        return $this->belongsTo(Pegawai::class);
+        return $this->belongsTo(Pegawai::class, 'pegawai_id');
     }
 }

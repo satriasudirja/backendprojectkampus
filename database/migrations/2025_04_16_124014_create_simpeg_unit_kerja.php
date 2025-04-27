@@ -14,7 +14,11 @@ return new class extends Migration
         Schema::create('simpeg_unit_kerja', function (Blueprint $table) {
             // Kolom utama
             $table->bigIncrements('id');
+<<<<<<< Updated upstream
             $table->string('kode_unit', 50)->unique();
+=======
+            $table->string('kode_unit', 20)->unique();
+>>>>>>> Stashed changes
             $table->string('nama_unit', 100);
             
             // Relasi hierarkis
