@@ -19,7 +19,7 @@ return new class extends Migration
            $table->integer('jabatan_akademik_id')->nullable();
            $table->integer('suku_id')->nullable();
             // Data pribadi
-<<<<<<< Updated upstream
+
             $table->string('nama', 305);
             $table->string('nip', 30)->unique();
             $table->string('password', 100);
@@ -28,16 +28,7 @@ return new class extends Migration
             $table->string('gelar_belakang', 30)->nullable();
             $table->string('jenis_kelamin', 30);
             $table->string('tempat_lahir', 30);
-=======
-            $table->string('nama', 255);
-            $table->string('nip', 20)->unique();
-            $table->string('password', 100);
-            $table->string('nidn', 20)->nullable();
-            $table->string('gelar_depan', 20)->nullable();
-            $table->string('gelar_belakang', 30)->nullable();
-            $table->string('jenis_kelamin', 20);
-            $table->string('tempat_lahir', 20);
->>>>>>> Stashed changes
+
             $table->date('tanggal_lahir');
             $table->string('nama_ibu_kandung', 50);
             
@@ -51,31 +42,25 @@ return new class extends Migration
             
             // Alamat dan kontak
             $table->string('alamat_domisili', 255);
-<<<<<<< Updated upstream
+
             $table->string('agama', 20);
-=======
-            $table->string('agama', 15);
->>>>>>> Stashed changes
+
             $table->string('golongan_darah', 5)->nullable();
             $table->string('kota', 30);
             $table->string('provinsi', 30);
             $table->string('kode_pos', 5);
-<<<<<<< Updated upstream
+
             $table->string('no_telepon_domisili_kontak', 20)->nullable();
             $table->string('no_handphone', 20);
             $table->string('no_telephone_kantor', 20)->nullable();
-=======
-            $table->string('no_telepon_domisili_kontak', 15)->nullable();
-            $table->string('no_handphone', 15);
-            $table->string('no_telephone_kantor', 15)->nullable();
->>>>>>> Stashed changes
+
             $table->string('no_kk', 16);
             $table->string('email_pribadi', 50);
             
             // Data tambahan (lanjutan)
             $table->string('no_ktp', 30);
             $table->float('jarak_rumah_domisili')->nullable();
-<<<<<<< Updated upstream
+
             $table->string('npwp', 30)->nullable();
             $table->string('no_kartu_bpjs', 20)->nullable();
             $table->string('file_sertifikasi_dosen', 100)->nullable();
@@ -83,15 +68,7 @@ return new class extends Migration
             $table->string('status_kerja', 50);
             $table->string('kepemilikan_nohp_utama', 50)->nullable();
             $table->string('alamat_kependudukan', 305)->nullable();
-=======
-            $table->string('npwp', 20)->nullable();
-            $table->string('no_kartu_bpjs', 15)->nullable();
-            $table->string('file_sertifikasi_dosen', 100)->nullable();
-            $table->string('no_kartu_pensiun', 15)->nullable();
-            $table->string('status_kerja', 50);
-            $table->string('kepemilikan_nohp_utama', 50)->nullable();
-            $table->string('alamat_kependudukan', 255)->nullable();
->>>>>>> Stashed changes
+
             
             // File dan dokumen
             $table->string('file_ktp', 100)->nullable();
@@ -100,11 +77,9 @@ return new class extends Migration
             $table->string('cabang_bank', 100)->nullable();
             $table->string('nama_bank', 100)->nullable();
             $table->string('file_rekening', 100)->nullable();
-<<<<<<< Updated upstream
+
             $table->string('karpeg', 30)->nullable();
-=======
-            $table->string('karpeg', 25)->nullable();
->>>>>>> Stashed changes
+
             $table->string('file_karpeg', 100)->nullable();
             $table->string('file_npwp', 100)->nullable();
             $table->string('file_bpjs', 100)->nullable();
