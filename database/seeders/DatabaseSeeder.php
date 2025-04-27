@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
     SimpegDaftarJenisTestSeeder::class,
     SimpegDaftarJenisSkSeeder::class,
     SimpegDaftarJenisTestSeeder::class,
+    SimpegMasterOutputPenelitianSeeder::class,
         ]);
 
     }

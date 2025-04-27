@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\SimpegDaftarJenisLuaranController;
 use App\Http\Controllers\Api\DaftarJenisPkmController;
 use App\Http\Controllers\Api\SimpegDaftarJenisSkController;
 use App\Http\Controllers\Api\SimpegDaftarJenisTestController;
+use App\Http\Controllers\Api\SimpegOutputPenelitianController;
+
 
 
 Route::prefix('auth')->group(function () {
@@ -54,6 +56,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('jenis-pkm', DaftarJenisPkmController::class);
         Route::apiResource('jenis-sk', SimpegDaftarJenisSkController::class);
         Route::apiResource('jenis-test', SimpegDaftarJenisTestController::class);
+        Route::apiResource('output-penelitian', SimpegOutputPenelitianController::class);
     
     });
     

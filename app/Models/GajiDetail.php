@@ -11,9 +11,7 @@ class GajiDetail extends Model
 
     protected $table = 'gaji_detail';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
-
+   
     protected $fillable = [
         'id',
         'gaji_slip_id',

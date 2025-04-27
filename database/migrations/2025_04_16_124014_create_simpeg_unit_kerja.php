@@ -17,7 +17,7 @@ return new class extends Migration
 
             $table->string('kode_unit', 20)->unique();
 
-            $table->string('nama_unit', 100);
+            $table->string('nama_unit', 150);
             
             // Relasi hierarkis
             $table->string('parent_unit_id', 50)->nullable();
