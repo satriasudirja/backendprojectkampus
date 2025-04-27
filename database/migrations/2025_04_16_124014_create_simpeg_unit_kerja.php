@@ -13,23 +13,27 @@ return new class extends Migration
     {
         Schema::create('simpeg_unit_kerja', function (Blueprint $table) {
             // Kolom utama
-            $table->uuid('id')->primary();
+            $table->bigIncrements('id');
+<<<<<<< Updated upstream
+            $table->string('kode_unit', 50)->unique();
+=======
             $table->string('kode_unit', 20)->unique();
+>>>>>>> Stashed changes
             $table->string('nama_unit', 100);
             
             // Relasi hierarkis
-            $table->string('parent_unit_id', 20)->nullable();
-            $table->string('jenis_unit_id', 20)->nullable();
-            $table->string('tk_pendidikan_id', 20)->nullable();
+            $table->string('parent_unit_id', 50)->nullable();
+            $table->string('jenis_unit_id', 50)->nullable();
+            $table->string('tk_pendidikan_id', 50)->nullable();
             
             // Kontak dan alamat
             $table->string('alamat', 255)->nullable();
-            $table->string('telepon', 15)->nullable();
+            $table->string('telepon', 20)->nullable();
             $table->string('website', 100)->nullable();
             $table->string('alamat_email', 50)->nullable();
             
             // Data akreditasi
-            $table->string('akreditasi_id', 15)->nullable();
+            $table->string('akreditasi_id', 50)->nullable();
             $table->string('no_sk_akreditasi', 50)->nullable();
             $table->date('tanggal_akreditasi')->nullable(); // Diperbaiki dari 'tanggal_akreditas'
             

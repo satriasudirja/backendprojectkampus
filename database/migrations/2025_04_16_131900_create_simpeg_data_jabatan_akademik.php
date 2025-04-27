@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_jabatan_akademik', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->bigIncrements('id');
             
             // Foreign keys
-            $table->uuid('pegawai_id');
-            $table->uuid('jabatan_akademik_id');
+            $table->integer('pegawai_id');
+            $table->integer('jabatan_akademik_id');
             
             // Data jabatan
             $table->date('tmt_jabatan'); // TMT = Terhitung Mulai Tanggal
@@ -33,20 +33,7 @@ return new class extends Migration
             
             $table->timestamps();
 
-            // Foreign key constraints
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
-
-            $table->foreign('jabatan_akademik_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jabatan_akademik')
-                  ->onDelete('restrict');
-
-            // Indexes
-            $table->index('pegawai_id');
-            $table->index('jabatan_akademik_id');
+       
             $table->index('no_sk');
             $table->index('tmt_jabatan');
         });

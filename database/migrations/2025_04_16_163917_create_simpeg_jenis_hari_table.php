@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_jenis_hari', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->bigIncrements('id');
             $table->string('kode', 2);
             $table->string('nama_hari', 10);
             $table->boolean('jenis_hari');

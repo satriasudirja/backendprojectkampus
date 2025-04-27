@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_izin_record', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('pegawai_id');
-            $table->uuid('jenis_izin_id');
+            $table->bigIncrements('id');
+            $table->integer('pegawai_id');
+            $table->integer('jenis_izin_id');
             $table->string('alasan', 255);
             $table->date('tgl_mulai');
             $table->date('tgl_selesai');
@@ -24,15 +24,15 @@ return new class extends Migration
             $table->timestamps();
 
             // Foreign key constraints
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
                   
-            $table->foreign('jenis_izin_id')
-                  ->references('id')
-                  ->on('simpeg_jenis_izin')
-                  ->onDelete('cascade');
+            // $table->foreign('jenis_izin_id')
+            //       ->references('id')
+            //       ->on('simpeg_jenis_izin')
+            //       ->onDelete('cascade');
         });
     }
 

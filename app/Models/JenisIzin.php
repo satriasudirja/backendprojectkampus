@@ -2,22 +2,33 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class JenisIzin extends Model
+class SimpegJenisIzin extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
-    protected $primaryKey = 'kode'; // Menentukan primary key
-    public $incrementing = false; // Primary key tidak auto-increment
-    protected $keyType = 'string'; // Tipe data primary key
+    protected $table = 'simpeg_jenis_izin';
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
+        'jenis_kehadiran_id',
         'kode',
         'jenis_izin',
         'status_presensi',
-        'maksimal',
+        'izin_max',
         'potong_cuti',
     ];
+
+    protected $casts = [
+        'potong_cuti' => 'boolean',
+    ];
+
+    public function jenisKehadiran()
+    {
+        return $this->belongsTo(JenisKehadiran::class, 'jenis_kehadiran_id');
+    }
 }

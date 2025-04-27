@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_tes', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->bigIncrements('id');
             
             // Foreign keys
-            $table->uuid('pegawai_id');
-            $table->uuid('jenis_tes_id');
+            $table->integer('pegawai_id');
+            $table->integer('jenis_tes_id');
             
             // Data tes
             $table->string('nama_tes', 100);
@@ -33,15 +33,15 @@ return new class extends Migration
             $table->timestamps();
 
             // Foreign key constraints
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
 
-            $table->foreign('jenis_tes_id')
-                  ->references('id')
-                  ->on('simpeg_ref_jenis_tes')
-                  ->onDelete('restrict');
+            // $table->foreign('jenis_tes_id')
+            //       ->references('id')
+            //       ->on('simpeg_ref_jenis_tes')
+            //       ->onDelete('restrict');
 
             // Indexes
             $table->index('pegawai_id');

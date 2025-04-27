@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class JenisPelanggaran extends Model
+class SimpegJenisPelanggaran extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
-    protected $primaryKey = 'kode';
-    protected $keyType = 'string';
+    protected $table = 'simpeg_jenis_pelanggaran';
+    protected $primaryKey = 'id';
     public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'kode',

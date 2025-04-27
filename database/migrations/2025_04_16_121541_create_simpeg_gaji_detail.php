@@ -12,23 +12,23 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_gaji_detail', function (Blueprint $table) {
-            $table->uuid('id')->primary(); // Diubah dari FK ke PK karena seharusnya ini tabel detail
-            $table->uuid('gaji_slip_id'); // Diperbaiki dari 'gaj1_slip_id' ke 'gaji_slip_id'
-            $table->uuid('komponen_id');
+            $table->bigIncrements('id'); // Diubah dari FK ke PK karena seharusnya ini tabel detail
+            $table->integer('gaji_slip_id'); // Diperbaiki dari 'gaj1_slip_id' ke 'gaji_slip_id'
+            $table->integer('komponen_id');
             $table->float('jumlah', 12, 2); // float4 equivalent
             $table->text('keterangan')->nullable();
             $table->timestamps();
 
-            // Foreign key constraints
-            $table->foreign('gaji_slip_id')
-                  ->references('id')
-                  ->on('simpeg_gaji_slip') // Asumsi nama tabel slip gaji
-                  ->onDelete('cascade');
+            // // Foreign key constraints
+            // $table->foreign('gaji_slip_id')
+            //       ->references('id')
+            //       ->on('simpeg_gaji_slip') // Asumsi nama tabel slip gaji
+            //       ->onDelete('cascade');
                   
-            $table->foreign('komponen_id')
-                  ->references('id')
-                  ->on('simpeg_komponen_gaji') // Asumsi nama tabel komponen gaji
-                  ->onDelete('restrict');
+            // $table->foreign('komponen_id')
+            //       ->references('id')
+            //       ->on('simpeg_komponen_gaji') // Asumsi nama tabel komponen gaji
+            //       ->onDelete('restrict');
         });
     }
 

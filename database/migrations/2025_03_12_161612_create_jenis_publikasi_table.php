@@ -8,10 +8,11 @@ class CreateJenisPublikasiTable extends Migration
 {
     public function up()
     {
-        Schema::create('jenis_publikasi', function (Blueprint $table) {
-            $table->string('kode', 3)->primary();
-            $table->string('jenis_publikasi', 100);
-            $table->double('bobot', 1, 2)->nullable(); 
+        Schema::create('simpeg_jenis_publikasi', function (Blueprint $table) {
+             $table->bigIncrements('id');
+            $table->string('kode', 5);
+            $table->string('jenis_publikasi', 50);
+            // $table->double('bobot', 1, 2)->nullable(); 
             $table->timestamps();
         });
     }

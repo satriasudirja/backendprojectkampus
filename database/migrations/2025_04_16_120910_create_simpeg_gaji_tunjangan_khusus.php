@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_gaji_tunjangan_khusus', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('pegawai_id');
-            $table->uuid('komponen_id');
+            $table->bigIncrements('id');
+            $table->integer('pegawai_id');
+            $table->integer('komponen_id');
             $table->float('jumlah', 8, 2); // float4 equivalent with 8 digits total and 2 decimal places
             $table->date('tgl_mulai');
             $table->date('tgl_selesai')->nullable(); // Made nullable for ongoing allowances
@@ -22,15 +22,15 @@ return new class extends Migration
             $table->timestamps();
 
             // Foreign key constraints
-            $table->foreign('pegawai_id')
-                  ->references('id')
-                  ->on('simpeg_pegawai')
-                  ->onDelete('cascade');
+            // $table->foreign('pegawai_id')
+            //       ->references('id')
+            //       ->on('simpeg_pegawai')
+            //       ->onDelete('cascade');
                   
-            $table->foreign('komponen_id')
-                  ->references('id')
-                  ->on('simpeg_komponen_gaji')
-                  ->onDelete('cascade');
+            // $table->foreign('komponen_id')
+            //       ->references('id')
+            //       ->on('simpeg_komponen_gaji')
+            //       ->onDelete('cascade');
         });
     }
 

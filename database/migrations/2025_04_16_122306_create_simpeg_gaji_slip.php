@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_gaji_slip', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('pegawai_id');
-            $table->uuid('periode_id');
+            $table->bigIncrements('id');
+            $table->integer('pegawai_id');
+            $table->integer('periode_id');
             $table->decimal('total_pendapatan', 12, 2)->default(0);
             $table->decimal('total_potongan', 12, 2)->default(0);
             $table->decimal('gaji_bersih', 12, 2)->default(0);
@@ -22,16 +22,16 @@ return new class extends Migration
             $table->date('tgl_proses')->nullable();
             $table->timestamps();
 
-            // Foreign keys
-            $table->foreign('pegawai_id')
-                ->references('id')
-                ->on('simpeg_pegawai')
-                ->onDelete('restrict');
+            // // Foreign keys
+            // $table->foreign('pegawai_id')
+            //     ->references('id')
+            //     ->on('simpeg_pegawai')
+            //     ->onDelete('restrict');
 
-            $table->foreign('periode_id')
-                ->references('id')
-                ->on('simpeg_gaji_periode')
-                ->onDelete('restrict');
+            // $table->foreign('periode_id')
+            //     ->references('id')
+            //     ->on('simpeg_gaji_periode')
+            //     ->onDelete('restrict');
 
             // Indexes
             $table->index(['pegawai_id', 'periode_id']);

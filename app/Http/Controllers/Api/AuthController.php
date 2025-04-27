@@ -3,98 +3,121 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\SimpegUser;
+use App\Http\Requests\Api\LoginRequest;
 use Illuminate\Support\Facades\Auth;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\SimpegPegawai;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $credentials = $request->only('username', 'password');
+        $credentials = $request->only('nip', 'password');
 
-        // Cek kredensial dan status aktif
-        if (!$token = auth('api')->attempt($credentials)) {
+        if (!$token = JWTAuth::attempt($credentials)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Username atau password salah'
+                'message' => 'NIP atau password salah'
             ], 401);
         }
 
-        $user = auth('api')->user();
-        
-        // Pengecekan status aktif
-        if (property_exists($user, 'aktif') && !$user->aktif) {
-            auth('api')->logout();
-            return response()->json([
-                'success' => false,
-                'message' => 'Akun tidak aktif'
-            ], 403);
-        }
-        
+        $user = Auth::user();
+        $role = $user->jabatanAkademik->role;
+
+        return $this->respondWithToken($token, $user, $role);
+    }
+
+    protected function respondWithToken($token, $user, $role)
+    {
         return response()->json([
             'success' => true,
-            'user' => $user,
-            'token' => $token,
+            'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth('api')->factory()->getTTL() * 60
+            'expires_in' => auth('api')->factory()->getTTL() * 60,
+            'user' => [
+                'id' => $user->id,
+                'nip' => $user->nip,
+                'nama' => $user->nama,
+                'email' => $user->email_pribadi,
+            ],
+            'role' => $role->nama,
+            'jabatan' => $user->jabatanAkademik->jabatan_akademik,
         ]);
     }
 
     public function me()
     {
-        $user = auth('api')->user();
+        $user = Auth::user();
+        $role = $user->jabatanAkademik->role;
         
-        // Tambahkan pengecekan aktif di response
         return response()->json([
-            'user' => $user,
-            'is_active' => $user->aktif ?? true
+            'success' => true,
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'nip' => $user->nip,
+                    'nama' => $user->nama,
+                    'email' => $user->email_pribadi,
+                ],
+                'role' => $role->nama,
+                'jabatan' => $user->jabatanAkademik->jabatan_akademik,
+            ]
         ]);
     }
 
     public function logout()
     {
-        try {
-            auth('api')->logout();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Logout berhasil'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal logout'
-            ], 500);
-        }
+        Auth::logout();
+        return response()->json([
+            'success' => true,
+            'message' => 'Berhasil logout'
+        ]);
     }
 
     public function refresh()
     {
-        try {
-            $newToken = auth('api')->refresh();
-            $user = auth('api')->user();
-            
-            // Pengecekan status aktif saat refresh
-            if (property_exists($user, 'aktif') && !$user->aktif) {
-                auth('api')->logout();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Akun tidak aktif'
-                ], 403);
-            }
-            
-            return response()->json([
-                'success' => true,
-                'token' => $newToken,
-                'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to refresh token'
-            ], 401);
+        return $this->respondWithToken(Auth::refresh());
+    }
+
+    public function getMenu()
+    {
+        $user = Auth::user();
+        $role = $user->jabatanAkademik->role;
+        
+        $menus = [];
+        
+        switch ($role->nama) {
+            case 'Admin':
+                $menus = [
+                    ['name' => 'Dashboard', 'path' => '/admin/dashboard', 'icon' => 'mdi-view-dashboard'],
+                    ['name' => 'Manajemen User', 'path' => '/admin/users', 'icon' => 'mdi-account-group'],
+                    ['name' => 'Manajemen Role', 'path' => '/admin/roles', 'icon' => 'mdi-shield-account'],
+                ];
+                break;
+            case 'Dosen':
+                $menus = [
+                    ['name' => 'Dashboard', 'path' => '/dosen/dashboard', 'icon' => 'mdi-view-dashboard'],
+                    ['name' => 'Jadwal Mengajar', 'path' => '/dosen/schedule', 'icon' => 'mdi-calendar-clock'],
+                    ['name' => 'Materi Ajar', 'path' => '/dosen/materials', 'icon' => 'mdi-book-education'],
+                ];
+                break;
+            case 'Dosen Praktisi/Industri':
+                $menus = [
+                    ['name' => 'Dashboard', 'path' => '/dosen-praktisi/dashboard', 'icon' => 'mdi-view-dashboard'],
+                    ['name' => 'Jadwal', 'path' => '/dosen-praktisi/schedule', 'icon' => 'mdi-calendar-clock'],
+                ];
+                break;
+            case 'Tenaga Kependidikan':
+                $menus = [
+                    ['name' => 'Dashboard', 'path' => '/tenaga-kependidikan/dashboard', 'icon' => 'mdi-view-dashboard'],
+                    ['name' => 'Laporan', 'path' => '/tenaga-kependidikan/reports', 'icon' => 'mdi-file-document'],
+                ];
+                break;
         }
+        
+        return response()->json([
+            'success' => true,
+            'data' => $menus
+        ]);
     }
 }

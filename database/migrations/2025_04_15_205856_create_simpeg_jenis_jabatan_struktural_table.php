@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_jenis_jabatan_struktural', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->bigIncrements('id');
             $table->string('kode', 6);
             $table->string('jenis_jabatan_struktural', 30);
             $table->timestamps();
