@@ -4,16 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegDaftarCuti extends Model
 {
     use HasFactory;
-
+    use SoftDeletes;
     protected $table = 'simpeg_daftar_cuti';
 
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
+
 
     protected $fillable = [
         'id',

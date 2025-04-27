@@ -11,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('simpeg_jabatan_akademik', function (Blueprint $table) {
-             $table->bigIncrements('id');
-        
-            $table->integer('role_id'); 
-            $table->string('kode', 2); 
-            $table->string('jabatan_akademik', 50); 
-            $table->timestamps();
+        Schema::table('daftar_jenis_pkm', function (Blueprint $table) {
+            //
+            $table->softDeletes();
         });
     }
 
@@ -26,6 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('simpeg_jabatan_akademik');
+        Schema::table('daftar_jenis_pkm', function (Blueprint $table) {
+            //
+            $table->dropSoftDeletes();
+        });
     }
 };

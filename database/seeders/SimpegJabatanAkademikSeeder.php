@@ -17,6 +17,7 @@ class SimpegJabatanAkademikSeeder extends Seeder
             ->pluck('id', 'nama'); // ['Admin' => 1, 'Dosen' => 2, ...]
 
         $data = [
+            ['kode' => 'AD', 'jabatan_akademik' => 'Admin', 'role' => 'Admin'],
             ['kode' => 'AA', 'jabatan_akademik' => 'Asisten Ahli', 'role' => 'Dosen'],
             ['kode' => 'DP', 'jabatan_akademik' => 'Dosen Praktisi/Industri', 'role' => 'Dosen Praktisi/Industri'],
             ['kode' => 'GB', 'jabatan_akademik' => 'Guru Besar', 'role' => 'Dosen'],

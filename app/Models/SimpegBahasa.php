@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegBahasa extends Model
 {
     // Nama tabel sesuai migration
+    use SoftDeletes;
     protected $table = 'bahasa';
 
     // Konfigurasi primary key (bigIncrements)
