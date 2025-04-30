@@ -11,8 +11,6 @@ class MasterProdiPerguruanTinggi extends Model
 
     protected $table = 'master_prodi_perguruan_tinggi';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
         'id',

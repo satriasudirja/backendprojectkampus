@@ -19,7 +19,8 @@ use App\Http\Controllers\Api\DaftarJenisPkmController;
 use App\Http\Controllers\Api\SimpegDaftarJenisSkController;
 use App\Http\Controllers\Api\SimpegDaftarJenisTestController;
 use App\Http\Controllers\Api\SimpegOutputPenelitianController;
-
+use App\Http\Controllers\Api\SimpegHubunganKerjaController;
+use App\Http\Controllers\Api\SimpegJenisHariController;
 
 
 Route::prefix('auth')->group(function () {
@@ -57,6 +58,8 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('jenis-sk', SimpegDaftarJenisSkController::class);
         Route::apiResource('jenis-test', SimpegDaftarJenisTestController::class);
         Route::apiResource('output-penelitian', SimpegOutputPenelitianController::class);
+        Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);
+        Route::apiResource('jenis-hari', SimpegJenisHariController::class);
     
     });
     

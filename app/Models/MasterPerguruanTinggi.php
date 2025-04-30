@@ -4,15 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MasterPerguruanTinggi extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
-    protected $table = 'master_perguruan_tinggi';
+    protected $table = 'simpeg_master_perguruan_tinggi';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+
 
     protected $fillable = [
         'id',
