@@ -36,6 +36,8 @@ class DatabaseSeeder extends Seeder
     SimpegMasterOutputPenelitianSeeder::class,
     SimpegHubunganKerjaSeeder::class,
     SimpegJenisHariSeeder::class,
+    RumpunBidangIlmuSeeder::class,
+    
         ]);
 
     }
