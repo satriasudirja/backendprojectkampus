@@ -8,18 +8,55 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MasterPerguruanTinggi extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_master_perguruan_tinggi';
-    protected $primaryKey = 'id';
-
 
     protected $fillable = [
-        'id',
         'kode',
         'nama_universitas',
         'alamat',
-        'no_telp'
+        'no_telp',
+        'email',
+        'website',
+        'akreditasi',
+        'is_aktif'
     ];
+
+    protected $casts = [
+        'is_aktif' => 'boolean',
+        'deleted_at' => 'datetime',
+    ];
+
+    /**
+     * Scope untuk filter perguruan tinggi yang aktif
+     */
+    public function scopeAktif($query)
+    {
+        return $query->where('is_aktif', true);
+    }
+
+    /**
+     * Scope untuk pencarian berdasarkan nama universitas
+     */
+    public function scopeSearchByNama($query, $nama)
+    {
+        return $query->where('nama_universitas', 'ILIKE', "%{$nama}%");
+    }
+
+    /**
+     * Scope untuk pencarian berdasarkan kode
+     */
+    public function scopeSearchByKode($query, $kode)
+    {
+        return $query->where('kode', 'ILIKE', "%{$kode}%");
+    }
+
+    /**
+     * Relasi ke pendidikan pegawai (jika sudah dibuat)
+     */
+    // public function pendidikanPegawai()
+    // {
+    //     return $this->hasMany(SimpegPendidikanPegawai::class, 'perguruan_tinggi_id');
+    // }
 }

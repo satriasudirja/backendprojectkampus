@@ -4,21 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class JenjangPendidikan extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'jenjang_pendidikan';
+    protected $table = 'simpeg_jenjang_pendidikan';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
         'id',
         'jenjang_singkatan',
-        'nama_jenjang',
-        'nama_jenjang_eng',
+        'jenjang_pendidikan',
+        'nama_jenjang_pendidikan_eng',
         'urutan_jenjang_pendidikan',
         'perguruan_tinggi',
         'pasca_sarjana'
@@ -26,6 +25,24 @@ class JenjangPendidikan extends Model
 
     protected $casts = [
         'perguruan_tinggi' => 'boolean',
-        'pasca_sarjana' => 'boolean'
+        'pasca_sarjana' => 'boolean',
+        'urutan_jenjang_pendidikan' => 'integer',
+        'deleted_at' => 'datetime',
     ];
+
+    /**
+     * Relasi ke program studi perguruan tinggi
+     */
+    public function programStudi()
+    {
+        return $this->hasMany(SimpegMasterProdiPerguruanTinggi::class, 'jenjang_pendidikan_id');
+    }
+
+    /**
+     * Relasi ke pendidikan pegawai (jika sudah dibuat)
+     */
+    public function pendidikanPegawai()
+    {
+        return $this->hasMany(SimpegPendidikanPegawai::class, 'jenjang_pendidikan_id');
+    }
 }

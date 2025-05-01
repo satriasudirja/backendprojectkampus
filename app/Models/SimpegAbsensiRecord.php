@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class AbsensiRecord extends Model
+class SimpegAbsensiRecord extends Model
 {
     // Nama tabel
     protected $table = 'simpeg_absensi_record';

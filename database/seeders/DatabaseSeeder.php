@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\SimpegDaftarCuti;
 use App\Models\SimpegDaftarJenisSk;
 use App\Models\SimpegDaftarJenisTest;
+use App\Models\SimpegMasterPerguruanTinggi;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -37,7 +38,10 @@ class DatabaseSeeder extends Seeder
     SimpegHubunganKerjaSeeder::class,
     SimpegJenisHariSeeder::class,
     RumpunBidangIlmuSeeder::class,
-    
+    SimpegBeritaSeeder::class,
+    SimpegMasterPerguruanTinggi::class,
+    SimpegMasterProdiPerguruanTinggiSeeder::class,
+    SimpegJenjangPendidikanSeeder::class,
         ]);
 
     }

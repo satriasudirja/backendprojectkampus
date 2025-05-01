@@ -11,7 +11,7 @@ class RumpunBidangIlmu extends Model
     use SoftDeletes;
     use HasFactory;
 
-    protected $table = 'rumpun_bidang_ilmu';
+    protected $table = 'simpeg_rumpun_bidang_ilmu';
     protected $primaryKey = 'id';
 
     protected $fillable = [
