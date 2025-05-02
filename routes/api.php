@@ -106,6 +106,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('master-prodi-perguruan-tinggi/trash', [SimpegMasterProdiPerguruanTinggiController::class, 'trash']);
         Route::post('master-prodi-perguruan-tinggi/{id}/restore', [SimpegMasterProdiPerguruanTinggiController::class, 'restore']);
         Route::delete('master-prodi-perguruan-tinggi/{id}/force-delete', [SimpegMasterProdiPerguruanTinggiController::class, 'forceDelete']);
+
+
+        
     });
     
     // Dosen Routes
