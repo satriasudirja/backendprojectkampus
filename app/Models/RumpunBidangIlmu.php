@@ -4,15 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class RumpunBidangIlmu extends Model
 {
+    use SoftDeletes;
     use HasFactory;
 
-    protected $table = 'rumpun_bidang_ilmu';
+    protected $table = 'simpeg_rumpun_bidang_ilmu';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
         'id',

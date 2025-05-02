@@ -12,10 +12,7 @@ class SimpegDataTes extends Model
     protected $table = 'simpeg_data_tes';
 
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
-
-    protected $fillable = [
+        protected $fillable = [
         'id',
         'pegawai_id',
         'jenis_tes_id',

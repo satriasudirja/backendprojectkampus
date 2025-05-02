@@ -13,9 +13,7 @@ class SimpegBahasa extends Model
 
     // Konfigurasi primary key (bigIncrements)
     protected $primaryKey = 'id';
-    public $incrementing = true;
-    protected $keyType = 'integer';
-
+  
     // Kolom yang bisa diisi massal
     protected $fillable = [
         'kode',

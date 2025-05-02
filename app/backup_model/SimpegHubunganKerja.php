@@ -4,15 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegHubunganKerja extends Model
 {
+    use SoftDeletes;
     use HasFactory;
 
     protected $table = 'simpeg_hubungan_kerja';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
+    
     protected $fillable = [
         'kode',
         'nama_hub_kerja',
