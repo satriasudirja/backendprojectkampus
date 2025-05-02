@@ -21,31 +21,12 @@ return new class extends Migration
             $table->string('singkatan', 50);
             $table->string('alamat_email', 100);
             $table->integer('beban_sks');
-            $table->boolean('is_pimpinan')->default(false);
-            $table->boolean('aktif')->default(true);
+            $table->boolean('is_pimpinan');
+            $table->boolean('aktif');
             $table->text('keterangan')->nullable();
             $table->string('parent_jabatan', 100)->nullable();
+            $table->timestamps();
 
-            // // Foreign key constraints
-            // $table->foreign('unit_kerja_id')
-            //       ->references('id')
-            //       ->on('simpeg_unit_kerja')
-            //       ->onDelete('cascade');
-
-            // $table->foreign('jenis_jabatan_struktural_id')
-            //       ->references('id')
-            //       ->on('simpeg_jenis_jabatan_struktural')
-            //       ->onDelete('cascade');
-
-            // $table->foreign('pangkat_id')
-            //       ->references('id')
-            //       ->on('simpeg_pangkat')
-            //       ->onDelete('cascade');
-
-            // $table->foreign('eselon_id')
-            //       ->references('id')
-            //       ->on('simpeg_eselon')
-            //       ->onDelete('cascade');
         });
     }
 

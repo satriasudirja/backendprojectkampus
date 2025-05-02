@@ -53,6 +53,6 @@ class AbsensiRecord extends Model
     // Relasi ke model JenisKehadiran
     public function jenisKehadiran()
     {
-        return $this->belongsTo(SimpegJenisKehadiran::class, 'jenis_kehadiran_id');
+        return $this->belongsTo(JenisKehadiran::class, 'jenis_kehadiran_id');
     }
 }

@@ -34,6 +34,17 @@ class DatabaseSeeder extends Seeder
     SimpegDaftarJenisSkSeeder::class,
     SimpegDaftarJenisTestSeeder::class,
     SimpegMasterOutputPenelitianSeeder::class,
+    SimpegJenisJabatanStrukturalSeeder::class,
+    // SimpegJabatanStrukturalSeeder::class,
+    SimpegMasterPangkatSeeder::class,
+    SimpegEselonSeeder::class,
+    SimpegJamKerjaSeeder::class,
+    SimpegMasterJenisSertifikasiSeeder::class,
+    SimpegDataRiwayatPekerjaanSeeder::class,
+    SimpegUnivLuarSeeder::class,
+    SimpegJenjangPendidikanSeeder::class,
+
+
         ]);
 
     }

@@ -4,15 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class MasterPangkat extends Model
+class SimpegMasterPangkat extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'master_pangkat';
+    protected $table = 'simpeg_master_pangkat';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+ 
 
     protected $fillable = [
         'id',

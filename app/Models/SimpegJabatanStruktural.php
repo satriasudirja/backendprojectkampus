@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegJabatanStruktural extends Model
 {
     use SoftDeletes;
+    use HasFactory;
 
     protected $table = 'simpeg_jabatan_struktural';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+
+
 
     protected $fillable = [
         'unit_kerja_id',
@@ -46,11 +48,11 @@ class SimpegJabatanStruktural extends Model
 
     public function pangkat()
     {
-        return $this->belongsTo(Pangkat::class, 'pangkat_id');
+        return $this->belongsTo(SimpegMasterPangkat::class, 'pangkat_id');
     }
 
     public function eselon()
     {
-        return $this->belongsTo(Eselon::class, 'eselon_id');
+        return $this->belongsTo(SimpegEselon::class, 'eselon_id');
     }
 }

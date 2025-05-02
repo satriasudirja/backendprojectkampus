@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('universitas_luar', function (Blueprint $table) {
+        Schema::create('simpeg_univ_luar', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('kode', 10);
             $table->string('nama_universitas', 50); 
@@ -20,6 +20,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('universitas_luar');
+        Schema::dropIfExists('simpeg_univ_luar');
     }
 };

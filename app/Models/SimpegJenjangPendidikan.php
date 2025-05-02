@@ -4,25 +4,25 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class JenjangPendidikan extends Model
+class SimpegJenjangPendidikan extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'jenjang_pendidikan';
+    protected $table = 'simpeg_jenjang_pendidikan';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+
 
     protected $fillable = [
-        'id',
         'jenjang_singkatan',
-        'nama_jenjang',
-        'nama_jenjang_eng',
+        'jenjang_pendidikan', 
+        'nama_jenjang_pendidikan_eng', 
         'urutan_jenjang_pendidikan',
         'perguruan_tinggi',
         'pasca_sarjana'
     ];
+    
 
     protected $casts = [
         'perguruan_tinggi' => 'boolean',

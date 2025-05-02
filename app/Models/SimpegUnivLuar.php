@@ -4,20 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class UnivLuar extends Model
+class SimpegUnivLuar extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'univ_luar';
+    protected $table = 'simpeg_univ_luar';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
         'id',
         'kode',
-        'nama_univ',
+        'nama_universitas',
         'alamat',
         'no_telp'
     ];

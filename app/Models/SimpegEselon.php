@@ -4,16 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegEselon extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_eselon';
 
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
+
 
     protected $fillable = [
         'id',
@@ -26,9 +26,5 @@ class SimpegEselon extends Model
         'status' => 'boolean'
     ];
 
-    // Relasi ke tabel jabatan struktural jika diperlukan
-    public function jabatanStruktural()
-    {
-        return $this->hasMany(SimpegJabatanStruktural::class, 'eselon_id');
-    }
+
 }
