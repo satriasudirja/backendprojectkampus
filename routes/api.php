@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\SimpegJenjangPendidikanController;
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
+Route::get('captcha', [AuthController::class, 'generateCaptcha']);
     
     Route::middleware('auth:api')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);

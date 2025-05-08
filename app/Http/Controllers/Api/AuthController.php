@@ -7,11 +7,67 @@ use App\Http\Requests\Api\LoginRequest;
 use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\SimpegPegawai;
+use App\Services\SlideCaptchaService;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
+    protected $captchaService;
+    
+    public function __construct(SlideCaptchaService $captchaService)
+    {
+        $this->captchaService = $captchaService;
+    }
+    
+    /**
+     * Generate a new slide captcha for login
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generateCaptcha()
+    {
+        $captcha = $this->captchaService->generateSlideCaptcha();
+        
+        if (isset($captcha['error'])) {
+            return response()->json([
+                'success' => false,
+                'message' => $captcha['message']
+            ], 500);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'captcha_id' => $captcha['captcha_id'],
+                'background_url' => $captcha['background_url'],
+                'slider_url' => $captcha['slider_url'],
+                'slider_y' => $captcha['slider_y'],
+                'captcha_url' => route('captcha.slide-captcha', ['id' => $captcha['captcha_id']])
+            ]
+        ]);
+    }
+    
+    /**
+     * Handle user login with captcha verification
+     *
+     * @param LoginRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function login(LoginRequest $request)
     {
+        // Verify slide captcha first
+        $captchaVerified = $this->captchaService->verifySlideCaptcha(
+            $request->captcha_id, 
+            $request->slider_position
+        );
+        
+        if (!$captchaVerified) {
+            return response()->json([
+                'success' => false,
+                'message' => 'CAPTCHA tidak valid atau sudah kadaluarsa'
+            ], 422);
+        }
+        
         $credentials = $request->only('nip', 'password');
 
         if (!$token = JWTAuth::attempt($credentials)) {
@@ -32,7 +88,6 @@ class AuthController extends Controller
 
         return $this->respondWithToken($token, $user, $role);
     }
-
     protected function respondWithToken($token, $user, $role)
     {
         return response()->json([
@@ -70,6 +125,7 @@ class AuthController extends Controller
             ]
         ]);
     }
+    
     public function logout()
     {
         $user = Auth::user();  // Mendapatkan user yang sedang login
@@ -92,10 +148,13 @@ class AuthController extends Controller
         ]);
     }
     
-
     public function refresh()
     {
-        return $this->respondWithToken(Auth::refresh());
+        $user = Auth::user();
+        $role = $user->jabatanAkademik->role;
+        $newToken = Auth::refresh();
+        
+        return $this->respondWithToken($newToken, $user, $role);
     }
 
     public function getMenu()

@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
     SimpegMasterPerguruanTinggiSeeder::class,
     SimpegJenjangPendidikanSeeder::class,
     SimpegMasterProdiPerguruanTinggiSeeder::class,
-   
+    CaptchaPuzzleSeeder::class,
         ]);
 
     }
