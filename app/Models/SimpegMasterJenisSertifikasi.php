@@ -4,15 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class MasterJenisSertifikasi extends Model
+class SimpegMasterJenisSertifikasi extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'master_jenis_sertifikasi';
+    protected $table = 'simpeg_master_jenis_sertifikasi';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+
 
     protected $fillable = [
         'id',

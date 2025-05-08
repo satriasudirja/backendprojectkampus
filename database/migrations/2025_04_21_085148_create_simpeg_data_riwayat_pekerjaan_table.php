@@ -32,11 +32,7 @@ return new class extends Migration
             
             $table->timestamps();
 
-            // Foreign key
-            // $table->foreign('pegawai_id')
-            //       ->references('id')
-            //       ->on('pegawai')
-            //       ->onDelete('cascade');
+
         });
     }
 

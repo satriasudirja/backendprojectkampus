@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('simpeg_jenjang_pendidikan', function (Blueprint $table) {
+        Schema::table('simpeg_master_pangkat', function (Blueprint $table) {
             //
             $table->softDeletes();
         });
@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('simpeg_jenjang_pendidikan', function (Blueprint $table) {
+        Schema::table('simpeg_master_pangkat', function (Blueprint $table) {
             //
             $table->dropSoftDeletes();
         });
