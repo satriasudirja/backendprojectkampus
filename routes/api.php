@@ -22,6 +22,13 @@ use App\Http\Controllers\Api\SimpegOutputPenelitianController;
 use App\Http\Controllers\Api\SimpegJenisJabatanStrukturalController;
 use App\Http\Controllers\Api\SimpegJabatanStrukturalController;
 use App\Http\Controllers\Api\SimpegMasterPangkatController;
+use App\Http\Controllers\Api\SimpegEselonController;
+use App\Http\Controllers\Api\SimpegUnivLuarController;
+use App\Http\Controllers\Api\SimpegDataRiwayatPekerjaanController;
+use App\Http\Controllers\Api\SimpegJamKerjaController;
+use App\Http\Controllers\Api\SimpegMasterJenisSertifikasiController;
+use App\Http\Controllers\Api\SimpegDataSertifikasiController;
+
 
 
 
@@ -62,10 +69,14 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('output-penelitian', SimpegOutputPenelitianController::class);
         Route::apiResource('jenis-jabatan-struktural', SimpegJenisJabatanStrukturalController::class);
         Route::apiResource('jabatan-struktural', SimpegJabatanStrukturalController::class);
-
-
+        Route::apiResource('eselon', SimpegEselonController::class);
+        Route::apiResource('univ-luar', SimpegUnivLuarController::class);
         Route::apiResource('master-pangkat', SimpegMasterPangkatController::class);
-
+        Route::apiResource('data-riwayat-pekerjaan', SimpegDataRiwayatPekerjaanController::class);
+        Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
+        Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
+        Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
+        
     });
     
     // Dosen Routes

@@ -8,14 +8,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegJabatanStruktural extends Model
 {
-    use SoftDeletes;
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_jabatan_struktural';
-    protected $primaryKey = 'id';
-
-
-
     protected $fillable = [
         'unit_kerja_id',
         'jenis_jabatan_struktural_id',
@@ -38,7 +33,7 @@ class SimpegJabatanStruktural extends Model
 
     public function unitKerja()
     {
-        return $this->belongsTo(UnitKerja::class, 'unit_kerja_id');
+        return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id');
     }
 
     public function jenisJabatanStruktural()
@@ -54,5 +49,15 @@ class SimpegJabatanStruktural extends Model
     public function eselon()
     {
         return $this->belongsTo(SimpegEselon::class, 'eselon_id');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(SimpegJabatanStruktural::class, 'parent_jabatan', 'kode');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(SimpegJabatanStruktural::class, 'parent_jabatan', 'kode');
     }
 }

@@ -4,16 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegDataSertifikasi extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_data_sertifikasi';
-
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
+
 
     protected $fillable = [
         'id',
@@ -51,6 +50,6 @@ class SimpegDataSertifikasi extends Model
     // Relasi ke bidang ilmu
     public function bidangIlmu()
     {
-        return $this->belongsTo(SimpegRumpunBidangIlmu::class, 'bidang_ilmu_id');
+        return $this->belongsTo(RumpunBidangIlmu::class, 'bidang_ilmu_id');
     }
 }
