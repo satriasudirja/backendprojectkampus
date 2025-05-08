@@ -55,7 +55,7 @@ class DatabaseSeeder extends Seeder
     SimpegBeritaSeeder::class,
     SimpegMasterPerguruanTinggiSeeder::class,
     SimpegMasterProdiPerguruanTinggiSeeder::class,
-   
+    CaptchaPuzzleSeeder::class,
 
         ]);
 

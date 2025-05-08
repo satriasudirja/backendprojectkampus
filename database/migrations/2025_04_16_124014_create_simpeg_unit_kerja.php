@@ -27,7 +27,7 @@ return new class extends Migration
             // Kontak dan alamat
             $table->string('alamat', 255)->nullable();
             $table->string('telepon', 20)->nullable();
-            $table->string('website', 100)->nullable();
+            $table->string('website', 150)->nullable();
             $table->string('alamat_email', 50)->nullable();
             
             // Data akreditasi

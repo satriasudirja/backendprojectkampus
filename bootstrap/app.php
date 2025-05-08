@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // 'role' => \App\Http\Middleware\CheckRole::class,
 
 
-
+        Intervention\Image\ImageServiceProvider::class,
 
 
             'auth' => \App\Http\Middleware\Authenticate::class,
