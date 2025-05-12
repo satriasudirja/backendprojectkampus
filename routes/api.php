@@ -28,6 +28,10 @@ use App\Http\Controllers\Api\SimpegDataRiwayatPekerjaanController;
 use App\Http\Controllers\Api\SimpegJamKerjaController;
 use App\Http\Controllers\Api\SimpegMasterJenisSertifikasiController;
 use App\Http\Controllers\Api\SimpegDataSertifikasiController;
+use App\Http\Controllers\Api\UnitKerjaController;
+use App\Http\Controllers\Api\AdminDashboardController;
+use App\Http\Controllers\Api\SimpegBeritaController;
+
 
 
 
@@ -54,6 +58,7 @@ Route::middleware('auth:api')->group(function () {
            
           
         });
+        Route::apiResource('berita', SimpegBeritaController::class);
         Route::apiResource('suku', SimpegSukuController::class);
         Route::apiResource('role', SimpegUserRoleController::class);
         Route::apiResource('unit-kerja', SimpegUnitKerjaController::class);
@@ -77,6 +82,11 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
         Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
+
+        Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
+        Route::get('/unit-kerja/dropdown', [UnitKerjaController::class, 'getUnitsDropdown']);
+        Route::get('/news/{id}', [AdminDashboardController::class, 'getNewsDetail']);
+
         
     });
     

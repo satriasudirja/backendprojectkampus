@@ -10,8 +10,6 @@ class SimpegDataPendidikanFormal extends Model
     use HasFactory;
 
     protected $table = 'simpeg_data_pendidikan_formal';
-    protected $keyType = 'string';
-    public $incrementing = false;
 
     protected $fillable = [
         'id', 'pegawai_id', 'jenjang_studi', 'perguruan_tinggi_id',

@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Services\SimpleCaptchaGeneratorService;
 use App\Services\SlideCaptchaService;
+use App\Services\AdminDashboardService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
             return new SlideCaptchaService(
                 $app->make(SimpleCaptchaGeneratorService::class)
             );
+        });
+           $this->app->singleton(AdminDashboardService::class, function ($app) {
+            return new AdminDashboardService();
         });
     }
 

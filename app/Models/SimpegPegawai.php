@@ -104,7 +104,7 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
 
     public function unitKerja()
     {
-        return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id');
+        return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id', 'kode_unit');
     }
 
     public function statusPernikahan()
@@ -134,6 +134,31 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    // public function unitKerja()
+    // {
+    //     return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id', 'kode_unit');
+    // }
+    
+    // public function statusAktif()
+    // {
+    //     return $this->belongsTo(SimpegStatusAktif::class, 'status_aktif_id');
+    // }
+    
+    // public function jabatanAkademik()
+    // {
+    //     return $this->belongsTo(SimpegJabatanAkademik::class, 'jabatan_akademik_id');
+    // }
+    
+    public function dataHubunganKerja()
+    {
+        return $this->hasMany(SimpegDataHubunganKerja::class, 'pegawai_id');
+    }
+    
+    public function dataPendidikanFormal()
+    {
+        return $this->hasMany(SimpegDataPendidikanFormal::class, 'pegawai_id');
     }
 
 }

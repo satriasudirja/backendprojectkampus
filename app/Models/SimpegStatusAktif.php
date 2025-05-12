@@ -20,4 +20,9 @@ class SimpegStatusAktif extends Model
     protected $casts = [
         'status_keluar' => 'boolean',
     ];
+
+      public function pegawai()
+    {
+        return $this->hasMany(SimpegPegawai::class, 'status_aktif_id');
+    }
 }

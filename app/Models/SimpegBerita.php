@@ -61,7 +61,7 @@ class SimpegBerita extends Model
     public function unitKerja()
     {
         // Assuming there's a model for unit_kerja
-        return $this->belongsTo(UnitKerja::class, 'unit_kerja_id');
+        return $this->belongsTo(UnitKerja::class, 'unit_kerja_id',  'kode_unit');
     }
 
     /**
@@ -128,4 +128,5 @@ class SimpegBerita extends Model
         return $query->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([$unitKerjaId])]);
     }
 
+    
 }

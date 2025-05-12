@@ -12,8 +12,7 @@ class SimpegDataHubunganKerja extends Model
     protected $table = 'simpeg_data_hubungan_kerja';
 
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
+ 
 
     protected $fillable = [
         'id',

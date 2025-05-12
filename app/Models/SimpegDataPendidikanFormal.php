@@ -12,8 +12,6 @@ class SimpegDataPendidikanFormal extends Model
     protected $table = 'simpeg_data_pendidikan_formal';
 
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
 
     protected $fillable = [
         'id',
@@ -83,5 +81,14 @@ class SimpegDataPendidikanFormal extends Model
     public function gelarAkademik()
     {
         return $this->belongsTo(SimpegMasterGelarAkademik::class, 'gelar_akademik_id');
+    }
+    //   public function pegawai()
+    // {
+    //     return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
+    // }
+    
+    public function jenjangPendidikan()
+    {
+        return $this->belongsTo(SimpegJenjangPendidikan::class, 'jenjang_pendidikan_id');
     }
 }

@@ -23,4 +23,8 @@ class HubunganKerja extends Model
         'status_aktif' => 'boolean',
         'pns' => 'boolean'
     ];
+     public function dataHubunganKerja()
+    {
+        return $this->hasMany(SimpegDataHubunganKerja::class, 'hubungan_kerja_id');
+    }
 }

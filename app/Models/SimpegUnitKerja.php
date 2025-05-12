@@ -44,4 +44,23 @@ class SimpegUnitKerja extends Model
     {
         return $this->hasMany(SimpegUnitKerja::class, 'parent_unit_id', 'kode_unit');
     }
+        public function pegawai()
+    {
+        return $this->hasMany(SimpegPegawai::class, 'unit_kerja_id', 'kode_unit');
+    }
+    
+    public function parentUnit()
+    {
+        return $this->belongsTo(self::class, 'parent_unit_id', 'kode_unit');
+    }
+    
+    public function childUnits()
+    {
+        return $this->hasMany(self::class, 'parent_unit_id', 'kode_unit');
+    }
+    
+    public function berita()
+    {
+        return $this->hasMany(SimpegBerita::class, 'unit_kerja_id', 'kode_unit');
+    }
 }
