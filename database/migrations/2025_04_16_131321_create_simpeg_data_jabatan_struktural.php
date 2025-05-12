@@ -12,11 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_jabatan_struktural', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+
+               $table->bigIncrements('id')->primary();
             
-            // Foreign keys (corrected field names)
-            $table->uuid('pegawai_id');
-            $table->uuid('jabatan_struktural_id'); // Fixed from 'jabatan_strnktural_id'
+            // Relasi ke tabel referensi
+            $table->integer('jabatan_fungsional_id');
+            $table->integer('pegawai_id');
+            
+
             
             // Date ranges
             $table->date('tgl_mulai');
@@ -49,7 +52,7 @@ return new class extends Migration
 
             // Indexes
             $table->index('pegawai_id');
-            $table->index('jabatan_struktural_id');
+            $table->index('jabatan_fungsional_id');
             $table->index('no_sk');
             $table->index('tgl_mulai');
         });

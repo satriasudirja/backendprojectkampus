@@ -11,8 +11,6 @@ class SimpegJenisPublikasi extends Model
 
     protected $table = 'simpeg_jenis_publikasi';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
         'kode',

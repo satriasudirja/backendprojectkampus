@@ -12,8 +12,7 @@ class SimpegDataJabatanStruktural extends Model
     protected $table = 'simpeg_data_jabatan_struktural';
 
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
+
 
     protected $fillable = [
         'id',

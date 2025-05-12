@@ -160,5 +160,62 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(SimpegDataPendidikanFormal::class, 'pegawai_id');
     }
+//  public function unitKerja()
+//     {
+//         return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id');
+//     }
 
+    // Relationship to StatusAktif
+    // public function statusAktif()
+    // {
+    //     return $this->belongsTo(SimpegStatusAktif::class, 'status_aktif_id');
+    // }
+
+    // // Relationship to DataHubunganKerja
+    // public function dataHubunganKerja()
+    // {
+    //     return $this->hasMany(SimpegDataHubunganKerja::class, 'pegawai_id');
+    // }
+
+    // Relationship to DataJabatanFungsional
+    public function dataJabatanFungsional()
+    {
+        return $this->hasMany(SimpegDataJabatanFungsional::class, 'pegawai_id');
+    }
+
+    // Relationship to DataPendidikanFormal
+    // public function dataPendidikanFormal()
+    // {
+    //     return $this->hasMany(SimpegDataPendidikanFormal::class, 'pegawai_id');
+    // }
+
+    // Relationship to DataPangkat
+    public function dataPangkat()
+    {
+        return $this->hasMany(SimpegDataPangkat::class, 'pegawai_id');
+    }
+
+    // Relationship to DataJabatanAkademik
+    public function dataJabatanAkademik()
+    {
+        return $this->hasMany(SimpegDataJabatanAkademik::class, 'pegawai_id');
+    }
+
+    // Relationship to DataJabatanStruktural
+    public function dataJabatanStruktural()
+    {
+        return $this->hasMany(SimpegDataJabatanStruktural::class, 'pegawai_id');
+    }
+
+    // Relationship to AbsensiRecord
+    public function absensiRecord()
+    {
+        return $this->hasMany(SimpegAbsensiRecord::class, 'pegawai_id');
+    }
+
+    // Relationship to RiwayatUnitKerja
+    public function riwayatUnitKerja()
+    {
+        return $this->hasMany(SimpegRiwayatUnitKerja::class, 'pegawai_id');
+    }
 }

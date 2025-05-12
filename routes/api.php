@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\SimpegDataSertifikasiController;
 use App\Http\Controllers\Api\UnitKerjaController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\SimpegBeritaController;
+use App\Http\Controllers\Api\PegawaiController;
 
 
 
@@ -58,6 +59,35 @@ Route::middleware('auth:api')->group(function () {
            
           
         });
+
+        //dashboard nav pegawai
+         Route::get('pegawai', [PegawaiController::class, 'index']);
+    Route::get('pegawai/{id}', [PegawaiController::class, 'show']);
+    Route::post('pegawai', [PegawaiController::class, 'store']);
+    Route::put('pegawai/{id}', [PegawaiController::class, 'update']);
+    Route::delete('pegawai/{id}', [PegawaiController::class, 'destroy']);
+    
+    // Batch actions
+    Route::post('pegawai/update-status', [PegawaiController::class, 'updateStatus']);
+    Route::post('pegawai/batch-delete', [PegawaiController::class, 'destroy']);
+    
+    // History routes
+    Route::get('pegawai/riwayat-unit-kerja/{id}', [PegawaiController::class, 'riwayatUnitKerja']);
+    Route::get('pegawai/riwayat-pendidikan/{id}', [PegawaiController::class, 'riwayatPendidikan']);
+    Route::get('pegawai/riwayat-pangkat/{id}', [PegawaiController::class, 'riwayatPangkat']);
+    Route::get('pegawai/riwayat-fungsional/{id}', [PegawaiController::class, 'riwayatFungsional']);
+    Route::get('pegawai/riwayat-jenjang-fungsional/{id}', [PegawaiController::class, 'riwayatJenjangFungsional']);
+    Route::get('pegawai/riwayat-jabatan-struktural/{id}', [PegawaiController::class, 'riwayatJabatanStruktural']);
+    Route::get('pegawai/riwayat-hubungan-kerja/{id}', [PegawaiController::class, 'riwayatHubunganKerja']);
+    Route::get('pegawai/rekap-kehadiran/{id}', [PegawaiController::class, 'rekapKehadiran']);
+
+        /////////////////////////////////////////////////
+
+
+
+
+
+
         Route::apiResource('berita', SimpegBeritaController::class);
         Route::apiResource('suku', SimpegSukuController::class);
         Route::apiResource('role', SimpegUserRoleController::class);
