@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\AdminDashboardService;
 use App\Models\SimpegBerita;
+use App\Models\SimpegUnitKerja;
 
 class AdminDashboardController extends Controller
 {
@@ -43,13 +44,16 @@ class AdminDashboardController extends Controller
     /**
      * Get detailed news by ID
      */
-    public function getNewsDetail($id)
-    {
-        $news = SimpegBerita::with('unitKerja')->findOrFail($id);
-        
-        return response()->json([
-            'status' => 'success',
-            'data' => $news
-        ]);
-    }
+ public function getNewsDetail($id)
+{
+    $news = SimpegBerita::findOrFail($id);
+    
+    // Add the related unit kerja records manually
+    $news->related_unit_kerja = $news->allUnitKerja();
+    
+    return response()->json([
+        'status' => 'success',
+        'data' => $news
+    ]);
+}
 }

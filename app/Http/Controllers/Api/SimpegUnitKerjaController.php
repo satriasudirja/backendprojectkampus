@@ -110,4 +110,36 @@ class SimpegUnitKerjaController extends Controller
             'message' => 'Unit kerja berhasil dihapus (soft delete)'
         ]);
     }
+    public function dropdown()
+    {
+        $unitKerja = SimpegUnitKerja::select('kode_unit as id', 'nama_unit as text')
+            ->orderBy('nama_unit', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $unitKerja
+        ]);
+    }
+
+    // Show method (modified to handle numeric vs UUID IDs)
+//     public function show($id)
+//     {
+//         // Check if the ID is "dropdown" and handle it specially
+//         if ($id === 'dropdown') {
+//             return $this->dropdown();
+//         }
+
+//         // Regular show logic
+//         $unitKerja = SimpegUnitKerja::find($id);
+
+//         if (!$unitKerja) {
+//             return response()->json(['success' => false, 'message' => 'Unit kerja tidak ditemukan'], 404);
+//         }
+
+//         return response()->json([
+//             'success' => true,
+//             'data' => $unitKerja
+//         ]);
+//     }
 }

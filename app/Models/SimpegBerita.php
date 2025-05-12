@@ -58,12 +58,38 @@ class SimpegBerita extends Model
     /**
      * Relasi dengan Unit Kerja
      */
-    public function unitKerja()
+    // public function unitKerja()
+    // {
+    //     // Assuming there's a model for unit_kerja
+    //     return $this->belongsTo(SImpegUnitKerja::class, 'unit_kerja_id',  'kode_unit');
+    // }
+
+public function unitKerja()
     {
-        // Assuming there's a model for unit_kerja
-        return $this->belongsTo(UnitKerja::class, 'unit_kerja_id',  'kode_unit');
+        // If unit_kerja_id is an array, use the first value
+        $unitKerjaId = is_array($this->unit_kerja_id) && !empty($this->unit_kerja_id) 
+            ? $this->unit_kerja_id[0] 
+            : $this->unit_kerja_id;
+        
+        return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id', 'kode_unit')
+            ->withDefault([
+                'nama_unit' => 'Tidak ditemukan'
+            ]);
     }
 
+    /**
+     * Get all related unit kerja records
+     */
+    public function allUnitKerja()
+    {
+        if (!is_array($this->unit_kerja_id)) {
+            $unitIds = [$this->unit_kerja_id];
+        } else {
+            $unitIds = $this->unit_kerja_id;
+        }
+        
+        return SimpegUnitKerja::whereIn('kode_unit', $unitIds)->get();
+    }
     /**
      * Relasi dengan Jabatan Akademik (Many-to-Many)
      */
@@ -128,5 +154,6 @@ class SimpegBerita extends Model
         return $query->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([$unitKerjaId])]);
     }
 
+    
     
 }

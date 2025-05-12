@@ -91,6 +91,9 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('berita', SimpegBeritaController::class);
         Route::apiResource('suku', SimpegSukuController::class);
         Route::apiResource('role', SimpegUserRoleController::class);
+
+
+        Route::get('unit-kerja/dropdown', [SimpegUnitKerjaController::class, 'dropdown']);
         Route::apiResource('unit-kerja', SimpegUnitKerjaController::class);
         Route::apiResource('status-pernikahan', SimpegStatusPernikahanController::class);
         Route::apiResource('status-aktif', SimpegStatusAktifController::class);
@@ -114,7 +117,9 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
 
         Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
-        Route::get('/unit-kerja/dropdown', [UnitKerjaController::class, 'getUnitsDropdown']);
+
+// Then define your resource route
+
         Route::get('/news/{id}', [AdminDashboardController::class, 'getNewsDetail']);
 
         
