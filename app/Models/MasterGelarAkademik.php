@@ -9,11 +9,7 @@ class MasterGelarAkademik extends Model
 {
     use HasFactory;
 
-    protected $table = 'master_gelar_akademik';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
-
+    protected $table = 'simpeg_master_gelar_akademik';
     protected $fillable = [
         'id',
         'gelar',

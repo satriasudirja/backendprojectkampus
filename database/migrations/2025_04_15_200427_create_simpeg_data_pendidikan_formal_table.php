@@ -14,34 +14,44 @@ return new class extends Migration
         Schema::create('simpeg_data_pendidikan_formal', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('pegawai_id')->unsigned();
-            $table->integer('jenjang_pendidikan_id')->unsigned();
-            $table->integer('perguruan_tinggi_id')->unsigned();
-            $table->integer('prodi_perguruan_tinggi_id')->unsigned();
-            $table->integer('gelar_akademik_id')->unsigned();
 
 
+            $table->string('lokasi_studi')->nullable();
+          $table->integer('jenjang_pendidikan_id')->nullable();
+           $table->integer('perguruan_tinggi_id')->nullable();
+             $table->integer('prodi_perguruan_tinggi_id')->nullable();
+            $table->integer('gelar_akademik_id')->nullable();
 
-            $table->boolean('lokasi_studi');
-            $table->string('nama_institusi', 100);
-            $table->string('nisn', 30);
-            $table->string('konsentrasi', 100);
-            $table->string('tahun_masuk', 4);
-            $table->date('tanggal_kelulusan');
-            $table->string('tahun_lulus', 4);
-            $table->string('nomor_ijazah', 50);
-            $table->date('tanggal_ijazah');
-            $table->text('file_ijazah');
-            $table->text('file_transkrip');
-            $table->string('nomor_ijazah_negara', 50);
-            $table->string('gelar_ijazah_negara', 30);
-            $table->date('tgl_input');
-            $table->string('nomor_induk', 30);
-            $table->text('judul_tugas');
-            $table->string('letak_gelar', 10);
-            $table->integer('jumlah_semster_ditempuh');
-            $table->integer('jumlah_sks_kelulusan');
-            $table->float('ipk_kelulusan');
+             
+                
+                 
+            
+            $table->string('bidang_studi', 100)->nullable();
+            $table->string('nisn', 30)->nullable();
+            $table->string('konsentrasi', 100)->nullable();
+            $table->string('tahun_masuk', 4)->nullable();
+            $table->date('tanggal_kelulusan')->nullable();
+            $table->string('tahun_lulus', 4)->nullable();
+            $table->string('nomor_ijazah', 50)->nullable();
+            $table->date('tanggal_ijazah')->nullable();
+            $table->text('file_ijazah')->nullable();
+            $table->text('file_transkrip')->nullable();
+            $table->string('nomor_ijazah_negara', 50)->nullable();
+            $table->string('gelar_ijazah_negara', 30)->nullable();
+            $table->date('tgl_input')->nullable();
+             $table->date('tanggal_ijazah_negara')->nullable();
+            $table->string('nomor_induk', 30)->nullable();
+            $table->text('judul_tugas')->nullable();
+            $table->string('letak_gelar', 10)->nullable();
+            $table->integer('jumlah_semster_ditempuh')->nullable();
+            $table->integer('jumlah_sks_kelulusan')->nullable();
+            $table->float('ipk_kelulusan')->nullable();
+             $table->string('status_pengajuan')->nullable();
+               $table->date('tanggal_diajukan')->nullable();
+                 $table->date('tanggal_disetujui')->nullable();
+                  $table->string('dibuat_oleh')->nullable();
             $table->timestamps();
+             $table->softDeletes();
         });
     }
 

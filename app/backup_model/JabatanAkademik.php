@@ -16,8 +16,17 @@ class JabatanAkademik extends Model
 
     protected $fillable = ['id', 'nama_jabatan', 'singkatan'];
 
-    public function dataJabatanAkademik()
+    // public function dataJabatanAkademik()
+    // {
+    //     return $this->hasMany(DataJabatanAkademik::class);
+    // }
+     public function dataJabatanAkademik()
     {
-        return $this->hasMany(DataJabatanAkademik::class);
+        return $this->hasMany(SimpegDataJabatanAkademik::class, 'jabatan_akademik_id');
+    }
+    
+    public function jabatanFungsional()
+    {
+        return $this->hasMany(SimpegJabatanFungsional::class, 'jabatan_akademik_id');
     }
 }

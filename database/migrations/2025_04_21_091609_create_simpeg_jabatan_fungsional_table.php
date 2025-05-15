@@ -23,6 +23,8 @@ return new class extends Migration
             $table->integer('usia_pensiun');
             $table->text('keterangan')->nullable();
 
+                 $table->timestamps();
+        $table->softDeletes();
             // Foreign key constraints
             // $table->foreign('jabatan_akademik_id')
             //       ->references('id')

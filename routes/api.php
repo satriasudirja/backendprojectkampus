@@ -32,7 +32,7 @@ use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\SimpegBeritaController;
 use App\Http\Controllers\Api\PegawaiController;
 use App\Http\Controllers\Api\SimpegUnitKerjaController;
-
+use App\Http\Controllers\Api\SimpegRiwayatPendidikanController;
 use App\Http\Controllers\Api\SimpegKategoriSertifikasiController;
 use App\Http\Controllers\Api\SimpegHubunganKerjaController;
 
@@ -61,7 +61,8 @@ Route::middleware('auth:api')->group(function () {
            
           
         });
-
+        Route::get('pegawai/info-pendidikan/{pegawaiId}', [SimpegRiwayatPendidikanController::class, 'getPegawaiWithPendidikan']);
+Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchPegawai']);
         //dashboard nav pegawai
          Route::get('pegawai', [PegawaiController::class, 'index']);
     Route::get('pegawai/{id}', [PegawaiController::class, 'show']);
@@ -75,7 +76,37 @@ Route::middleware('auth:api')->group(function () {
     
     // History routes
     Route::get('pegawai/riwayat-unit-kerja/{id}', [PegawaiController::class, 'riwayatUnitKerja']);
-    Route::get('pegawai/riwayat-pendidikan/{id}', [PegawaiController::class, 'riwayatPendidikan']);
+   
+    // Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchPegawai']);
+    Route::get('pegawai/riwayat-unit-kerja/{id}', [PegawaiController::class, 'riwayatUnitKerja']);
+    Route::post('pegawai/update-status', [PegawaiController::class, 'updateStatus']);
+    Route::post('pegawai/batch-delete', [PegawaiController::class, 'destroy']);
+    
+    // THEN define the pendidikan routes, also in specific-to-generic order
+    Route::get('pegawai/riwayat-pendidikan/all', [SimpegRiwayatPendidikanController::class, 'index']);
+    Route::get('pegawai/riwayat-pendidikan/detail/{id}', [SimpegRiwayatPendidikanController::class, 'show']);
+    Route::put('pegawai/riwayat-pendidikan/batch/update-status', [SimpegRiwayatPendidikanController::class, 'batchUpdateStatus']);
+    Route::delete('pegawai/riwayat-pendidikan/batch/delete', [SimpegRiwayatPendidikanController::class, 'batchDelete']);
+    Route::put('pegawai/riwayat-pendidikan/{id}/status', [SimpegRiwayatPendidikanController::class, 'updateStatusPengajuan']);
+    Route::get('pegawai/riwayat-pendidikan/{pegawaiId}', [SimpegRiwayatPendidikanController::class, 'getByPegawai']);
+    Route::post('pegawai/riwayat-pendidikan', [SimpegRiwayatPendidikanController::class, 'store']);
+    Route::put('pegawai/riwayat-pendidikan/{id}', [SimpegRiwayatPendidikanController::class, 'update']);
+    Route::delete('pegawai/riwayat-pendidikan/{id}', [SimpegRiwayatPendidikanController::class, 'destroy']);
+    
+    // FINALLY define the most generic routes with route parameters
+    Route::get('pegawai', [PegawaiController::class, 'index']);
+    Route::get('pegawai/{id}', [PegawaiController::class, 'show']);
+    Route::post('pegawai', [PegawaiController::class, 'store']);
+    Route::put('pegawai/{id}', [PegawaiController::class, 'update']);
+    Route::post('pegawai/destroy', [PegawaiController::class, 'destroy']);
+    
+    // Rest of your admin routes...
+
+
+
+
+
+
     Route::get('pegawai/riwayat-pangkat/{id}', [PegawaiController::class, 'riwayatPangkat']);
     Route::get('pegawai/riwayat-fungsional/{id}', [PegawaiController::class, 'riwayatFungsional']);
     Route::get('pegawai/riwayat-jenjang-fungsional/{id}', [PegawaiController::class, 'riwayatJenjangFungsional']);

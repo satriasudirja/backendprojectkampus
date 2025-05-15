@@ -2,65 +2,86 @@
 
 namespace Database\Seeders;
 
-use App\Models\SimpegJabatanStruktural;
-use App\Models\SimpegUnitKerja;
-use App\Models\JenisJabatanStruktural;
-use App\Models\SimpegMasterPangkat;
-use App\Models\SimpegEselon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class SimpegJabatanStrukturalSeeder extends Seeder
 {
-    public function run()
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
     {
+        $now = Carbon::now();
+        
         $data = [
             [
-                'kode' => '001',
-                'singkatan' => 'REK',
-                'unit_kerja_id' => SimpegUnitKerja::where('kode_unit', '041001')->first()->id,
-                'jenis_jabatan_struktural_id' => JenisJabatanStruktural::where('kode', '10000')->first()->id,
-                'pangkat_id' => SimpegMasterPangkat::where('pangkat', 'IV/e')->first()->id,
-                'eselon_id' => SimpegEselon::where('kode', '1I')->first()->id,
-                'alamat_email' => 'rektor@uika-bogor.ac.id',
+                'unit_kerja_id' => 1, // Assuming unit kerja with ID 1 exists
+                'jenis_jabatan_struktural_id' => 3, // Eselon II.a
+                'pangkat_id' => 1, // Assuming pangkat with ID 1 exists
+                'eselon_id' => 1, // Assuming eselon with ID 1 exists
+                'kode' => 'RKT01',
+                'singkatan' => 'Rektor',
+                'alamat_email' => 'rektor@universitas.ac.id',
+                'beban_sks' => 2,
+                'is_pimpinan' => true,
+                'aktif' => true,
+                'keterangan' => null,
+                'parent_jabatan' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'unit_kerja_id' => 2, // Assuming unit kerja with ID 2 exists
+                'jenis_jabatan_struktural_id' => 5, // Eselon III.a
+                'pangkat_id' => 2, // Assuming pangkat with ID 2 exists
+                'eselon_id' => 3, // Assuming eselon with ID 3 exists
+                'kode' => 'DKN01',
+                'singkatan' => 'Dekan',
+                'alamat_email' => 'dekan@fak.universitas.ac.id',
+                'beban_sks' => 4,
+                'is_pimpinan' => true,
+                'aktif' => true,
+                'keterangan' => null,
+                'parent_jabatan' => 'RKT01',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'unit_kerja_id' => 3, // Assuming unit kerja with ID 3 exists
+                'jenis_jabatan_struktural_id' => 6, // Eselon III.b
+                'pangkat_id' => 3, // Assuming pangkat with ID 3 exists
+                'eselon_id' => 4, // Assuming eselon with ID 4 exists
+                'kode' => 'KJR01',
+                'singkatan' => 'Kajur',
+                'alamat_email' => 'kajur@dep.universitas.ac.id',
                 'beban_sks' => 6,
                 'is_pimpinan' => true,
                 'aktif' => true,
-                'keterangan' => 'Pimpinan Tertinggi Universitas',
-                'parent_jabatan' => null,
+                'keterangan' => 'Kepala Jurusan',
+                'parent_jabatan' => 'DKN01',
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
             [
-                'kode' => '002',
-                'singkatan' => 'WR I',
-                'unit_kerja_id' => SimpegUnitKerja::where('kode_unit', '041001')->first()->id,
-                'jenis_jabatan_struktural_id' => JenisJabatanStruktural::where('kode', '11000')->first()->id,
-                'pangkat_id' => SimpegMasterPangkat::where('pangkat', 'IV/d')->first()->id,
-                'eselon_id' => SimpegEselon::where('kode', '12')->first()->id,
-                'alamat_email' => 'wr1@uika-bogor.ac.id',
-                'beban_sks' => 4,
+                'unit_kerja_id' => 4, // Assuming unit kerja with ID 4 exists
+                'jenis_jabatan_struktural_id' => 7, // Eselon IV.a
+                'pangkat_id' => 4, // Assuming pangkat with ID 4 exists
+                'eselon_id' => 5, // Assuming eselon with ID 5 exists
+                'kode' => 'KPS01',
+                'singkatan' => 'Kaprodi',
+                'alamat_email' => 'kaprodi@prodi.universitas.ac.id',
+                'beban_sks' => 6,
                 'is_pimpinan' => true,
                 'aktif' => true,
-                'keterangan' => 'Wakil Rektor Bidang Akademik',
-                'parent_jabatan' => '001',
+                'keterangan' => 'Kepala Program Studi',
+                'parent_jabatan' => 'KJR01',
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
-            [
-                'kode' => '003',
-                'singkatan' => 'DEKAN',
-                'unit_kerja_id' => SimpegUnitKerja::where('kode_unit', '01')->first()->id,
-                'jenis_jabatan_struktural_id' => JenisJabatanStruktural::where('kode', '12000')->first()->id,
-                'pangkat_id' => SimpegMasterPangkat::where('pangkat', 'IV/c')->first()->id,
-                'eselon_id' => SimpegEselon::where('kode', '21')->first()->id,
-                'alamat_email' => 'dekan.fkip@uika-bogor.ac.id',
-                'beban_sks' => 4,
-                'is_pimpinan' => true,
-                'aktif' => true,
-                'keterangan' => 'Dekan Fakultas Keguruan dan Ilmu Pendidikan',
-                'parent_jabatan' => '001',
-            ],
-            // Tambahkan data jabatan lainnya sesuai kebutuhan
         ];
 
-        foreach ($data as $item) {
-            SimpegJabatanStruktural::create($item);
-        }
+        DB::table('simpeg_jabatan_struktural')->insert($data);
     }
 }

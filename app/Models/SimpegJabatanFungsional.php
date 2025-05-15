@@ -26,13 +26,18 @@ class SimpegJabatanFungsional extends Model
         'keterangan',
     ];
 
+    // public function jabatanAkademik()
+    // {
+    //     return $this->belongsTo(JabatanAkademik::class, 'jabatan_akademik_id');
+    // }
     public function jabatanAkademik()
-    {
-        return $this->belongsTo(JabatanAkademik::class, 'jabatan_akademik_id');
-    }
+{
+    return $this->belongsTo(SimpegJabatanAkademik::class, 'jabatan_akademik_id');
+}
 
     public function pangkat()
     {
         return $this->belongsTo(Pangkat::class, 'pangkat_id');
     }
+    
 }

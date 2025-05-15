@@ -4,24 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegDataPendidikanFormal extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'simpeg_data_pendidikan_formal';
-
-    protected $primaryKey = 'id';
-
+   protected $table = 'simpeg_data_pendidikan_formal';
     protected $fillable = [
-        'id',
         'pegawai_id',
-        'jenjang_studi_id',
+        'lokasi_studi',
+        'jenjang_pendidikan_id',
         'perguruan_tinggi_id',
         'prodi_perguruan_tinggi_id',
         'gelar_akademik_id',
-        'lokasi_studi',
-        'nama_institusi',
+        'bidang_studi',
         'nisn',
         'konsentrasi',
         'tahun_masuk',
@@ -32,27 +29,36 @@ class SimpegDataPendidikanFormal extends Model
         'file_ijazah',
         'file_transkrip',
         'nomor_ijazah_negara',
+        'gelar_ijazah_negara',
         'tanggal_ijazah_negara',
         'tgl_input',
         'nomor_induk',
         'judul_tugas',
         'letak_gelar',
-        'jumlah_semester_ditempuh',
+        'jumlah_semster_ditempuh',
         'jumlah_sks_kelulusan',
-        'ipk_kelulusan'
+        'ipk_kelulusan',
+        'status_pengajuan',
+        'tanggal_diajukan',
+        'tanggal_disetujui',
+        'dibuat_oleh'
     ];
 
     protected $casts = [
-        'lokasi_studi' => 'boolean',
         'tanggal_kelulusan' => 'date',
         'tanggal_ijazah' => 'date',
         'tanggal_ijazah_negara' => 'date',
         'tgl_input' => 'date',
-        'jumlah_semester_ditempuh' => 'integer',
+        'tanggal_diajukan' => 'date',
+        'tanggal_disetujui' => 'date',
+        'jumlah_semster_ditempuh' => 'integer',
         'jumlah_sks_kelulusan' => 'integer',
         'ipk_kelulusan' => 'float'
     ];
 
+    protected $dates = [
+        'deleted_at',
+    ];
     // Relasi ke tabel pegawai
     public function pegawai()
     {
@@ -62,25 +68,25 @@ class SimpegDataPendidikanFormal extends Model
     // Relasi ke jenjang studi
     public function jenjangStudi()
     {
-        return $this->belongsTo(SimpegJenjangStudi::class, 'jenjang_studi_id');
+        return $this->belongsTo(SimpegJenjangPendidikan::class, 'jenjang_pendidikan_id');
     }
 
-    // Relasi ke perguruan tinggi
-    public function perguruanTinggi()
-    {
-        return $this->belongsTo(SimpegMasterPerguruanTinggi::class, 'perguruan_tinggi_id');
-    }
+
+ public function perguruanTinggi()
+{
+    return $this->belongsTo( MasterPerguruanTinggi::class, 'perguruan_tinggi_id');
+}
 
     // Relasi ke program studi
     public function prodiPerguruanTinggi()
     {
-        return $this->belongsTo(SimpegMasterProdiPerguruanTinggi::class, 'prodi_perguruan_tinggi_id');
+        return $this->belongsTo(MasterProdiPerguruanTinggi::class, 'prodi_perguruan_tinggi_id');
     }
 
     // Relasi ke gelar akademik
     public function gelarAkademik()
     {
-        return $this->belongsTo(SimpegMasterGelarAkademik::class, 'gelar_akademik_id');
+        return $this->belongsTo(MasterGelarAkademik::class, 'gelar_akademik_id');
     }
     //   public function pegawai()
     // {
@@ -91,4 +97,6 @@ class SimpegDataPendidikanFormal extends Model
     {
         return $this->belongsTo(SimpegJenjangPendidikan::class, 'jenjang_pendidikan_id');
     }
+
+
 }

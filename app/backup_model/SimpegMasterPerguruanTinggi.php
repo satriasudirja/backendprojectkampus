@@ -10,10 +10,8 @@ class SimpegMasterPerguruanTinggi extends Model
     use HasFactory;
 
     protected $table = 'simpeg_master_perguruan_tinggi';
-    protected $keyType = 'string';
-    public $incrementing = false;
 
-    protected $fillable = ['id', 
+    protected $fillable = [
     'kode', 
     'nama_universitas', 
     'alamat', 
