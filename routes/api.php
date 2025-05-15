@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\PegawaiController;
 use App\Http\Controllers\Api\SimpegUnitKerjaController;
 
 use App\Http\Controllers\Api\SimpegKategoriSertifikasiController;
+use App\Http\Controllers\Api\SimpegHubunganKerjaController;
 
 
 
@@ -116,6 +117,8 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
         Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
+        Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);
+        Route::apiResource('kategori-sertifikasi', SimpegKategoriSertifikasiController::class);
         
     });
     
