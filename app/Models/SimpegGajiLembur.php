@@ -9,7 +9,7 @@ class SimpegGajiLembur extends Model
 {
     use HasFactory;
 
-    protected $table = 'gaji_lembur';
+    protected $table = 'simpeg_gaji_lembur';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';

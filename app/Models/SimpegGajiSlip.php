@@ -9,7 +9,7 @@ class SimpegGajiSlip extends Model
 {
     use HasFactory;
 
-    protected $table = 'gaji_slip';
+    protected $table = 'simpeg_gaji_slip';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';

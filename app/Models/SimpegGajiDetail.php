@@ -9,7 +9,7 @@ class SimpegGajiDetail extends Model
 {
     use HasFactory;
 
-    protected $table = 'gaji_detail';
+    protected $table = 'simpeg_gaji_detail';
     protected $primaryKey = 'id';
    
     protected $fillable = [
