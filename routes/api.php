@@ -31,11 +31,12 @@ use App\Http\Controllers\Api\UnitKerjaController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\SimpegBeritaController;
 use App\Http\Controllers\Api\PegawaiController;
-<<<<<<< HEAD
+
+
 use App\Http\Controllers\Api\SimpegUnitKerjaController;
 use App\Http\Controllers\Api\SimpegRiwayatPendidikanController;
 use App\Http\Controllers\Api\SimpegKategoriSertifikasiController;
-=======
+
 use App\Http\Controllers\Api\SimpegJenispelanggaranController;
 use App\Http\Controllers\Api\SimpegJenisPenghargaaniController;
 use App\Http\Controllers\Api\SimpegJenisPublikasiController;
@@ -48,7 +49,6 @@ use App\Http\Controllers\Api\SimpegGajiSlipController;
 use App\Http\Controllers\Api\SimpegGajiPeriodeController;
 use App\Http\Controllers\Api\SimpegGajiTunjanganKhususController;
 use App\Http\Controllers\Api\SimpegGajiLemburController;
->>>>>>> e9eb2be (ihsan push wok)
 
 
 
@@ -162,8 +162,7 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
         Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
         Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
-<<<<<<< HEAD
-=======
+
         Route::apiResource('jenis-penghargaan', SimpegJenisPenghargaanController::class);
         Route::apiResource('jenis-pelanggaran', SimpegJenisPelanggaranController::class);
         Route::apiResource('jenis-publikasi', SimpegJenisPublikasiController::class);
@@ -180,7 +179,7 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
         Route::get('/unit-kerja/dropdown', [UnitKerjaController::class, 'getUnitsDropdown']);
         Route::get('/news/{id}', [AdminDashboardController::class, 'getNewsDetail']);
 
->>>>>>> e9eb2be (ihsan push wok)
+
         
     });
     

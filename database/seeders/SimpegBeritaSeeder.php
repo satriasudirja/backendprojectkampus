@@ -47,65 +47,91 @@ class SimpegBeritaSeeder extends Seeder
             $this->command->info('Tidak semua jabatan akademik ditemukan. Silakan periksa data jabatan akademik.');
             return;
         }
-        
-        // Insert berita pertama
-        $berita1 = [
-            'unit_kerja_id' => json_encode([$unitKerjaId]),
-            'judul' => 'Harap diperhatikan',
-            'konten' => 'Harap semua dosen dan tendik melengkapi Biodata yang masih belum terisi',
-            'slug' => Str::slug('Harap diperhatikan'),
-            'tgl_posting' => '2025-01-01',
-            'tgl_expired' => '2025-12-31',
-            'prioritas' => false,
-            'gambar_berita' => null,
-            'file_berita' => null,
-            'created_at' => $now,
-            'updated_at' => $now
-        ];
-        
-        $berita1Id = DB::table('simpeg_berita')->insertGetId($berita1);
-        
-        // Insert berita kedua
-        $berita2 = [
-            'unit_kerja_id' => json_encode([$unitKerjaId]),
-            'judul' => 'Pengajian Rutin Jum\'at',
-            'konten' => 'Pengajian rutin Jum\'at dan Do\'a Khatam Al Qur\'an Keluarga Civitas Akademika UIKA Bogor. selama Bulan Ramadhan Pukul : 17.00 wib  s /d selesai',
-            'slug' => Str::slug('Pengajian Rutin Jumat'),
-            'tgl_posting' => '2025-01-01',
-            'tgl_expired' => '2025-12-31',
-            'prioritas' => false,
-            'gambar_berita' => null,
-            'file_berita' => null,
-            'created_at' => $now,
-            'updated_at' => $now
-        ];
-        
-        $berita2Id = DB::table('simpeg_berita')->insertGetId($berita2);
-        
-        // Insert relasi berita 1 dengan jabatan akademik
-        $berita1Relations = array_map(function ($jabatanId) use ($berita1Id, $now) {
-            return [
-                'berita_id' => $berita1Id,
-                'jabatan_akademik_id' => $jabatanId,
+
+        // Periksa apakah berita sudah ada
+        $existingBerita1 = DB::table('simpeg_berita')
+            ->where('judul', 'Harap diperhatikan')
+            ->first();
+
+        // Insert berita pertama jika belum ada
+        if (!$existingBerita1) {
+            // Tambahkan timestamp ke slug untuk memastikan keunikan
+            $uniqueSlug1 = Str::slug('Harap diperhatikan') . '-' . time();
+            
+            $berita1 = [
+                'unit_kerja_id' => json_encode([$unitKerjaId]),
+                'judul' => 'Harap diperhatikan',
+                'konten' => 'Harap semua dosen dan tendik melengkapi Biodata yang masih belum terisi',
+                'slug' => $uniqueSlug1,
+                'tgl_posting' => '2025-01-01',
+                'tgl_expired' => '2025-12-31',
+                'prioritas' => false,
+                'gambar_berita' => null,
+                'file_berita' => null,
                 'created_at' => $now,
                 'updated_at' => $now
             ];
-        }, $jabatanIds);
+            
+            $berita1Id = DB::table('simpeg_berita')->insertGetId($berita1);
+            
+            // Insert relasi berita 1 dengan jabatan akademik
+            $berita1Relations = array_map(function ($jabatanId) use ($berita1Id, $now) {
+                return [
+                    'berita_id' => $berita1Id,
+                    'jabatan_akademik_id' => $jabatanId,
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ];
+            }, $jabatanIds);
+            
+            DB::table('simpeg_berita_jabatan_akademik')->insert($berita1Relations);
+        } else {
+            $berita1Id = $existingBerita1->id;
+            $this->command->info('Berita "Harap diperhatikan" sudah ada, melewati penambahan.');
+        }
         
-        DB::table('simpeg_berita_jabatan_akademik')->insert($berita1Relations);
-        
-        // Insert relasi berita 2 dengan jabatan akademik
-        $berita2Relations = array_map(function ($jabatanId) use ($berita2Id, $now) {
-            return [
-                'berita_id' => $berita2Id,
-                'jabatan_akademik_id' => $jabatanId,
+        // Periksa apakah berita kedua sudah ada
+        $existingBerita2 = DB::table('simpeg_berita')
+            ->where('judul', 'Pengajian Rutin Jum\'at')
+            ->first();
+
+        // Insert berita kedua jika belum ada
+        if (!$existingBerita2) {
+            // Tambahkan timestamp ke slug untuk memastikan keunikan
+            $uniqueSlug2 = Str::slug('Pengajian Rutin Jumat') . '-' . time();
+            
+            $berita2 = [
+                'unit_kerja_id' => json_encode([$unitKerjaId]),
+                'judul' => 'Pengajian Rutin Jum\'at',
+                'konten' => 'Pengajian rutin Jum\'at dan Do\'a Khatam Al Qur\'an Keluarga Civitas Akademika UIKA Bogor. selama Bulan Ramadhan Pukul : 17.00 wib  s /d selesai',
+                'slug' => $uniqueSlug2,
+                'tgl_posting' => '2025-01-01',
+                'tgl_expired' => '2025-12-31',
+                'prioritas' => false,
+                'gambar_berita' => null,
+                'file_berita' => null,
                 'created_at' => $now,
                 'updated_at' => $now
             ];
-        }, $jabatanIds2);
+            
+            $berita2Id = DB::table('simpeg_berita')->insertGetId($berita2);
+            
+            // Insert relasi berita 2 dengan jabatan akademik
+            $berita2Relations = array_map(function ($jabatanId) use ($berita2Id, $now) {
+                return [
+                    'berita_id' => $berita2Id,
+                    'jabatan_akademik_id' => $jabatanId,
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ];
+            }, $jabatanIds2);
+            
+            DB::table('simpeg_berita_jabatan_akademik')->insert($berita2Relations);
+        } else {
+            $berita2Id = $existingBerita2->id;
+            $this->command->info('Berita "Pengajian Rutin Jum\'at" sudah ada, melewati penambahan.');
+        }
         
-        DB::table('simpeg_berita_jabatan_akademik')->insert($berita2Relations);
-        
-        $this->command->info('Berhasil menambahkan 2 berita beserta relasinya dengan jabatan akademik.');
+        $this->command->info('Seeder berita berhasil dijalankan.');
     }
 }

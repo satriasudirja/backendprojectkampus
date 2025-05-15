@@ -11,6 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
+
+
+
+
+             Schema::create('simpeg_jenis_publikasi', function (Blueprint $table) {
+               $table->bigIncrements('id');
+            $table->string('kode', 5)->nullable();
+            $table->string('jenis_publikasi', 50);
+      
+            $table->timestamps();
+        });
+
+
+
+
+
+
         Schema::table('simpeg_data_publikasi', function (Blueprint $table) {
             // Foreign key untuk pegawai_id
             $table->foreign('pegawai_id')

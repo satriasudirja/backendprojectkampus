@@ -21,16 +21,7 @@ class DatabaseSeeder extends Seeder
             SimpegStatusAktifSeeder::class,
             RumpunBidangIlmuSeeder::class,
 
-<<<<<<< HEAD
-            SimpegPegawaiSeeder::class,
-            SimpegBahasaSeeder::class,
-            SimpegJenisCutiSeeder::class,
-            SimpegDaftarJenisLuaranSeeder::class,
-            PkmSeeder::class,
-            SimpegDaftarJenisSkSeeder::class,
-            SimpegDaftarJenisTestSeeder::class,
-            SimpegMasterOutputPenelitianSeeder::class,
-=======
+
     SimpegPegawaiSeeder::class,
     SimpegBahasaSeeder::class,
     SimpegJenisCutiSeeder::class,
@@ -65,7 +56,7 @@ class DatabaseSeeder extends Seeder
     SimpegMasterPerguruanTinggiSeeder::class,
     SimpegMasterProdiPerguruanTinggiSeeder::class,
     CaptchaPuzzleSeeder::class,
->>>>>>> e9eb2be (ihsan push wok)
+
 
             SimpegJenisJabatanStrukturalSeeder::class,
             SimpegMasterPangkatSeeder::class,
