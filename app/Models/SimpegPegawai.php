@@ -31,6 +31,7 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
         'suku_id',
         'nama',
         'nip',
+        'nuptk',
         'password',
         'nidn',
         'gelar_depan',

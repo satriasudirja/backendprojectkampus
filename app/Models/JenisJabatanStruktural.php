@@ -18,4 +18,9 @@ class JenisJabatanStruktural extends Model
         'kode',
         'jenis_jabatan_struktural'
     ];
+
+      public function jabatanStruktural()
+    {
+        return $this->hasMany(SimpegJabatanStruktural::class, 'jenis_jabatan_struktural_id');
+    }
 }

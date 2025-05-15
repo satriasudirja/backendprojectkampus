@@ -16,7 +16,7 @@ return new class extends Migration
                $table->bigIncrements('id')->primary();
             
             // Relasi ke tabel referensi
-            $table->integer('jabatan_fungsional_id');
+            $table->integer('jabatan_struktural_id');
             $table->integer('pegawai_id');
             
 
@@ -38,23 +38,17 @@ return new class extends Migration
             $table->string('status_pengajuan', 20)->default('draft'); // draft, submitted, approved, rejected
             
             $table->timestamps();
+            $table->softDeletes();
 
-            // Foreign key constraints
-            // $table->foreign('pegawai_id')
-            //       ->references('id')
-            //       ->on('simpeg_pegawai')
-            //       ->onDelete('cascade');
-
-            // $table->foreign('jabatan_struktural_id')
-            //       ->references('id')
-            //       ->on('simpeg_ref_jabatan_struktural')
-            //       ->onDelete('restrict');
-
+   
             // Indexes
             $table->index('pegawai_id');
-            $table->index('jabatan_fungsional_id');
+            $table->index('jabatan_struktural_id');
             $table->index('no_sk');
             $table->index('tgl_mulai');
+
+
+         
         });
     }
 

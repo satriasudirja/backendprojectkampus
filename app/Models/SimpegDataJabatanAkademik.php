@@ -11,9 +11,7 @@ class SimpegDataJabatanAkademik extends Model
 
     protected $table = 'simpeg_data_jabatan_akademik';
 
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
+  
 
     protected $fillable = [
         'id',

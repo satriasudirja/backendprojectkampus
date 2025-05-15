@@ -24,4 +24,10 @@ class SimpegJabatanFungsional extends Model
         'usia_pensiun',
         'keterangan',
     ];
+
+
+    public function jabatanAkademik()
+{
+    return $this->belongsTo(SimpegJabatanAkademik::class, 'jabatan_akademik_id');
+}
 }

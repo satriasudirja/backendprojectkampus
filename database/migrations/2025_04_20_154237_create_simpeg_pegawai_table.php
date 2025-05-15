@@ -22,6 +22,7 @@ return new class extends Migration
 
             $table->string('nama', 305);
             $table->string('nip', 30)->unique();
+              $table->string('nuptk', 30)->unique();
             $table->string('password', 100);
             $table->string('nidn', 30)->nullable();
             $table->string('gelar_depan', 30)->nullable();

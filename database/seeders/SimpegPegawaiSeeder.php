@@ -43,6 +43,7 @@ class SimpegPegawaiSeeder extends Seeder
                 'suku_id'               => $suku->id,
                 'nama'                  => $faker->name(),
                 'nip'                   => $faker->numerify('##############'),
+                'nuptk'                   => $faker->numerify('##############'),
                 'password'              => bcrypt('password123'),
                 'nidn'                  => $faker->numerify('############'),
                 'gelar_depan'           => $faker->randomElement(['Dr.', 'Prof.', 'Ir.']),
