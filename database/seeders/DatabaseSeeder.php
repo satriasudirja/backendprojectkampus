@@ -48,14 +48,15 @@ class DatabaseSeeder extends Seeder
     SimpegUnivLuarSeeder::class,
     SimpegJenjangPendidikanSeeder::class,
     SimpegDataSertifikasiSeeder::class,
-
-
+    
     SimpegHubunganKerjaSeeder::class,
     SimpegJenisHariSeeder::class,
     SimpegBeritaSeeder::class,
     SimpegMasterPerguruanTinggiSeeder::class,
     SimpegMasterProdiPerguruanTinggiSeeder::class,
     CaptchaPuzzleSeeder::class,
+    SimpegKategoriSertifikasiSeeder::class,
+
 
         ]);
 

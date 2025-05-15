@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SimpegSukuController;
 use App\Http\Controllers\Api\SimpegUserRoleController;
-use App\Http\Controllers\Api\SimpegUnitKerjaController;
 use App\Http\Controllers\Api\SimpegStatusPernikahanController;
 use App\Http\Controllers\Api\SimpegStatusAktifController;
 use App\Http\Controllers\Api\SimpegJabatanAkademikController;
@@ -32,7 +31,9 @@ use App\Http\Controllers\Api\UnitKerjaController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\SimpegBeritaController;
 use App\Http\Controllers\Api\PegawaiController;
+use App\Http\Controllers\Api\SimpegUnitKerjaController;
 
+use App\Http\Controllers\Api\SimpegKategoriSertifikasiController;
 
 
 
@@ -115,13 +116,6 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
         Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
-
-        Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
-
-// Then define your resource route
-
-        Route::get('/news/{id}', [AdminDashboardController::class, 'getNewsDetail']);
-
         
     });
     
