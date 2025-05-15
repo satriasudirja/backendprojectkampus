@@ -30,27 +30,6 @@ class DatabaseSeeder extends Seeder
             SimpegDaftarJenisTestSeeder::class,
             SimpegMasterOutputPenelitianSeeder::class,
 
-<<<<<<< HEAD
-    SimpegJenisJabatanStrukturalSeeder::class,
-    SimpegMasterPangkatSeeder::class,
-    SimpegEselonSeeder::class,
-    SimpegJabatanStrukturalSeeder::class,
-    SimpegJamKerjaSeeder::class,
-    SimpegMasterJenisSertifikasiSeeder::class,
-    SimpegDataRiwayatPekerjaanSeeder::class,
-    SimpegUnivLuarSeeder::class,
-    SimpegJenjangPendidikanSeeder::class,
-    SimpegDataSertifikasiSeeder::class,
-    
-    SimpegHubunganKerjaSeeder::class,
-    SimpegJenisHariSeeder::class,
-    SimpegBeritaSeeder::class,
-    SimpegMasterPerguruanTinggiSeeder::class,
-    SimpegMasterProdiPerguruanTinggiSeeder::class,
-    CaptchaPuzzleSeeder::class,
-    SimpegKategoriSertifikasiSeeder::class,
-
-=======
             SimpegJenisJabatanStrukturalSeeder::class,
             SimpegMasterPangkatSeeder::class,
             SimpegEselonSeeder::class,
@@ -61,14 +40,14 @@ class DatabaseSeeder extends Seeder
             SimpegUnivLuarSeeder::class,
             SimpegJenjangPendidikanSeeder::class,
             SimpegDataSertifikasiSeeder::class,
->>>>>>> 4d2573d (push satria)
-
+            
             SimpegHubunganKerjaSeeder::class,
             SimpegJenisHariSeeder::class,
             SimpegBeritaSeeder::class,
             SimpegMasterPerguruanTinggiSeeder::class,
             SimpegMasterProdiPerguruanTinggiSeeder::class,
             CaptchaPuzzleSeeder::class,
+            SimpegKategoriSertifikasiSeeder::class,
             SimpegMasterGelarAkademikSeeder::class,
             SimpegDataPendidikanFormalSeeder::class,
             SimpegJabatanFungsionalSeeder::class,

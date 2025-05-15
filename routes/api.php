@@ -31,12 +31,8 @@ use App\Http\Controllers\Api\UnitKerjaController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\SimpegBeritaController;
 use App\Http\Controllers\Api\PegawaiController;
-<<<<<<< HEAD
 use App\Http\Controllers\Api\SimpegUnitKerjaController;
-=======
 use App\Http\Controllers\Api\SimpegRiwayatPendidikanController;
->>>>>>> 4d2573d (push satria)
-
 use App\Http\Controllers\Api\SimpegKategoriSertifikasiController;
 
 
