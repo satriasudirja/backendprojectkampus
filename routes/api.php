@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\PegawaiController;
 use App\Http\Controllers\Api\SimpegUnitKerjaController;
 use App\Http\Controllers\Api\SimpegRiwayatPendidikanController;
 use App\Http\Controllers\Api\SimpegKategoriSertifikasiController;
+use App\Http\Controllers\Api\SimpegMediaPublikasiController;
 
 use App\Http\Controllers\Api\SimpegJenispelanggaranController;
 use App\Http\Controllers\Api\SimpegJenisPenghargaaniController;
@@ -163,6 +164,9 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
         Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
         Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
+        Route::apiResource('kategori-sertifikasi', SimpegKategoriSertifikasiController::class);        
+        Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);   
+        Route::apiResource('media-publikasi', SimpegMediaPublikasiController::class);  
         
     });
     

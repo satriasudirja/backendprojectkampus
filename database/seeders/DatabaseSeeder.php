@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\SimpegMediaPublikasi;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -82,6 +83,8 @@ class DatabaseSeeder extends Seeder
             SimpegDataJabatanFungsionalSeeder::class,
             SimpegDataJabatanStrukturalSeeder::class,
             SimpegPegawaiAdminSeeder::class,
+            SimpegMediaPublikasi::class,
+
         ]);
     }
 }
