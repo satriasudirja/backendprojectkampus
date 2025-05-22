@@ -83,7 +83,7 @@ class DatabaseSeeder extends Seeder
             SimpegDataJabatanFungsionalSeeder::class,
             SimpegDataJabatanStrukturalSeeder::class,
             SimpegPegawaiAdminSeeder::class,
-            SimpegMediaPublikasi::class,
+            SimpegMediaPublikasiSeeder::class,
 
         ]);
     }
