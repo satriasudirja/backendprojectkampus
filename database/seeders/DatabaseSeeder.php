@@ -50,6 +50,13 @@ class DatabaseSeeder extends Seeder
     SimpegJenisPublikasiSeeder::class,
     SimpegJenisPublikasiSeeder::class,
     SimpegJenisKenaikanPangkatSeeder::class,
+    SimpegJenisKehadiranSeeder::class,
+    SimpegGajiDetailSeeder::class,
+    SimpegGajiKomponenSeeder::class,
+    SimpegGajiLemburSeeder::class,
+    SimpegGajiPeriodeSeeder::class,
+    SimpegGajiSlipSeeder::class,
+    SimpegGajiTunjanganKhususSeeder::class,
 
     SimpegHubunganKerjaSeeder::class,
     SimpegJenisHariSeeder::class,

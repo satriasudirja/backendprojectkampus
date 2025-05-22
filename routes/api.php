@@ -44,6 +44,7 @@ use App\Http\Controllers\Api\SimpegJenisPublikasiController;
 use App\Http\Controllers\Api\SimpegJenisKenaikanPangkatController;
 use App\Http\Controllers\Api\SimpegJenisJenisIzinController;
 use App\Http\Controllers\Api\SimpegJenisHariController;
+use App\Http\Controllers\Api\SimpegJenisKehadiranController;
 use App\Http\Controllers\Api\SimpegGajiDetailController;
 use App\Http\Controllers\Api\SimpegGajiKomponenController;
 use App\Http\Controllers\Api\SimpegGajiSlipController;
@@ -164,9 +165,32 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
         Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
         Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
+<<<<<<< HEAD
         Route::apiResource('kategori-sertifikasi', SimpegKategoriSertifikasiController::class);        
         Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);   
         Route::apiResource('media-publikasi', SimpegMediaPublikasiController::class);  
+=======
+
+        Route::apiResource('jenis-penghargaan', SimpegJenisPenghargaanController::class);
+        Route::apiResource('jenis-pelanggaran', SimpegJenisPelanggaranController::class);
+        Route::apiResource('jenis-publikasi', SimpegJenisPublikasiController::class);
+        Route::apiResource('jenis-kenaikan-pangkat', SimpegJenisKenaikanPangkatController::class);
+        Route::apiResource('jenis-izin', SimpegJenisIzinController::class);
+        Route::apiResource('gaji-detail', SimpegGajiDetailController::class);
+        Route::apiResource('gaji-komponen', SimpegGajiKomponenController::class);
+        Route::apiResource('gaji-tunjangan-khusus', SimpegGajiTunjanganKhususController::class);
+        Route ::apiResource('gaji-slip', SimpegGajiSlipController::class);
+        Route::apiResource('gaji-lembur', SimpegGajiLemburController::class);
+        Route::apiResource('gaji-periode', SimpegGajiPeriodeController::class);
+        Route::apiResource('jenis-hari', SimpegJenisHariController::class);
+        Route::apiResource('jenis-kehadiran', SimpegJenisKehadiranController::class);
+
+        Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
+        Route::get('/unit-kerja/dropdown', [UnitKerjaController::class, 'getUnitsDropdown']);
+        Route::get('/news/{id}', [AdminDashboardController::class, 'getNewsDetail']);
+
+
+>>>>>>> af361c3 (ihsan push wok)
         
     });
     
