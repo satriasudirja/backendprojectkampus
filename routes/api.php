@@ -165,8 +165,10 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
         Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
         Route::apiResource('kategori-sertifikasi', SimpegKategoriSertifikasiController::class);        
-        Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);   
+        Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);  
+         
         Route::apiResource('media-publikasi', SimpegMediaPublikasiController::class);  
+        
         
     });
     
