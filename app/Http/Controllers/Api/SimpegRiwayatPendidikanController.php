@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 
 class SimpegRiwayatPendidikanController extends Controller
@@ -526,15 +527,15 @@ class SimpegRiwayatPendidikanController extends Controller
             }
             
             // Set dibuat_oleh dengan nama pegawai yang login
-        if (auth()->check()) {
+         if (Auth::check()) {
     // Karena auth()->user() langsung mengacu ke model SimpegPegawai (bukan User), 
     // kita bisa langsung mengambil nama pegawai
-    $data['dibuat_oleh'] = auth()->user()->nama ?? 'Admin';
+    $data['dibuat_oleh'] = $user = Auth::user()->nama ?? 'Admin';
 } else {
     $data['dibuat_oleh'] = 'Sistem';
 }
             // Debug: tambahkan logging untuk melihat data sebelum insert
-            \Log::info('Data akan diinsert:', $data);
+            Log::info('Data akan diinsert:', $data);
             
             $pendidikan = SimpegDataPendidikanFormal::create($data);
 
@@ -549,7 +550,7 @@ class SimpegRiwayatPendidikanController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error saat insert data pendidikan: ' . $e->getMessage());
+            Log::error('Error saat insert data pendidikan: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,

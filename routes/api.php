@@ -167,7 +167,8 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
 <<<<<<< HEAD
         Route::apiResource('kategori-sertifikasi', SimpegKategoriSertifikasiController::class);        
-        Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);   
+        Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);  
+         
         Route::apiResource('media-publikasi', SimpegMediaPublikasiController::class);  
 =======
 
@@ -191,6 +192,7 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
 
 
 >>>>>>> af361c3 (ihsan push wok)
+        
         
     });
     

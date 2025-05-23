@@ -23,27 +23,28 @@ class DatabaseSeeder extends Seeder
             RumpunBidangIlmuSeeder::class,
 
 
-    SimpegPegawaiSeeder::class,
-    SimpegBahasaSeeder::class,
-    SimpegJenisCutiSeeder::class,
-    SimpegDaftarJenisLuaranSeeder::class,
-    PkmSeeder::class,
-    SimpegDaftarJenisSkSeeder::class,
-    SimpegDaftarJenisTestSeeder::class,
-    SimpegDaftarJenisSkSeeder::class,
-    SimpegDaftarJenisTestSeeder::class,
-    SimpegMasterOutputPenelitianSeeder::class,
+            SimpegPegawaiSeeder::class,
+            SimpegBahasaSeeder::class,
+            SimpegJenisCutiSeeder::class,
+            SimpegDaftarJenisLuaranSeeder::class,
+            PkmSeeder::class,
+            SimpegDaftarJenisSkSeeder::class,
+            SimpegDaftarJenisTestSeeder::class,
+            SimpegDaftarJenisSkSeeder::class,
+            SimpegDaftarJenisTestSeeder::class,
+            SimpegMasterOutputPenelitianSeeder::class,
 
-    SimpegJenisJabatanStrukturalSeeder::class,
-    SimpegMasterPangkatSeeder::class,
-    SimpegEselonSeeder::class,
-    SimpegJabatanStrukturalSeeder::class,
-    SimpegJamKerjaSeeder::class,
-    SimpegMasterJenisSertifikasiSeeder::class,
-    SimpegDataRiwayatPekerjaanSeeder::class,
-    SimpegUnivLuarSeeder::class,
-    SimpegJenjangPendidikanSeeder::class,
-    SimpegDataSertifikasiSeeder::class,
+            SimpegJenisJabatanStrukturalSeeder::class,
+            SimpegMasterPangkatSeeder::class,
+            SimpegEselonSeeder::class,
+            SimpegJabatanStrukturalSeeder::class,
+            SimpegJamKerjaSeeder::class,
+            SimpegMasterJenisSertifikasiSeeder::class,
+            SimpegDataRiwayatPekerjaanSeeder::class,
+            SimpegUnivLuarSeeder::class,
+            SimpegJenjangPendidikanSeeder::class,
+            SimpegDataSertifikasiSeeder::class,
+
 
     SimpegJenisPenghargaanSeeder::class,
     SimpegJenisPelanggaranSeeder::class,
@@ -58,12 +59,18 @@ class DatabaseSeeder extends Seeder
     SimpegGajiSlipSeeder::class,
     SimpegGajiTunjanganKhususSeeder::class,
 
-    SimpegHubunganKerjaSeeder::class,
-    SimpegJenisHariSeeder::class,
-    SimpegBeritaSeeder::class,
-    SimpegMasterPerguruanTinggiSeeder::class,
-    SimpegMasterProdiPerguruanTinggiSeeder::class,
-    CaptchaPuzzleSeeder::class,
+            SimpegJenisPenghargaanSeeder::class,
+            SimpegJenisPelanggaranSeeder::class,
+            SimpegJenisPublikasiSeeder::class,git 
+            SimpegJenisPublikasiSeeder::class,
+            SimpegJenisKenaikanPangkatSeeder::class,
+
+            SimpegHubunganKerjaSeeder::class,
+            SimpegJenisHariSeeder::class,
+            SimpegBeritaSeeder::class,
+            SimpegMasterPerguruanTinggiSeeder::class,
+            SimpegMasterProdiPerguruanTinggiSeeder::class,
+            CaptchaPuzzleSeeder::class,
 
 
             SimpegJenisJabatanStrukturalSeeder::class,
@@ -90,7 +97,7 @@ class DatabaseSeeder extends Seeder
             SimpegDataJabatanFungsionalSeeder::class,
             SimpegDataJabatanStrukturalSeeder::class,
             SimpegPegawaiAdminSeeder::class,
-            SimpegMediaPublikasi::class,
+            SimpegMediaPublikasiSeeder::class,
 
         ]);
     }
