@@ -61,7 +61,7 @@ class DatabaseSeeder extends Seeder
 
             SimpegJenisPenghargaanSeeder::class,
             SimpegJenisPelanggaranSeeder::class,
-            SimpegJenisPublikasiSeeder::class,git 
+            SimpegJenisPublikasiSeeder::class,
             SimpegJenisPublikasiSeeder::class,
             SimpegJenisKenaikanPangkatSeeder::class,
 
