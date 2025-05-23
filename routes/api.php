@@ -165,12 +165,12 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
         Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
         Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
         Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
-<<<<<<< HEAD
+
         Route::apiResource('kategori-sertifikasi', SimpegKategoriSertifikasiController::class);        
         Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);  
          
         Route::apiResource('media-publikasi', SimpegMediaPublikasiController::class);  
-=======
+
 
         Route::apiResource('jenis-penghargaan', SimpegJenisPenghargaanController::class);
         Route::apiResource('jenis-pelanggaran', SimpegJenisPelanggaranController::class);
@@ -191,7 +191,7 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
         Route::get('/news/{id}', [AdminDashboardController::class, 'getNewsDetail']);
 
 
->>>>>>> af361c3 (ihsan push wok)
+
         
         
     });
