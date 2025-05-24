@@ -49,6 +49,11 @@ use App\Http\Controllers\Api\SimpegGajiSlipController;
 use App\Http\Controllers\Api\SimpegGajiPeriodeController;
 use App\Http\Controllers\Api\SimpegGajiTunjanganKhususController;
 use App\Http\Controllers\Api\SimpegGajiLemburController;
+use App\Http\Controllers\Api\SimpegRiwayatPangkatController;
+
+use App\Http\Controllers\Api\SimpegDataAnakController;
+use App\Http\Controllers\Api\SimpegDataPasanganController;
+use App\Http\Controllers\Api\SimpegDataOrangTuaController;
 
 
 
@@ -121,7 +126,16 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
 
 
 
-    Route::get('pegawai/riwayat-pangkat/{id}', [PegawaiController::class, 'riwayatPangkat']);
+    // Route::get('pegawai/riwayat-pangkat/{id}', [PegawaiController::class, 'riwayatPangkat']);
+    Route::get('pegawai/riwayat-pangkat/all', [SimpegRiwayatPangkatController::class, 'index']);
+    Route::get('pegawai/riwayat-pangkat/detail/{id}', [SimpegRiwayatPangkatController::class, 'show']);
+    Route::put('pegawai/riwayat-pangkat/batch/update-status', [SimpegRiwayatPangkatController::class, 'batchUpdateStatus']);
+    Route::delete('pegawai/riwayat-pangkat/batch/delete', [SimpegRiwayatPangkatController::class, 'batchDelete']);
+    Route::put('pegawai/riwayat-pangkat/{id}/status', [SimpegRiwayatPangkatController::class, 'updateStatusPengajuan']);
+    Route::get('pegawai/riwayat-pangkat/{pegawaiId}', [SimpegRiwayatPangkatController::class, 'getByPegawai']);
+    Route::post('pegawai/riwayat-pangkat', [SimpegRiwayatPangkatController::class, 'store']);
+    Route::put('pegawai/riwayat-pangkat/{id}', [SimpegRiwayatPangkatController::class, 'update']);
+    Route::delete('pegawai/riwayat-pangkat/{id}', [SimpegRiwayatPangkatController::class, 'destroy']);  
     Route::get('pegawai/riwayat-fungsional/{id}', [PegawaiController::class, 'riwayatFungsional']);
     Route::get('pegawai/riwayat-jenjang-fungsional/{id}', [PegawaiController::class, 'riwayatJenjangFungsional']);
     Route::get('pegawai/riwayat-jabatan-struktural/{id}', [PegawaiController::class, 'riwayatJabatanStruktural']);
@@ -188,6 +202,183 @@ Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchP
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
+    Route::prefix('anak')->group(function () {
+    Route::get('/', [SimpegDataAnakController::class, 'index']);
+    Route::get('/{id}', [SimpegDataAnakController::class, 'show']);
+    Route::post('/', [SimpegDataAnakController::class, 'store']);
+    Route::put('/{id}', [SimpegDataAnakController::class, 'update']);
+    Route::delete('/{id}', [SimpegDataAnakController::class, 'destroy']);
+    // ======================================
+    // STATUS PENGAJUAN ROUTES
+    // ========================================
+    Route::patch('/{id}/submit', [SimpegDataAnakController::class, 'submitDraft']);
+    // ========================================
+    // BATCH OPERATIONS ROUTES
+    // ========================================
+    Route::delete('/batch/delete', [SimpegDataAnakController::class, 'batchDelete']);
+    Route::patch('/batch/submit', [SimpegDataAnakController::class, 'batchSubmitDrafts']);
+    Route::patch('/batch/status', [SimpegDataAnakController::class, 'batchUpdateStatus']);
+    // ========================================
+    // CONFIGURATION & STATISTICS ROUTES
+    // ========================================
+    Route::get('/config/system', [SimpegDataAnakController::class, 'getSystemConfig']);
+    Route::get('/statistics/status', [SimpegDataAnakController::class, 'getStatusStatistics']);
+    Route::get('/filter-options', [SimpegDataAnakController::class, 'getFilterOptions']);
+    Route::get('/available-actions', [SimpegDataAnakController::class, 'getAvailableActions']);
+    });
+
+    // Data Pasangan Routes
+Route::prefix('pasangan')->middleware('auth:api')->group(function () {
+    
+    // ========================================
+    // BASIC CRUD ROUTES
+    // ========================================
+    
+    // GET /api/dosen/pasangan - List semua data pasangan pegawai yang login
+    Route::get('/', [SimpegDataPasanganController::class, 'index']);
+    
+    // GET /api/dosen/pasangan/{id} - Detail data pasangan by ID
+    Route::get('/{id}', [SimpegDataPasanganController::class, 'show']);
+    
+    // POST /api/dosen/pasangan - Create new data pasangan (dengan draft/submit mode)
+    Route::post('/', [SimpegDataPasanganController::class, 'store']);
+    
+    // PUT /api/dosen/pasangan/{id} - Update data pasangan by ID
+    Route::put('/{id}', [SimpegDataPasanganController::class, 'update']);
+    
+    // DELETE /api/dosen/pasangan/{id} - Delete data pasangan by ID
+    Route::delete('/{id}', [SimpegDataPasanganController::class, 'destroy']);
+
+    // ========================================
+    // STATUS PENGAJUAN ROUTES
+    // ========================================
+    
+    // PATCH /api/dosen/pasangan/{id}/submit - Submit draft ke diajukan
+    Route::patch('/{id}/submit', [SimpegDataPasanganController::class, 'submitDraft']);
+
+    // ========================================
+    // BATCH OPERATIONS ROUTES
+    // ========================================
+    
+    // DELETE /api/dosen/pasangan/batch/delete - Batch delete data pasangan
+    Route::delete('/batch/delete', [SimpegDataPasanganController::class, 'batchDelete']);
+    
+    // PATCH /api/dosen/pasangan/batch/submit - Batch submit drafts
+    Route::patch('/batch/submit', [SimpegDataPasanganController::class, 'batchSubmitDrafts']);
+    
+    // PATCH /api/dosen/pasangan/batch/status - Batch update status
+    Route::patch('/batch/status', [SimpegDataPasanganController::class, 'batchUpdateStatus']);
+
+    // ========================================
+    // CONFIGURATION & STATISTICS ROUTES
+    // ========================================
+    
+    // GET /api/dosen/pasangan/config/system - Get system configuration
+    Route::get('/config/system', [SimpegDataPasanganController::class, 'getSystemConfig']);
+    
+    // GET /api/dosen/pasangan/statistics/status - Get status statistics
+    Route::get('/statistics/status', [SimpegDataPasanganController::class, 'getStatusStatistics']);
+    
+    // GET /api/dosen/pasangan/filter-options - Get filter options
+    Route::get('/filter-options', [SimpegDataPasanganController::class, 'getFilterOptions']);
+    
+    // GET /api/dosen/pasangan/available-actions - Get available actions
+    Route::get('/available-actions', [SimpegDataPasanganController::class, 'getAvailableActions']);
+
+    // ========================================
+    // SEARCH & UTILITY ROUTES
+    // ========================================
+    
+    // GET /api/dosen/pasangan/search/pegawai - Search existing pegawai for pasangan
+    Route::get('/search/pegawai', [SimpegDataPasanganController::class, 'searchPegawai']);
+
+    // ========================================
+    // DATA MAINTENANCE ROUTES
+    // ========================================
+    
+    // PATCH /api/dosen/pasangan/fix-existing - Fix existing data dengan status null
+    Route::patch('/fix-existing', [SimpegDataPasanganController::class, 'fixExistingData']);
+    
+    // PATCH /api/dosen/pasangan/bulk-fix-existing - Bulk fix all existing data
+    Route::patch('/bulk-fix-existing', [SimpegDataPasanganController::class, 'bulkFixExistingData']);
+});
+
+    // Data Orang Tua Routes
+Route::prefix('orangtua')->middleware('auth:api')->group(function () {
+    
+    // ========================================
+    // BASIC CRUD ROUTES
+    // ========================================
+    
+    // GET /api/dosen/orangtua - List semua data orang tua pegawai yang login
+    Route::get('/', [SimpegDataOrangTuaController::class, 'index']);
+    
+    // GET /api/dosen/orangtua/{id} - Detail data orang tua by ID
+    Route::get('/{id}', [SimpegDataOrangTuaController::class, 'show']);
+    
+    // POST /api/dosen/orangtua - Create new data orang tua (dengan draft/submit mode)
+    Route::post('/', [SimpegDataOrangTuaController::class, 'store']);
+    
+    // PUT /api/dosen/orangtua/{id} - Update data orang tua by ID
+    Route::put('/{id}', [SimpegDataOrangTuaController::class, 'update']);
+    
+    // DELETE /api/dosen/orangtua/{id} - Delete data orang tua by ID
+    Route::delete('/{id}', [SimpegDataOrangTuaController::class, 'destroy']);
+
+    // ========================================
+    // STATUS PENGAJUAN ROUTES
+    // ========================================
+    
+    // PATCH /api/dosen/orangtua/{id}/submit - Submit draft ke diajukan
+    Route::patch('/{id}/submit', [SimpegDataOrangTuaController::class, 'submitDraft']);
+
+    // ========================================
+    // BATCH OPERATIONS ROUTES
+    // ========================================
+    
+    // DELETE /api/dosen/orangtua/batch/delete - Batch delete data orang tua
+    Route::delete('/batch/delete', [SimpegDataOrangTuaController::class, 'batchDelete']);
+    
+    // PATCH /api/dosen/orangtua/batch/submit - Batch submit drafts
+    Route::patch('/batch/submit', [SimpegDataOrangTuaController::class, 'batchSubmitDrafts']);
+    
+    // PATCH /api/dosen/orangtua/batch/status - Batch update status
+    Route::patch('/batch/status', [SimpegDataOrangTuaController::class, 'batchUpdateStatus']);
+
+    // ========================================
+    // CONFIGURATION & STATISTICS ROUTES
+    // ========================================
+    
+    // GET /api/dosen/orangtua/config/system - Get system configuration
+    Route::get('/config/system', [SimpegDataOrangTuaController::class, 'getSystemConfig']);
+    
+    // GET /api/dosen/orangtua/statistics/status - Get status statistics
+    Route::get('/statistics/status', [SimpegDataOrangTuaController::class, 'getStatusStatistics']);
+    
+    // GET /api/dosen/orangtua/filter-options - Get filter options
+    Route::get('/filter-options', [SimpegDataOrangTuaController::class, 'getFilterOptions']);
+    
+    // GET /api/dosen/orangtua/available-actions - Get available actions
+    Route::get('/available-actions', [SimpegDataOrangTuaController::class, 'getAvailableActions']);
+
+    // ========================================
+    // UTILITY ROUTES
+    // ========================================
+    
+    // GET /api/dosen/orangtua/check-available-status - Check available parent status
+    Route::get('/check-available-status', [SimpegDataOrangTuaController::class, 'checkAvailableStatus']);
+
+    // ========================================
+    // DATA MAINTENANCE ROUTES
+    // ========================================
+    
+    // PATCH /api/dosen/orangtua/fix-existing - Fix existing data dengan status null
+    Route::patch('/fix-existing', [SimpegDataOrangTuaController::class, 'fixExistingData']);
+    
+    // PATCH /api/dosen/orangtua/bulk-fix-existing - Bulk fix all existing data
+    Route::patch('/bulk-fix-existing', [SimpegDataOrangTuaController::class, 'bulkFixExistingData']);
+});
+
     });
     
     // Dosen Praktisi Routes

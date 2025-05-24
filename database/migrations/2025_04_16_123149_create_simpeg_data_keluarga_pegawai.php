@@ -17,8 +17,8 @@ return new class extends Migration
             $table->integer('pegawai_id');
             
             // Data umum keluarga
-            $table->string('nama', 100);
-            $table->string('jenis_kelamin', 50);
+            $table->string('nama', 100)->nullable();
+            $table->string('jenis_kelamin', 50)->nullable();
             $table->string('status_orangtua', 50)->nullable();
             $table->string('tempat_lahir', 50)->nullable();
             $table->date('tgl_lahir')->nullable();
@@ -38,18 +38,13 @@ return new class extends Migration
             
             // Data pasangan
             $table->string('nama_pasangan', 100)->nullable();
-            $table->boolean('pasangan_berkerja_dalam_satu_instansi')->default(false);
+            $table->boolean('pasangan_berkerja_dalam_satu_instansi')->default(false)->nullable();
             $table->string('tempat_nikah', 50)->nullable();
             $table->date('tgl_nikah')->nullable();
             $table->char('no_akta_nikah', 20)->nullable();
             
             $table->timestamps();
-
-            // Foreign key
-            // $table->foreign('pegawai_id')
-            //       ->references('id')
-            //       ->on('simpeg_pegawai')
-            //       ->onDelete('cascade');
+            $table->softDeletes();
 
             // Indexes
             $table->index('pegawai_id');

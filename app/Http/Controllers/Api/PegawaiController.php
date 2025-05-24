@@ -691,25 +691,108 @@ public function destroy(Request $request)
         ]);
     }
 
-    public function riwayatPangkat($id)
-    {
-        $pegawai = SimpegPegawai::find($id);
+    // public function riwayatPangkat($id)
+    // {
+    //     $pegawai = SimpegPegawai::find($id);
 
-        if (!$pegawai) {
-            return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan'], 404);
-        }
+    //     if (!$pegawai) {
+    //         return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan'], 404);
+    //     }
 
-        $riwayat = $pegawai->dataPangkat()->orderBy('tanggal_mulai', 'desc')->get();
+    //     $riwayat = $pegawai->dataPangkat()->orderBy('tanggal_mulai', 'desc')->get();
 
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => [
+    //             'pegawai' => $pegawai->only(['id', 'nip', 'nama']),
+    //             'riwayat' => $riwayat
+    //         ]
+    //     ]);
+    // }
+
+    
+public function riwayatPangkat($id)
+{
+    $pegawai = SimpegPegawai::find($id);
+
+    if (!$pegawai) {
         return response()->json([
-            'success' => true,
-            'data' => [
-                'pegawai' => $pegawai->only(['id', 'nip', 'nama']),
-                'riwayat' => $riwayat
-            ]
-        ]);
+            'success' => false,
+            'message' => 'Pegawai tidak ditemukan'
+        ], 404);
     }
 
+    $riwayat = $pegawai->dataPangkat()
+        ->with([
+            'pangkat',
+            'jenisKenaikanPangkat',
+            'jenisSk',
+            'jabatanStruktural' => function($query) {
+                $query->with('pangkat');
+            }
+        ])
+        ->orderBy('tmt_pangkat', 'desc')
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'pegawai' => [
+                'id' => $pegawai->id,
+                'nip' => $pegawai->nip,
+                'nama' => $pegawai->nama,
+                'unit_kerja' => $pegawai->unitKerja ? $pegawai->unitKerja->nama_unit : null,
+                'pangkat_terakhir' => $pegawai->dataPangkat()
+                    ->where('is_aktif', true)
+                    ->with('pangkat')
+                    ->first()
+            ],
+            'riwayat' => $riwayat->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'pangkat' => $item->pangkat ? [
+                        'id' => $item->pangkat->id,
+                        'nama' => $item->pangkat->nama_golongan,
+                        'golongan' => $item->pangkat->pangkat
+                    ] : null,
+                    'jenis_kenaikan' => $item->jenisKenaikanPangkat ? [
+                        'id' => $item->jenisKenaikanPangkat->id,
+                        'nama' => $item->jenisKenaikanPangkat->nama_jenis_kenaikan_pangkat
+                    ] : null,
+                    'jenis_sk' => $item->jenisSk ? [
+                        'id' => $item->jenisSk->id,
+                        'nama' => $item->jenisSk->nama_jenis_sk
+                    ] : null,
+                    'tmt_pangkat' => $item->tmt_pangkat,
+                    'no_sk' => $item->no_sk,
+                    'tgl_sk' => $item->tgl_sk,
+                    'pejabat_penetap' => $item->pejabat_penetap,
+                    'masa_kerja' => [
+                        'tahun' => $item->masa_kerja_tahun,
+                        'bulan' => $item->masa_kerja_bulan
+                    ],
+                    'jabatan_struktural' => $item->jabatanStruktural ? [
+                        'id' => $item->jabatanStruktural->id,
+                        'nama' => $item->jabatanStruktural->singkatan,
+                        'pangkat_minimal' => $item->jabatanStruktural->pangkat ? [
+                            'id' => $item->jabatanStruktural->pangkat->id,
+                            'nama' => $item->jabatanStruktural->pangkat->nama_golongan
+                        ] : null
+                    ] : null,
+                    'status' => [
+                        'is_aktif' => $item->is_aktif,
+                        'pengajuan' => $item->status_pengajuan
+                    ],
+                    'dokumen' => $item->file_pangkat ? [
+                        'nama_file' => $item->file_pangkat,
+                        'url' => url('storage/pegawai/' . $item->file_pangkat)
+                    ] : null,
+                    'tanggal_input' => $item->tgl_input
+                ];
+            })
+        ]
+    ]);
+}
     public function riwayatFungsional($id)
     {
         $pegawai = SimpegPegawai::find($id);

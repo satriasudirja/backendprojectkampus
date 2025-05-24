@@ -11,12 +11,9 @@ class SimpegDataPangkat extends Model
 
     protected $table = 'simpeg_data_pangkat';
 
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
-
+   
     protected $fillable = [
-        'id',
+       
         'pegawai_id',
         'jenis_sk_id',
         'jenis_kenaikan_pangkat_id',
@@ -66,5 +63,65 @@ class SimpegDataPangkat extends Model
     public function pangkat()
     {
         return $this->belongsTo(SimpegMasterPangkat::class, 'pangkat_id');
+    }
+    //  public function pegawai()
+    // {
+    //     return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
+    // }
+
+    // /**
+    //  * Relationship to Pangkat
+    //  */
+    // public function pangkat()
+    // {
+    //     return $this->belongsTo(SimpegMasterPangkat::class, 'pangkat_id');
+    // }
+
+    // /**
+    //  * Relationship to JenisSK
+    //  */
+    // public function jenisSk()
+    // {
+    //     return $this->belongsTo(SimpegDaftarJenisSk::class, 'jenis_sk_id');
+    // }
+
+    // /**
+    //  * Relationship to JenisKenaikanPangkat
+    //  */
+    // public function jenisKenaikanPangkat()
+    // {
+    //     return $this->belongsTo(SimpegJenisKenaikanPangkat::class, 'jenis_kenaikan_pangkat_id');
+    // }
+
+    /**
+     * Get formatted tmt_pangkat attribute
+     */
+    public function getTmtPangkatFormattedAttribute()
+    {
+        return $this->tmt_pangkat ? $this->tmt_pangkat->format('d-m-Y') : null;
+    }
+
+    /**
+     * Get formatted tgl_sk attribute
+     */
+    public function getTglSkFormattedAttribute()
+    {
+        return $this->tgl_sk ? $this->tgl_sk->format('d-m-Y') : null;
+    }
+
+    /**
+     * Scope for active records
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_aktif', true);
+    }
+
+    /**
+     * Scope for specific status
+     */
+    public function scopeWithStatus($query, $status)
+    {
+        return $query->where('status_pengajuan', $status);
     }
 }
