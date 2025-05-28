@@ -24,7 +24,12 @@ class SimpegPegawaiAdminSeeder extends Seeder
         if (!$jabatanAkademik) {
             $jabatanAkademik = SimpegJabatanAkademik::first();
         }
+          $pp = SimpegJabatanAkademik::where('role_id', 2)->first();
         
+        // Jika tidak ada, ambil yang ada
+        if (!$pp) {
+            $pp = SimpegJabatanAkademik::first();
+        }
         // Ambil data lain yang diperlukan
         $unitKerja = SimpegUnitKerja::first();
         $statusPernikahan = SimpegStatusPernikahan::first();
@@ -32,7 +37,7 @@ class SimpegPegawaiAdminSeeder extends Seeder
         $suku = SimpegSuku::first();
         
         // Pastikan semua data tersedia
-        if (!$unitKerja || !$statusPernikahan || !$statusAktif || !$jabatanAkademik || !$suku) {
+        if (!$unitKerja || !$statusPernikahan || !$statusAktif || !$jabatanAkademik || !$suku || $pp) {
             $this->command->error('Required reference data is missing. Make sure to run required seeders first.');
             return;
         }
@@ -109,7 +114,7 @@ class SimpegPegawaiAdminSeeder extends Seeder
             'unit_kerja_id'         => $unitKerja->id,
             'kode_status_pernikahan'=> $statusPernikahan->id,
             'status_aktif_id'       => $statusAktif->id,
-            'jabatan_akademik_id'   => $jabatanAkademik->id,
+            'jabatan_akademik_id'   => $pp->id,
             'suku_id'               => $suku->id,
             'nama'                  => 'Satria Sudirja',
             'nip'                   => '089638796665',
