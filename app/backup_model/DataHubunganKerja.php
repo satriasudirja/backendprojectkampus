@@ -30,7 +30,7 @@ class DataHubunganKerja extends Model
 
     public function pegawai()
     {
-        return $this->belongsTo(Pegawai::class, 'pegawai_id');
+        return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
     }
 
     public function hubunganKerja()
@@ -40,6 +40,6 @@ class DataHubunganKerja extends Model
 
     public function statusAktif()
     {
-        return $this->belongsTo(StatusAktif::class, 'status_aktif_id');
+        return $this->belongsTo(SImpegStatusAktif::class, 'status_aktif_id');
     }
 }

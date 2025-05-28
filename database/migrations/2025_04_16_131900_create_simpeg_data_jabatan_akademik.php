@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -32,6 +33,7 @@ return new class extends Migration
             $table->string('status_pengajuan', 20)->default('draft'); // draft, diajukan, disetujui, ditolak
             
             $table->timestamps();
+        
 
        
             $table->index('no_sk');
