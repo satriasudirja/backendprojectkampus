@@ -2,18 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegDataDiklat extends Model
 {
-    use HasFactory;
+    use HasFactory,SoftDeletes;
 
     protected $table = 'simpeg_data_diklat';
-
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
+
 
     protected $fillable = [
         'id',
@@ -25,27 +26,38 @@ class SimpegDataDiklat extends Model
         'penyelenggara',
         'peran',
         'jumlah_jam',
-        'no_sentifikat',
-        'tgl_sentifikat',
+        'no_sertifikat',
+        'tgl_sertifikat',
         'tahun_penyelenggaraan',
         'tempat',
         'tgl_mulai',
         'tgl_selesai',
         'sk_penugasan',
-        'tgl_input'
+        'tgl_input',
+        'status_pengajuan',
+        'tgl_disetujui',
+        'tgl_diajukan',
+        'tgl_ditolak',
     ];
 
     protected $casts = [
-        'tgl_sentifikat' => 'date',
+        'tgl_sertifikat' => 'date',
         'tgl_mulai' => 'date',
         'tgl_selesai' => 'date',
         'tgl_input' => 'date',
-        'jumlah_jam' => 'integer'
+        'tgl_disetujui' => 'datetime',
+        'tgl_diajukan' => 'datetime',
+        'tgl_ditolak' => 'datetime',
     ];
 
-    // Relasi ke tabel pegawai
+    // Relasi ke model Pegawai (pastikan model Pegawai ada)
     public function pegawai()
     {
         return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
     }
+    public function dataPendukung(): MorphMany
+    {
+        return $this->morphMany(SimpegDataPendukung::class, 'pendukungable');
+    }
+
 }

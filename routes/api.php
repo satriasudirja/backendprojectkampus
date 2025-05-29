@@ -40,10 +40,10 @@ use App\Http\Controllers\Api\SimpegMediaPublikasiController;
 use App\Http\Controllers\Api\SimpegJenjangPendidikanController;
 
 use App\Http\Controllers\Api\SimpegJenispelanggaranController;
-use App\Http\Controllers\Api\SimpegJenisPenghargaaniController;
+use App\Http\Controllers\Api\SimpegJenisPenghargaanController;
 use App\Http\Controllers\Api\SimpegJenisPublikasiController;
 use App\Http\Controllers\Api\SimpegJenisKenaikanPangkatController;
-use App\Http\Controllers\Api\SimpegJenisJenisIzinController;
+use App\Http\Controllers\Api\SimpegJenisIzinController;
 use App\Http\Controllers\Api\SimpegJenisHariController;
 use App\Http\Controllers\Api\SimpegJenisKehadiranController;
 use App\Http\Controllers\Api\SimpegGajiDetailController;
@@ -52,16 +52,16 @@ use App\Http\Controllers\Api\SimpegGajiSlipController;
 use App\Http\Controllers\Api\SimpegGajiPeriodeController;
 use App\Http\Controllers\Api\SimpegGajiTunjanganKhususController;
 use App\Http\Controllers\Api\SimpegGajiLemburController;
-<<<<<<< HEAD
 use App\Http\Controllers\Api\SimpegRiwayatPangkatController;
 
 use App\Http\Controllers\Api\SimpegDataAnakController;
 use App\Http\Controllers\Api\SimpegDataPasanganController;
 use App\Http\Controllers\Api\SimpegDataOrangTuaController;
-=======
 use App\Http\Controllers\Api\SimpegHubunganKerjaController;
 use App\Http\Controllers\Api\AnggotaProfesiController;
->>>>>>> 6bf2d668dbf1f87265c1ecbb84e50d02dd52b5e7
+use App\Http\Controllers\Api\SimpegDataDiklatController;
+
+
 
 
 
@@ -132,32 +132,26 @@ Route::middleware('auth:api')->group(function () {
 
 
 
-
-
-<<<<<<< HEAD
-    // Route::get('pegawai/riwayat-pangkat/{id}', [PegawaiController::class, 'riwayatPangkat']);
-    Route::get('pegawai/riwayat-pangkat/all', [SimpegRiwayatPangkatController::class, 'index']);
-    Route::get('pegawai/riwayat-pangkat/detail/{id}', [SimpegRiwayatPangkatController::class, 'show']);
-    Route::put('pegawai/riwayat-pangkat/batch/update-status', [SimpegRiwayatPangkatController::class, 'batchUpdateStatus']);
-    Route::delete('pegawai/riwayat-pangkat/batch/delete', [SimpegRiwayatPangkatController::class, 'batchDelete']);
-    Route::put('pegawai/riwayat-pangkat/{id}/status', [SimpegRiwayatPangkatController::class, 'updateStatusPengajuan']);
-    Route::get('pegawai/riwayat-pangkat/{pegawaiId}', [SimpegRiwayatPangkatController::class, 'getByPegawai']);
-    Route::post('pegawai/riwayat-pangkat', [SimpegRiwayatPangkatController::class, 'store']);
-    Route::put('pegawai/riwayat-pangkat/{id}', [SimpegRiwayatPangkatController::class, 'update']);
-    Route::delete('pegawai/riwayat-pangkat/{id}', [SimpegRiwayatPangkatController::class, 'destroy']);  
-    Route::get('pegawai/riwayat-fungsional/{id}', [PegawaiController::class, 'riwayatFungsional']);
-    Route::get('pegawai/riwayat-jenjang-fungsional/{id}', [PegawaiController::class, 'riwayatJenjangFungsional']);
-    Route::get('pegawai/riwayat-jabatan-struktural/{id}', [PegawaiController::class, 'riwayatJabatanStruktural']);
-    Route::get('pegawai/riwayat-hubungan-kerja/{id}', [PegawaiController::class, 'riwayatHubunganKerja']);
-    Route::get('pegawai/rekap-kehadiran/{id}', [PegawaiController::class, 'rekapKehadiran']);
-=======
         Route::get('pegawai/riwayat-pangkat/{id}', [PegawaiController::class, 'riwayatPangkat']);
+        Route::get('pegawai/riwayat-pangkat/all', [SimpegRiwayatPangkatController::class, 'index']);
+        Route::get('pegawai/riwayat-pangkat/detail/{id}', [SimpegRiwayatPangkatController::class, 'show']);
+        Route::put('pegawai/riwayat-pangkat/batch/update-status', [SimpegRiwayatPangkatController::class, 'batchUpdateStatus']);
+        Route::delete('pegawai/riwayat-pangkat/batch/delete', [SimpegRiwayatPangkatController::class, 'batchDelete']);
+        Route::put('pegawai/riwayat-pangkat/{id}/status', [SimpegRiwayatPangkatController::class, 'updateStatusPengajuan']);
+        Route::get('pegawai/riwayat-pangkat/{pegawaiid}', [SimpegRiwayatPangkatController::class, 'getByPegawai']);
+        Route::post('pegawai/riwayat-pangkat', [SimpegRiwayatPangkatController::class, 'store']);
+        Route::put('pegawai/riwayat-pangkat/{id}', [SimpegRiwayatPangkatController::class, 'update']);
+        Route::delete('pegawai/riwayat-pangkat/{id}', [SimpegRiwayatPangkatController::class, 'destroy']);
+
         Route::get('pegawai/riwayat-fungsional/{id}', [PegawaiController::class, 'riwayatFungsional']);
         Route::get('pegawai/riwayat-jenjang-fungsional/{id}', [PegawaiController::class, 'riwayatJenjangFungsional']);
         Route::get('pegawai/riwayat-jabatan-struktural/{id}', [PegawaiController::class, 'riwayatJabatanStruktural']);
         Route::get('pegawai/riwayat-hubungan-kerja/{id}', [PegawaiController::class, 'riwayatHubunganKerja']);
         Route::get('pegawai/rekap-kehadiran/{id}', [PegawaiController::class, 'rekapKehadiran']);
->>>>>>> 6bf2d668dbf1f87265c1ecbb84e50d02dd52b5e7
+
+
+
+
 
         /////////////////////////////////////////////////
 
@@ -243,7 +237,6 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
-<<<<<<< HEAD
     Route::prefix('anak')->group(function () {
     Route::get('/', [SimpegDataAnakController::class, 'index']);
     Route::get('/{id}', [SimpegDataAnakController::class, 'show']);
@@ -267,6 +260,62 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/statistics/status', [SimpegDataAnakController::class, 'getStatusStatistics']);
     Route::get('/filter-options', [SimpegDataAnakController::class, 'getFilterOptions']);
     Route::get('/available-actions', [SimpegDataAnakController::class, 'getAvailableActions']);
+    });
+
+Route::prefix('data-diklat')->group(function () {
+        // Main CRUD routes
+        Route::get('/', [SimpegDataDiklatController::class, 'index']);
+        Route::get('/{id}', [SimpegDataDiklatController::class, 'show']);
+        Route::post('/', [SimpegDataDiklatController::class, 'store']);
+        Route::put('/{id}', [SimpegDataDiklatController::class, 'update']);
+        Route::delete('/{id}', [SimpegDataDiklatController::class, 'destroy']);
+        
+        // ======================================
+        // STATUS PENGAJUAN ROUTES
+        // ======================================
+        Route::patch('/{id}/submit', [SimpegDataDiklatController::class, 'submitDraft']);
+        
+        // ======================================
+        // BATCH OPERATIONS ROUTES
+        // ======================================
+         Route::patch('/batch/submit-drafts', [SimpegDataDiklatController::class, 'batchSubmitDrafts']);
+        Route::delete('/batch/delete', [SimpegDataDiklatController::class, 'batchDelete']);
+        Route::patch('/batch/status', [SimpegDataDiklatController::class, 'batchUpdateStatus']);
+        
+        // ======================================
+        // CONFIGURATION & STATISTICS ROUTES
+        // ======================================
+        Route::get('/config/system', [SimpegDataDiklatController::class, 'getSystemConfig']);
+        Route::get('/statistics/status', [SimpegDataDiklatController::class, 'getStatusStatistics']);
+        Route::get('/options/filter', [SimpegDataDiklatController::class, 'getFilterOptions']);
+        Route::get('/actions/available', [SimpegDataDiklatController::class, 'getAvailableActions']);
+        
+        // ======================================
+        // UTILITY ROUTES
+        // ======================================
+        Route::patch('/fix/existing-data', [SimpegDataDiklatController::class, 'fixExistingData']);
+        Route::patch('/fix/bulk-existing-data', [SimpegDataDiklatController::class, 'bulkFixExistingData']);
+    });
+});
+
+// Alternative untuk pegawai (jika diperlukan)
+Route::prefix('pegawai')->middleware(['auth:api'])->group(function () {
+    Route::prefix('data-diklat')->group(function () {
+        Route::get('/', [SimpegDataDiklatController::class, 'index']);
+        Route::get('/{id}', [SimpegDataDiklatController::class, 'show']);
+        Route::post('/', [SimpegDataDiklatController::class, 'store']);
+        Route::put('/{id}', [SimpegDataDiklatController::class, 'update']);
+        Route::delete('/{id}', [SimpegDataDiklatController::class, 'destroy']);
+        Route::patch('/{id}/submit', [SimpegDataDiklatController::class, 'submitDraft']);
+        Route::delete('/batch/delete', [SimpegDataDiklatController::class, 'batchDelete']);
+        Route::patch('/batch/submit-drafts', [SimpegDataDiklatController::class, 'batchSubmitDrafts']);
+        Route::patch('/batch/status', [SimpegDataDiklatController::class, 'batchUpdateStatus']);
+        Route::get('/config/system', [SimpegDataDiklatController::class, 'getSystemConfig']);
+        Route::get('/statistics/status', [SimpegDataDiklatController::class, 'getStatusStatistics']);
+        Route::get('/options/filter', [SimpegDataDiklatController::class, 'getFilterOptions']);
+        Route::get('/actions/available', [SimpegDataDiklatController::class, 'getAvailableActions']);
+        Route::patch('/fix/existing-data', [SimpegDataDiklatController::class, 'fixExistingData']);
+        Route::patch('/fix/bulk-existing-data', [SimpegDataDiklatController::class, 'bulkFixExistingData']);
     });
 
     // Data Pasangan Routes
@@ -420,17 +469,46 @@ Route::prefix('orangtua')->middleware('auth:api')->group(function () {
     // PATCH /api/dosen/orangtua/bulk-fix-existing - Bulk fix all existing data
     Route::patch('/bulk-fix-existing', [SimpegDataOrangTuaController::class, 'bulkFixExistingData']);
 });
-=======
 
                 //   ROUTES ANGGOTA PROFESI 
-                Route::get('anggota-profesi-options', [AnggotaProfesiController::class, 'getOptions']);
+Route::get('anggota-profesi-options', [AnggotaProfesiController::class, 'getOptions']);
                 Route::get('anggota-profesi-trash', [AnggotaProfesiController::class, 'trash']);
                 Route::patch('anggota-profesi/{id}/restore', [AnggotaProfesiController::class, 'restore']);
                 Route::delete('anggota-profesi/{id}/force-delete', [AnggotaProfesiController::class, 'forceDelete']);
                 Route::patch('anggota-profesi/{id}/status', [AnggotaProfesiController::class, 'updateStatus']);
                 Route::post('anggota-profesi-bulk', [AnggotaProfesiController::class, 'bulkAction']);
                 Route::apiResource('anggota-profesi', AnggotaProfesiController::class);
->>>>>>> 6bf2d668dbf1f87265c1ecbb84e50d02dd52b5e7
+
+
+                Route::prefix('datadiklat')->group(function () {
+                Route::get('/', [SimpegDataDiklatController::class, 'index']);
+                Route::get('/{id}', [SimpegDataDiklatController::class, 'show']);
+                Route::post('/', [SimpegDataDiklatController::class, 'store']);
+                Route::put('/{id}', [SimpegDataDiklatController::class, 'update']);
+                Route::delete('/{id}', [SimpegDataDiklatController::class, 'destroy']);
+                // ======================================
+                // STATUS PENGAJUAN ROUTES
+                // ========================================
+                Route::patch('/{id}/submit', [SimpegDataDiklatController::class, 'submitDraft']);
+                // ========================================
+                // BATCH OPERATIONS ROUTES
+                // ========================================
+                Route::delete('/batch/delete', [SimpegDataDiklatController::class, 'batchDelete']);
+                Route::patch('/batch/submit', [SimpegDataDiklatController::class, 'batchSubmitDrafts']);
+                Route::patch('/batch/status', [SimpegDataDiklatController::class, 'batchUpdateStatus']);
+                // ========================================
+                // CONFIGURATION & STATISTICS ROUTES
+                // ========================================
+                Route::get('/config/system', [SimpegDataDiklatController::class, 'getSystemConfig']);
+                Route::get('/statistics/status', [SimpegDataDiklatController::class, 'getStatusStatistics']);
+                Route::get('/filter-options', [SimpegDataDiklatController::class, 'getFilterOptions']);
+                Route::get('/available-actions', [SimpegDataDiklatController::class, 'getAvailableActions']);
+                // ========================================
+                // DATA MAINTENANCE ROUTES  
+                // ========================================
+                Route::patch('/fix-existing-data', [SimpegDataDiklatController::class, 'fixExistingData']);
+                Route::patch('/bulk-fix-existing-data', [SimpegDataDiklatController::class, 'bulkFixExistingData']);
+});
 
     });
     
