@@ -11,7 +11,7 @@ class SimpegDataHubunganKerja extends Model
 
     protected $table = 'simpeg_data_hubungan_kerja';
 
-    protected $primaryKey = 'id';
+
  
 
     protected $fillable = [
@@ -44,7 +44,7 @@ class SimpegDataHubunganKerja extends Model
     // Relasi ke jenis hubungan kerja
     public function hubunganKerja()
     {
-        return $this->belongsTo(SimpegHubunganKerja::class, 'hubungan_kerja_id');
+        return $this->belongsTo(HubunganKerja::class, 'hubungan_kerja_id');
     }
 
     // Relasi ke status aktif

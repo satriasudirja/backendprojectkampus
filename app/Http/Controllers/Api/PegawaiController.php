@@ -200,7 +200,7 @@ class PegawaiController extends Controller
             'jenis_kelamin' => 'required|string|max:30',
             'tempat_lahir' => 'required|string|max:30',
             'tanggal_lahir' => 'required|date',
-            'nama_ibu_kandung' => 'required|string|max:50',
+            'nama_ibu_kandung' => 'nullable|string|max:50',
             'alamat_domisili' => 'required|string|max:255',
             'agama' => 'required|string|max:20',
             'kota' => 'required|string|max:30',
@@ -317,6 +317,8 @@ class PegawaiController extends Controller
         ], 500);
     }
 }
+
+
 
 public function update(Request $request, $id)
 {

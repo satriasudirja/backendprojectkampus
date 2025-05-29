@@ -15,7 +15,7 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->string('nama_gedung', 50);
             $table->float('latitude');
-            $table->float('longitude');
+            $table->float('longitude'); 
             $table->float('radius');
             $table->boolean('berlaku_keterlambatan');
             $table->integer('toleransi_terlambat');

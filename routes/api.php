@@ -278,8 +278,8 @@ Route::prefix('data-diklat')->group(function () {
         // ======================================
         // BATCH OPERATIONS ROUTES
         // ======================================
-         Route::patch('/batch/submit-drafts', [SimpegDataDiklatController::class, 'batchSubmitDrafts']);
         Route::delete('/batch/delete', [SimpegDataDiklatController::class, 'batchDelete']);
+        Route::patch('/batch/submit', [SimpegDataDiklatController::class, 'batchSubmitDrafts']);
         Route::patch('/batch/status', [SimpegDataDiklatController::class, 'batchUpdateStatus']);
         
         // ======================================
@@ -308,7 +308,7 @@ Route::prefix('pegawai')->middleware(['auth:api'])->group(function () {
         Route::delete('/{id}', [SimpegDataDiklatController::class, 'destroy']);
         Route::patch('/{id}/submit', [SimpegDataDiklatController::class, 'submitDraft']);
         Route::delete('/batch/delete', [SimpegDataDiklatController::class, 'batchDelete']);
-        Route::patch('/batch/submit-drafts', [SimpegDataDiklatController::class, 'batchSubmitDrafts']);
+        Route::patch('/batch/submit', [SimpegDataDiklatController::class, 'batchSubmitDrafts']);
         Route::patch('/batch/status', [SimpegDataDiklatController::class, 'batchUpdateStatus']);
         Route::get('/config/system', [SimpegDataDiklatController::class, 'getSystemConfig']);
         Route::get('/statistics/status', [SimpegDataDiklatController::class, 'getStatusStatistics']);
@@ -317,6 +317,36 @@ Route::prefix('pegawai')->middleware(['auth:api'])->group(function () {
         Route::patch('/fix/existing-data', [SimpegDataDiklatController::class, 'fixExistingData']);
         Route::patch('/fix/bulk-existing-data', [SimpegDataDiklatController::class, 'bulkFixExistingData']);
     });
+
+    Route::prefix('datadiklat')->group(function () {
+                Route::get('/', [SimpegDataDiklatController::class, 'index']);
+                Route::get('/{id}', [SimpegDataDiklatController::class, 'show']);
+                Route::post('/', [SimpegDataDiklatController::class, 'store']);
+                Route::put('/{id}', [SimpegDataDiklatController::class, 'update']);
+                Route::delete('/{id}', [SimpegDataDiklatController::class, 'destroy']);
+                // ======================================
+                // STATUS PENGAJUAN ROUTES
+                // ========================================
+                Route::patch('/{id}/submit', [SimpegDataDiklatController::class, 'submitDraft']);
+                // ========================================
+                // BATCH OPERATIONS ROUTES
+                // ========================================
+                Route::delete('/batch/delete', [SimpegDataDiklatController::class, 'batchDelete']);
+                Route::patch('/batch/submit', [SimpegDataDiklatController::class, 'batchSubmitDrafts']);
+                Route::patch('/batch/status', [SimpegDataDiklatController::class, 'batchUpdateStatus']);
+                // ========================================
+                // CONFIGURATION & STATISTICS ROUTES
+                // ========================================
+                Route::get('/config/system', [SimpegDataDiklatController::class, 'getSystemConfig']);
+                Route::get('/statistics/status', [SimpegDataDiklatController::class, 'getStatusStatistics']);
+                Route::get('/filter-options', [SimpegDataDiklatController::class, 'getFilterOptions']);
+                Route::get('/available-actions', [SimpegDataDiklatController::class, 'getAvailableActions']);
+                // ========================================
+                // DATA MAINTENANCE ROUTES  
+                // ========================================
+                Route::patch('/fix-existing-data', [SimpegDataDiklatController::class, 'fixExistingData']);
+                Route::patch('/bulk-fix-existing-data', [SimpegDataDiklatController::class, 'bulkFixExistingData']);
+});
 
     // Data Pasangan Routes
 Route::prefix('pasangan')->middleware('auth:api')->group(function () {
@@ -480,35 +510,7 @@ Route::get('anggota-profesi-options', [AnggotaProfesiController::class, 'getOpti
                 Route::apiResource('anggota-profesi', AnggotaProfesiController::class);
 
 
-                Route::prefix('datadiklat')->group(function () {
-                Route::get('/', [SimpegDataDiklatController::class, 'index']);
-                Route::get('/{id}', [SimpegDataDiklatController::class, 'show']);
-                Route::post('/', [SimpegDataDiklatController::class, 'store']);
-                Route::put('/{id}', [SimpegDataDiklatController::class, 'update']);
-                Route::delete('/{id}', [SimpegDataDiklatController::class, 'destroy']);
-                // ======================================
-                // STATUS PENGAJUAN ROUTES
-                // ========================================
-                Route::patch('/{id}/submit', [SimpegDataDiklatController::class, 'submitDraft']);
-                // ========================================
-                // BATCH OPERATIONS ROUTES
-                // ========================================
-                Route::delete('/batch/delete', [SimpegDataDiklatController::class, 'batchDelete']);
-                Route::patch('/batch/submit', [SimpegDataDiklatController::class, 'batchSubmitDrafts']);
-                Route::patch('/batch/status', [SimpegDataDiklatController::class, 'batchUpdateStatus']);
-                // ========================================
-                // CONFIGURATION & STATISTICS ROUTES
-                // ========================================
-                Route::get('/config/system', [SimpegDataDiklatController::class, 'getSystemConfig']);
-                Route::get('/statistics/status', [SimpegDataDiklatController::class, 'getStatusStatistics']);
-                Route::get('/filter-options', [SimpegDataDiklatController::class, 'getFilterOptions']);
-                Route::get('/available-actions', [SimpegDataDiklatController::class, 'getAvailableActions']);
-                // ========================================
-                // DATA MAINTENANCE ROUTES  
-                // ========================================
-                Route::patch('/fix-existing-data', [SimpegDataDiklatController::class, 'fixExistingData']);
-                Route::patch('/bulk-fix-existing-data', [SimpegDataDiklatController::class, 'bulkFixExistingData']);
-});
+                
 
     });
     

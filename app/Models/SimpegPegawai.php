@@ -217,6 +217,6 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
     // Relationship to RiwayatUnitKerja
     public function riwayatUnitKerja()
     {
-        return $this->hasMany(SimpegRiwayatUnitKerja::class, 'pegawai_id');
+        return $this->hasMany(SimpegUnitKerja::class, 'pegawai_id');
     }
 }
