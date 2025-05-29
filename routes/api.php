@@ -66,6 +66,8 @@ use App\Http\Controllers\Api\SimpegDataJabatanAkademikController;
 use App\Http\Controllers\Api\SimpegDataJabatanFungsionalController;
 use App\Http\Controllers\Api\SimpegDataJabatanStrukturalController;
 use App\Http\Controllers\Api\SimpegDataHubunganKerjaController;
+use App\Http\Controllers\Api\BiodataController;
+
 
 
 
@@ -244,6 +246,20 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
+
+
+    Route::prefix('biodata')->group(function () {
+        Route::get('/', [BiodataController::class, 'index']);
+        Route::get('/riwayat-pendidikan', [BiodataController::class, 'riwayatPendidikan']);
+        Route::get('/riwayat-pangkat', [BiodataController::class, 'riwayatPangkat']);
+        Route::get('/riwayat-unit-kerja', [BiodataController::class, 'riwayatUnitKerja']);
+        Route::get('/riwayat-jabatan-akademik', [BiodataController::class, 'riwayatJabatanAkademik']);
+        Route::get('/riwayat-jabatan-fungsional', [BiodataController::class, 'riwayatJabatanFungsional']);
+        Route::get('/riwayat-jabatan-struktural', [BiodataController::class, 'riwayatJabatanStruktural']);
+        Route::get('/riwayat-hubungan-kerja', [BiodataController::class, 'riwayatHubunganKerja']);
+        Route::get('/rekap-kehadiran', [BiodataController::class, 'rekapKehadiran']);
+    });
+
 
     Route::prefix('anak')->group(function () {
     Route::get('/', [SimpegDataAnakController::class, 'index']);
