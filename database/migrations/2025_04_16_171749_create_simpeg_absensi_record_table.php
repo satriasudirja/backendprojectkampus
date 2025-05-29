@@ -21,7 +21,10 @@ return new class extends Migration
             $table->time('jam_keluar')->nullable();
             $table->boolean('terlambat');
             $table->boolean('pulang_awal');
+            $table->integer('menit_terlambat')->default(0);    
+            $table->integer('menit_pulang_awal')->default(0);  
             $table->string('check_sum_absensi', 255);
+            $table->softDeletes();
             $table->timestamps();
         });
         
