@@ -60,6 +60,7 @@ use App\Http\Controllers\Api\SimpegDataOrangTuaController;
 use App\Http\Controllers\Api\SimpegHubunganKerjaController;
 use App\Http\Controllers\Api\AnggotaProfesiController;
 use App\Http\Controllers\Api\SimpegDataDiklatController;
+use App\Http\Controllers\Api\SimpegDataKemampuanBahasaController;
 
 
 
@@ -262,6 +263,50 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/available-actions', [SimpegDataAnakController::class, 'getAvailableActions']);
     });
 
+
+// Data Kemampuan Bahasa Routes
+Route::prefix('datakemampuanbahasa')->group(function () {
+        
+        // ========================================
+        // CONFIGURATION & STATISTICS ROUTES
+        // ========================================
+        // ⚠️ PENTING: Routes spesifik HARUS di atas routes generic {id}
+        Route::get('/config/system', [SimpegDataKemampuanBahasaController::class, 'getSystemConfig']);
+        Route::get('/statistics/status', [SimpegDataKemampuanBahasaController::class, 'getStatusStatistics']);
+        Route::get('/filter-options', [SimpegDataKemampuanBahasaController::class, 'getFilterOptions']);
+        
+        // ========================================
+        // BATCH OPERATIONS ROUTES
+        // ========================================
+        Route::delete('/batch/delete', [SimpegDataKemampuanBahasaController::class, 'batchDelete']);
+        Route::patch('/batch/submit', [SimpegDataKemampuanBahasaController::class, 'batchSubmitDrafts']);
+        Route::patch('/batch/status', [SimpegDataKemampuanBahasaController::class, 'batchUpdateStatus']);
+        
+        // ========================================
+        // DATA CORRECTION ROUTES
+        // ========================================
+        Route::patch('/fix-existing-data', [SimpegDataKemampuanBahasaController::class, 'fixExistingData']);
+        
+        // ========================================
+        // CRUD OPERATIONS - Generic routes dengan {id} di BAWAH
+        // ========================================
+        Route::get('/', [SimpegDataKemampuanBahasaController::class, 'index']);
+        Route::post('/', [SimpegDataKemampuanBahasaController::class, 'store']);
+        
+        // ⚠️ PENTING: Routes dengan {id} parameter HARUS di paling bawah
+        Route::get('/{id}', [SimpegDataKemampuanBahasaController::class, 'show']);
+        Route::put('/{id}', [SimpegDataKemampuanBahasaController::class, 'update']);
+        Route::delete('/{id}', [SimpegDataKemampuanBahasaController::class, 'destroy']);
+        
+        // ========================================
+        // STATUS PENGAJUAN ROUTES dengan {id}
+        // ========================================
+        Route::patch('/{id}/submit', [SimpegDataKemampuanBahasaController::class, 'submitDraft']);
+        
+    });
+
+
+
 Route::prefix('data-diklat')->group(function () {
         // Main CRUD routes
         Route::get('/', [SimpegDataDiklatController::class, 'index']);
@@ -298,6 +343,10 @@ Route::prefix('data-diklat')->group(function () {
     });
     
 });
+
+
+
+
 
 // Alternative untuk pegawai (jika diperlukan)
 Route::prefix('pegawai')->middleware(['auth:api'])->group(function () {
