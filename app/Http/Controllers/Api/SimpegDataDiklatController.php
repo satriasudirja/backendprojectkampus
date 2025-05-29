@@ -563,6 +563,7 @@ class SimpegDataDiklatController extends Controller
         $dataDiklat = SimpegDataDiklat::where('pegawai_id', $pegawai->id)
             ->where('status_pengajuan', 'draft')
             ->find($id);
+        
 
         if (!$dataDiklat) {
             return response()->json([
