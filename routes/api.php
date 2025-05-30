@@ -61,6 +61,7 @@ use App\Http\Controllers\Api\SimpegHubunganKerjaController;
 use App\Http\Controllers\Api\AnggotaProfesiController;
 use App\Http\Controllers\Api\SimpegDataDiklatController;
 use App\Http\Controllers\Api\SimpegDataKemampuanBahasaController;
+use App\Http\Controllers\Api\SimpegDataOrganisasiController;
 
 
 
@@ -264,6 +265,47 @@ Route::middleware('auth:api')->group(function () {
     });
 
 
+    // Data Organisasi Routes
+Route::prefix('dataorganisasi')->group(function () {
+        // ========================================
+        // CONFIGURATION & STATISTICS ROUTES (HARUS DI ATAS!)
+        // ========================================
+        Route::get('/config/system', [SimpegDataOrganisasiController::class, 'getSystemConfig']);
+        Route::get('/statistics/status', [SimpegDataOrganisasiController::class, 'getStatusStatistics']);
+        Route::get('/filter-options', [SimpegDataOrganisasiController::class, 'getFilterOptions']);
+        Route::get('/available-actions', [SimpegDataOrganisasiController::class, 'getAvailableActions']);
+        
+        // ========================================
+        // UTILITY ROUTES
+        // ========================================
+        Route::patch('/fix-existing-data', [SimpegDataOrganisasiController::class, 'fixExistingData']);
+        Route::patch('/bulk-fix-existing-data', [SimpegDataOrganisasiController::class, 'bulkFixExistingData']);
+        
+        // ========================================
+        // BATCH OPERATIONS ROUTES
+        // ========================================
+        Route::delete('/batch/delete', [SimpegDataOrganisasiController::class, 'batchDelete']);
+        Route::patch('/batch/submit', [SimpegDataOrganisasiController::class, 'batchSubmitDrafts']);
+        Route::patch('/batch/status', [SimpegDataOrganisasiController::class, 'batchUpdateStatus']);
+        
+        // ========================================
+        // CRUD ROUTES (HARUS DI BAWAH ROUTE SPESIFIK!)
+        // ========================================
+        Route::get('/', [SimpegDataOrganisasiController::class, 'index']);
+        Route::post('/', [SimpegDataOrganisasiController::class, 'store']);
+        Route::get('/{id}', [SimpegDataOrganisasiController::class, 'show']);
+        Route::put('/{id}', [SimpegDataOrganisasiController::class, 'update']);
+        Route::delete('/{id}', [SimpegDataOrganisasiController::class, 'destroy']);
+        
+        // ======================================
+        // STATUS PENGAJUAN ROUTES
+        // ========================================
+        Route::patch('/{id}/submit', [SimpegDataOrganisasiController::class, 'submitDraft']);
+    });
+
+
+
+
 // Data Kemampuan Bahasa Routes
 Route::prefix('datakemampuanbahasa')->group(function () {
         
@@ -306,7 +348,7 @@ Route::prefix('datakemampuanbahasa')->group(function () {
     });
 
 
-
+// Data diklat Routes
 Route::prefix('data-diklat')->group(function () {
         // Main CRUD routes
         Route::get('/', [SimpegDataDiklatController::class, 'index']);
