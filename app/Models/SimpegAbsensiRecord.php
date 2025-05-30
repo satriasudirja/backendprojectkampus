@@ -11,9 +11,6 @@ class SimpegAbsensiRecord extends Model
 
     // Karena migration menggunakan bigIncrements (integer)
     protected $primaryKey = 'id';
-    public $incrementing = true;
-    protected $keyType = 'integer';
-
     // Kolom yang bisa diisi massal
     protected $fillable = [
         'pegawai_id',
@@ -24,7 +21,8 @@ class SimpegAbsensiRecord extends Model
         'jam_keluar',
         'terlambat',
         'pulang_awal',
-        'check_sum_absensi'
+        'check_sum_absensi',
+        'file_foto',
     ];
 
     // Casting tipe data
@@ -53,6 +51,6 @@ class SimpegAbsensiRecord extends Model
     // Relasi ke model JenisKehadiran
     public function jenisKehadiran()
     {
-        return $this->belongsTo(JenisKehadiran::class, 'jenis_kehadiran_id');
+        return $this->belongsTo(SimpegJenisKehadiran::class, 'jenis_kehadiran_id');
     }
 }

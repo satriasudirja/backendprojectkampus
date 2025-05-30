@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class JenisIzin extends Model
 {
     protected $table = 'simpeg_jenis_izin';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+
 
     protected $fillable = [
         'jenis_kehadiran_id',
@@ -26,6 +24,6 @@ class JenisIzin extends Model
 
     public function jenisKehadiran()
     {
-        return $this->belongsTo(JenisKehadiran::class);
+        return $this->belongsTo(SimpegJenisKehadiran::class);
     }
 }

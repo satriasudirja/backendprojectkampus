@@ -10,9 +10,8 @@ class SettingKehadiran extends Model
     use HasFactory;
 
     protected $table = 'setting_kehadiran';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+   
+  
 
     protected $fillable = [
         'id',

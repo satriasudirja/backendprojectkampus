@@ -7,10 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SimpegJenisKehadiran extends Model
 {
     protected $table = 'simpeg_jenis_kehadiran';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
-
+  
     protected $fillable = [
         'kode_jenis',
         'nama_jenis'

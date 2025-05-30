@@ -16,15 +16,15 @@ return new class extends Migration
             $table->string('nama_gedung', 50);
             $table->float('latitude');
             $table->float('longitude'); 
-            $table->float('radius');
-            $table->boolean('berlaku_keterlambatan');
-            $table->integer('toleransi_terlambat');
-            $table->boolean('berlaku_pulang_cepat');
-            $table->integer('toleransi_pulang_cepat');
-            $table->boolean('wajib_foto');
-            $table->boolean('wajib_isi_rencana_kegiatan');
-            $table->boolean('wajib_isi_realisasi_kegiatan');
-            $table->boolean('wajib_presensi_dilokasi');
+            $table->float('radius')->nullable();
+            $table->boolean('berlaku_keterlambatan')->nullable();
+            $table->integer('toleransi_terlambat')->nullable();
+            $table->boolean('berlaku_pulang_cepat')->nullable();
+            $table->integer('toleransi_pulang_cepat')->nullable();
+            $table->boolean('wajib_foto')->nullable();
+            $table->boolean('wajib_isi_rencana_kegiatan')->nullable();
+            $table->boolean('wajib_isi_realisasi_kegiatan')->nullable();
+            $table->boolean('wajib_presensi_dilokasi')->nullable();
             $table->timestamps();
         });
         
