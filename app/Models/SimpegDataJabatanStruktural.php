@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegDataJabatanStruktural extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_data_jabatan_struktural';
 
@@ -25,7 +26,8 @@ class SimpegDataJabatanStruktural extends Model
         'pejabat_penetap',
         'file_jabatan',
         'tgl_input',
-        'status_pengajuan'
+        'status_pengajuan',
+        'deleted_at',
     ];
 
     protected $casts = [

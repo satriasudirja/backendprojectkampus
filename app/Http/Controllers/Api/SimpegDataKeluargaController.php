@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Http\Controllers\Api;
-
 use App\Http\Controllers\Controller;
 use App\Models\SimpegDataKeluargaPegawai;
+use App\Models\SimpegUnitKerja;
 use App\Models\SimpegPegawai;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class SimpegDataKeluargaController extends Controller
 {

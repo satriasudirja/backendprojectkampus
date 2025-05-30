@@ -83,7 +83,7 @@ class SimpegDataKeluargaPegawai extends Model
      */
     public function pegawai()
     {
-        return $this->belongsTo(Pegawai::class, 'pegawai_id');
+        return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
     }
 
     /**

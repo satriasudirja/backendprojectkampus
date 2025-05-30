@@ -24,7 +24,12 @@ class SimpegPegawaiAdminSeeder extends Seeder
         if (!$jabatanAkademik) {
             $jabatanAkademik = SimpegJabatanAkademik::first();
         }
+          $pp = SimpegJabatanAkademik::where('role_id', 2)->first();
         
+        // Jika tidak ada, ambil yang ada
+        if (!$pp) {
+            $pp = SimpegJabatanAkademik::first();
+        }
         // Ambil data lain yang diperlukan
         $unitKerja = SimpegUnitKerja::first();
         $statusPernikahan = SimpegStatusPernikahan::first();
@@ -32,7 +37,7 @@ class SimpegPegawaiAdminSeeder extends Seeder
         $suku = SimpegSuku::first();
         
         // Pastikan semua data tersedia
-        if (!$unitKerja || !$statusPernikahan || !$statusAktif || !$jabatanAkademik || !$suku) {
+        if (!$unitKerja || !$statusPernikahan || !$statusAktif || !$jabatanAkademik || !$suku || !$pp) {
             $this->command->error('Required reference data is missing. Make sure to run required seeders first.');
             return;
         }
@@ -104,5 +109,38 @@ class SimpegPegawaiAdminSeeder extends Seeder
             'modified_by'           => 'system',
             'modified_dt'           => now(),
         ]);
+         SimpegPegawai::create([
+            'user_id'               => $jabatanAkademik->id,
+            'unit_kerja_id'         => $unitKerja->id,
+            'kode_status_pernikahan'=> $statusPernikahan->id,
+            'status_aktif_id'       => $statusAktif->id,
+            'jabatan_akademik_id'   => $pp->id,
+            'suku_id'               => $suku->id,
+            'nama'                  => 'Satria Sudirja',
+            'nip'                   => '089638796665',
+            'nuptk'                 => '089638796666',
+            'password'              => bcrypt('dosen123'),
+            'nidn'                  => '19900101110',
+            'gelar_depan'           => '',
+            'gelar_belakang'        => 'S.Kom.',
+            'jenis_kelamin'         => 'L',
+            'tempat_lahir'          => 'Jakarta',
+            'tanggal_lahir'         => '1990-01-01',
+            'nama_ibu_kandung'      => 'Ibu Administrator',
+            'alamat_domisili'       => 'Jl. Admin No. 1, Jakarta',
+            'agama'                 => 'Islam',
+            'golongan_darah'        => 'O',
+            'kota'                  => 'Jakarta',
+            'provinsi'              => 'DKI Jakarta',
+            'kode_pos'              => '12345',
+            'no_handphone'          => '081234567890',
+            'no_kk'                 => '1234567890123456',
+            'email_pribadi'         => 'admin@example.com',
+            'no_ktp'                => '1234567890123456',
+            'status_kerja'          => 'Aktif',
+            'modified_by'           => 'system',
+            'modified_dt'           => now(),
+        ]);
+    
     }
 }

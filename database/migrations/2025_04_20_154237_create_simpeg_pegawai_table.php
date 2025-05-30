@@ -27,11 +27,11 @@ return new class extends Migration
             $table->string('nidn', 30)->nullable();
             $table->string('gelar_depan', 30)->nullable();
             $table->string('gelar_belakang', 30)->nullable();
-            $table->string('jenis_kelamin', 30);
-            $table->string('tempat_lahir', 30);
+            $table->string('jenis_kelamin', 30)->nullable();
+            $table->string('tempat_lahir', 30)->nullable();
 
-            $table->date('tanggal_lahir');
-            $table->string('nama_ibu_kandung', 50);
+            $table->date('tanggal_lahir')->nullable();
+            $table->string('nama_ibu_kandung', 50)->nullable();
             
             // Data kepegawaian
             $table->string('no_sk_capeg', 50)->nullable();
@@ -42,31 +42,31 @@ return new class extends Migration
             $table->date('tanggal_sk_pegawai')->nullable();
             
             // Alamat dan kontak
-            $table->string('alamat_domisili', 255);
+            $table->string('alamat_domisili', 255)->nullable();
 
-            $table->string('agama', 20);
+            $table->string('agama', 20)->nullable();
 
             $table->string('golongan_darah', 5)->nullable();
-            $table->string('kota', 30);
-            $table->string('provinsi', 30);
-            $table->string('kode_pos', 5);
+            $table->string('kota', 30)->nullable();
+            $table->string('provinsi', 30)->nullable();
+            $table->string('kode_pos', 5)->nullable();
 
             $table->string('no_telepon_domisili_kontak', 20)->nullable();
-            $table->string('no_handphone', 20);
+            $table->string('no_handphone', 20)->nullable();
             $table->string('no_telephone_kantor', 20)->nullable();
 
-            $table->string('no_kk', 16);
-            $table->string('email_pribadi', 50);
+            $table->string('no_kk', 16)->nullable();
+            $table->string('email_pribadi', 50)->nullable();
             
             // Data tambahan (lanjutan)
-            $table->string('no_ktp', 30);
+            $table->string('no_ktp', 30)->nullable();
             $table->float('jarak_rumah_domisili')->nullable();
 
             $table->string('npwp', 30)->nullable();
             $table->string('no_kartu_bpjs', 20)->nullable();
             $table->string('file_sertifikasi_dosen', 100)->nullable();
             $table->string('no_kartu_pensiun', 20)->nullable();
-            $table->string('status_kerja', 50);
+            $table->string('status_kerja', 50)->nullable();
             $table->string('kepemilikan_nohp_utama', 50)->nullable();
             $table->string('alamat_kependudukan', 305)->nullable();
 
@@ -91,8 +91,8 @@ return new class extends Migration
             $table->string('file_bpjs_pensiun', 100)->nullable();
             
             // Data fisik
-            $table->integer('tinggi_badan')->nullable();
-            $table->integer('berat_badan')->nullable();
+            $table->integer('tinggi_badan')->nullable()->nullable();
+            $table->integer('berat_badan')->nullable()->nullable();
             $table->string('file_tanda_tangan', 100)->nullable();
             
             // Audit trail

@@ -27,6 +27,7 @@ class SimpegUnitKerja extends Model
         'no_sk_pendirian',
         'tanggal_sk_pendirian',
         'gedung',
+        'deleted_at',
     ];
 
     /**
@@ -63,4 +64,5 @@ class SimpegUnitKerja extends Model
     {
         return $this->hasMany(SimpegBerita::class, 'unit_kerja_id', 'kode_unit');
     }
+    
 }
