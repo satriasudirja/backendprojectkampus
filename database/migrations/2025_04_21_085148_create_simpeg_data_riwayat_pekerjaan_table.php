@@ -19,7 +19,8 @@ return new class extends Migration
             $table->string('instansi', 100);
             $table->string('divisi', 100)->nullable();
             $table->text('deskripsi')->nullable();
-            
+             $table->string('status_pengajuan', 50)->nullable()->after('area_pekerjaan');
+
             // Periode pekerjaan
             $table->date('mulai_bekerja');
             $table->date('selesai_bekerja')->nullable();
@@ -39,5 +40,6 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('simpeg_data_riwayat_pekerjaan');
+        $table->dropColumn('status_pengajuan');
     }
 };
