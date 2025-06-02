@@ -73,7 +73,6 @@ use App\Http\Controllers\Api\SimpegDataOrganisasiController;
 use App\Http\Controllers\Api\SimpegDataKemampuanBahasaController;
 use App\Http\Controllers\Api\SimpegDataDiklatController;
 use App\Http\Controllers\Api\SimpegDataRiwayatPekerjaanDosenController;
-
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 

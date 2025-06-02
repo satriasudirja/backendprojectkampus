@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\SimpegPengajuanCutiDosen;
+use App\Models\PengajuanCutiDosen;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegPegawai;
 use Illuminate\Http\Request;

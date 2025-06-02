@@ -6,6 +6,9 @@ use Illuminate\Support\ServiceProvider;
 use App\Services\SimpleCaptchaGeneratorService;
 use App\Services\SlideCaptchaService;
 use App\Services\AdminDashboardService;
+use Illuminate\Support\Facades\File;
+// Remove this line if you're not using Image facade in this file
+// use Intervention\Image\Facades\Image;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,7 +28,8 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(SimpleCaptchaGeneratorService::class)
             );
         });
-           $this->app->singleton(AdminDashboardService::class, function ($app) {
+        
+        $this->app->singleton(AdminDashboardService::class, function ($app) {
             return new AdminDashboardService();
         });
     }
@@ -35,6 +39,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+     
     }
 }

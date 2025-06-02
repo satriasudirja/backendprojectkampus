@@ -1,5 +1,5 @@
 <?php
-namespace App\Http\Controllers\Api\Tenaga_Kependidikan;
+namespace App\Http\Controllers\BackupApi\Tenaga_Kependidikan;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

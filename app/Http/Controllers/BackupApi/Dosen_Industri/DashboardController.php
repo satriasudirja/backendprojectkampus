@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Dosen_Industri;
+namespace App\Http\Controllers\BackupApi\Dosen_Industri;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
