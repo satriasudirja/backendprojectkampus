@@ -7,6 +7,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+
 Route::get('/captcha/slide-captcha', [CaptchaController::class, 'showSlideCaptcha'])->name('captcha.slide-captcha');
 
 // Route untuk menampilkan gambar captcha dari private storage

@@ -62,8 +62,8 @@ return [
         'simpeg_pegawai' => [
             'provider' => 'simpeg_pegawai',
             'table' => 'password_resets',
-            'expire' => 60,
-            'throttle' => 60,
+            'expire' => false,
+            'throttle' => false,
         ],
     ],
 

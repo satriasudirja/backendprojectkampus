@@ -73,6 +73,9 @@ use App\Http\Controllers\Api\SimpegDataOrganisasiController;
 use App\Http\Controllers\Api\SimpegDataKemampuanBahasaController;
 use App\Http\Controllers\Api\SimpegDataDiklatController;
 use App\Http\Controllers\Api\SimpegDataRiwayatPekerjaanDosenController;
+use App\Http\Controllers\Api\SimpegDataPenghargaanAdmController;
+use App\Http\Controllers\Api\SimpegDataPelanggaranController;
+use App\Http\Controllers\Api\RiwayatKehadiranController;
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
@@ -97,6 +100,78 @@ Route::middleware('auth:api')->group(function () {
      Route::get('dashboard', function () {
         return response()->json(['message' => 'Admin Dashboard']);
         });
+
+         Route::prefix('datapelanggaran')->group(function () {
+        // CRUD Operations
+        Route::get('/', [SimpegDataPelanggaranController::class, 'index']);
+        Route::post('/', [SimpegDataPelanggaranController::class, 'store']);
+        Route::get('/{id}', [SimpegDataPelanggaranController::class, 'show']);
+        Route::put('/{id}', [SimpegDataPelanggaranController::class, 'update']);
+        Route::delete('/{id}', [SimpegDataPelanggaranController::class, 'destroy']);
+        
+        // Batch Operations
+        Route::delete('/batch/delete', [SimpegDataPelanggaranController::class, 'batchDelete']);
+        
+        // Utility Routes
+        Route::get('/options/pegawai', [SimpegDataPelanggaranController::class, 'getPegawaiOptions']);
+        Route::get('/options/filter', [SimpegDataPelanggaranController::class, 'getFilterOptions']);
+        Route::get('/options/form', [SimpegDataPelanggaranController::class, 'getFormOptions']);
+        
+        // Statistics & Export
+        Route::get('/statistics/dashboard', [SimpegDataPelanggaranController::class, 'getStatistics']);
+        Route::get('/export/excel', [SimpegDataPelanggaranController::class, 'export']);
+        
+        // Validation
+        Route::post('/validate/duplicate', [SimpegDataPelanggaranController::class, 'validateDuplicate']);
+    });
+         Route::prefix('datapenghargaan')->group(function () {
+            // === CRUD Operations ===
+        
+        // List all penghargaan dengan filter dan search
+        Route::get('/', [SimpegDataPenghargaanAdmController::class, 'index']);
+        
+        // Create new penghargaan
+        Route::post('/', [SimpegDataPenghargaanAdmController::class, 'store']);
+        
+        // Get detail penghargaan
+        Route::get('/{id}', [SimpegDataPenghargaanAdmController::class, 'show']);
+        
+        // Update penghargaan
+        Route::put('/{id}', [SimpegDataPenghargaanAdmController::class, 'update']);
+        Route::patch('/{id}', [SimpegDataPenghargaanAdmController::class, 'update']); // Alternative method
+        
+        // Delete single penghargaan
+        Route::delete('/{id}', [SimpegDataPenghargaanAdmController::class, 'destroy']);
+        
+        // === Batch Operations ===
+        
+        // Batch delete penghargaan
+        Route::delete('/batch/delete', [SimpegDataPenghargaanAdmController::class, 'batchDelete']);
+        
+        // === Form & Options ===
+        
+        // Get form options untuk dropdown create/edit form
+        Route::get('/form/options', [SimpegDataPenghargaanAdmController::class, 'getFormOptions']);
+        
+        // Get pegawai options untuk dropdown pegawai
+        Route::get('/pegawai/options', [SimpegDataPenghargaanAdmController::class, 'getPegawaiOptions']);
+        
+        // Get filter options untuk dropdown filter
+        Route::get('/filters/options', [SimpegDataPenghargaanAdmController::class, 'getFilterOptions']);
+        
+        // === Validation & Utilities ===
+        
+        // Validate duplicate data
+        Route::post('/validate/duplicate', [SimpegDataPenghargaanAdmController::class, 'validateDuplicate']);
+        
+        // === Reports & Analytics ===
+        
+        // Get statistics untuk dashboard
+        Route::get('/statistics/summary', [SimpegDataPenghargaanAdmController::class, 'getStatistics']);
+        
+        // Export data penghargaan
+        Route::post('/export', [SimpegDataPenghargaanAdmController::class, 'export']);
+    });
         Route::get('pegawai/info-pendidikan/{pegawaiId}', [SimpegRiwayatPendidikanController::class, 'getPegawaiWithPendidikan']);
         Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchPegawai']);
         //dashboard nav pegawai
@@ -249,7 +324,20 @@ Route::middleware('auth:api')->group(function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
 
-
+ Route::prefix('riwayat-kehadiran')->group(function () {
+        
+        // Menampilkan riwayat kehadiran per tahun untuk pegawai yang login
+        Route::get('/', [RiwayatKehadiranController::class, 'index'])
+            ->name('riwayat-kehadiran.index');
+        
+        // Detail presensi harian untuk bulan tertentu
+        Route::get('/detail', [RiwayatKehadiranController::class, 'detail'])
+            ->name('riwayat-kehadiran.detail');
+        
+        // Print/cetak daftar riwayat kehadiran semua pegawai
+        Route::get('/print', [RiwayatKehadiranController::class, 'print'])
+            ->name('riwayat-kehadiran.print');
+    });
         Route::prefix('biodata')->group(function () {
             Route::get('/', [BiodataController::class, 'index']);
             Route::get('/riwayat-pendidikan', [BiodataController::class, 'riwayatPendidikan']);

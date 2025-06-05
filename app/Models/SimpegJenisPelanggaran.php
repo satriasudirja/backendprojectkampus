@@ -10,9 +10,7 @@ class SimpegJenisPelanggaran extends Model
     use SoftDeletes;
 
     protected $table = 'simpeg_jenis_pelanggaran';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+
 
     protected $fillable = [
         'kode',

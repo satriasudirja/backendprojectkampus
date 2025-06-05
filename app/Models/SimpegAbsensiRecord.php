@@ -16,6 +16,8 @@ class SimpegAbsensiRecord extends Model
         'pegawai_id',
         'setting_kehadiran_id',
         'jenis_kehadiran_id',
+        'cuti_record_id',
+        'izin_record_id',
         'tanggal_absensi',
         'jam_masuk',
         'jam_keluar',
@@ -52,5 +54,13 @@ class SimpegAbsensiRecord extends Model
     public function jenisKehadiran()
     {
         return $this->belongsTo(SimpegJenisKehadiran::class, 'jenis_kehadiran_id');
+    }
+      public function CutiRecord()
+    {
+        return $this->belongsTo(SimpegCutiRecord::class, 'cuti_record_id');
+    }
+    public function IzinRecord()
+    {
+        return $this->belongsTo(SimpegIzinRecord::class,'izin_record_id');
     }
 }

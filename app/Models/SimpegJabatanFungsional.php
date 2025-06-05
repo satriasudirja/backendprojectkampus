@@ -11,8 +11,6 @@ class SimpegJabatanFungsional extends Model
 
     protected $table = 'simpeg_jabatan_fungsional';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
         'jabatan_akademik_id',
