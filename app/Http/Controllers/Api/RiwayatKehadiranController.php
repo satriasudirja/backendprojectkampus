@@ -257,6 +257,7 @@ class RiwayatKehadiranController extends Controller
 
     /**
      * Get attendance statistics for a specific month
+     * Modified to check status_pengajuan for izin/cuti records
      */
     private function getMonthlyAttendanceStats($pegawaiId, $tahun, $bulan)
     {
@@ -327,10 +328,16 @@ class RiwayatKehadiranController extends Controller
                             $stats['pulang_awal']++;
                         }
                     } else {
-                        // Check absence type
-                        if ($record->cutiRecord) {
+                        // Check absence type with status validation
+                        $isValidAbsence = false;
+                        
+                        // Check cuti record with approved status
+                        if ($record->cutiRecord && $record->cutiRecord->status_pengajuan === 'disetujui') {
                             $stats['cuti']++;
-                        } elseif ($record->izinRecord) {
+                            $isValidAbsence = true;
+                        } 
+                        // Check izin record with approved status
+                        elseif ($record->izinRecord && $record->izinRecord->status_pengajuan === 'disetujui') {
                             // Check if it's sick leave or regular leave
                             $jenisIzin = $record->izinRecord->jenis_izin ?? '';
                             if (stripos($jenisIzin, 'sakit') !== false) {
@@ -338,18 +345,25 @@ class RiwayatKehadiranController extends Controller
                             } else {
                                 $stats['izin']++;
                             }
-                        } elseif ($record->jenisKehadiran) {
+                            $isValidAbsence = true;
+                        } 
+                        // Check jenis kehadiran (fallback for older records)
+                        elseif ($record->jenisKehadiran) {
                             $jenisKehadiran = strtolower($record->jenisKehadiran->nama_jenis ?? '');
                             if (stripos($jenisKehadiran, 'sakit') !== false) {
                                 $stats['sakit']++;
+                                $isValidAbsence = true;
                             } elseif (stripos($jenisKehadiran, 'izin') !== false) {
                                 $stats['izin']++;
+                                $isValidAbsence = true;
                             } elseif (stripos($jenisKehadiran, 'cuti') !== false) {
                                 $stats['cuti']++;
-                            } else {
-                                $stats['alpa']++;
+                                $isValidAbsence = true;
                             }
-                        } else {
+                        }
+                        
+                        // If no valid approved absence, count as alpa
+                        if (!$isValidAbsence) {
                             $stats['alpa']++;
                         }
                     }
@@ -367,6 +381,7 @@ class RiwayatKehadiranController extends Controller
 
     /**
      * Get daily attendance data for a specific month
+     * Modified to check status_pengajuan for izin/cuti records
      */
     private function getDailyAttendanceData($pegawaiId, $tahun, $bulan)
     {
@@ -427,11 +442,17 @@ class RiwayatKehadiranController extends Controller
                         
                         $keterangan = trim($keterangan) ?: 'Normal';
                     } else {
-                        // Check absence type
-                        if ($record->cutiRecord) {
+                        // Check absence type with status validation
+                        $jenisPresensi = 'Alpha';
+                        $keterangan = 'Belum melakukan Presensi';
+                        
+                        // Check cuti record with approved status
+                        if ($record->cutiRecord && $record->cutiRecord->status_pengajuan === 'disetujui') {
                             $jenisPresensi = 'Cuti';
                             $keterangan = $record->cutiRecord->alasan_cuti ?? 'Cuti';
-                        } elseif ($record->izinRecord) {
+                        } 
+                        // Check izin record with approved status
+                        elseif ($record->izinRecord && $record->izinRecord->status_pengajuan === 'disetujui') {
                             $jenisIzin = $record->izinRecord->jenis_izin ?? 'Izin';
                             if (stripos($jenisIzin, 'sakit') !== false) {
                                 $jenisPresensi = 'Sakit';
@@ -440,7 +461,9 @@ class RiwayatKehadiranController extends Controller
                                 $jenisPresensi = 'Izin';
                                 $keterangan = $record->izinRecord->alasan ?? 'Izin';
                             }
-                        } elseif ($record->jenisKehadiran) {
+                        } 
+                        // Check jenis kehadiran (fallback for older records)
+                        elseif ($record->jenisKehadiran) {
                             $jenisKehadiranNama = $record->jenisKehadiran->nama_jenis ?? 'Alpha';
                             if (stripos($jenisKehadiranNama, 'sakit') !== false) {
                                 $jenisPresensi = 'Sakit';
@@ -451,13 +474,19 @@ class RiwayatKehadiranController extends Controller
                             } elseif (stripos($jenisKehadiranNama, 'cuti') !== false) {
                                 $jenisPresensi = 'Cuti';
                                 $keterangan = 'Cuti';
-                            } else {
-                                $jenisPresensi = 'Alpha';
-                                $keterangan = 'Belum melakukan Presensi';
                             }
-                        } else {
+                        }
+                        // Check for pending/rejected submissions
+                        elseif ($record->cutiRecord || $record->izinRecord) {
+                            $status = '';
+                            if ($record->cutiRecord) {
+                                $status = $record->cutiRecord->status_pengajuan ?? 'belum diajukan';
+                            } elseif ($record->izinRecord) {
+                                $status = $record->izinRecord->status_pengajuan ?? 'belum diajukan';
+                            }
+                            
                             $jenisPresensi = 'Alpha';
-                            $keterangan = 'Belum melakukan Presensi';
+                            $keterangan = 'Pengajuan ' . ucfirst($status);
                         }
                     }
                     
@@ -495,6 +524,7 @@ class RiwayatKehadiranController extends Controller
 
     /**
      * Get attendance data for all employees in a period
+     * Modified to check status_pengajuan for izin/cuti records
      */
     private function getAllEmployeesAttendanceData($tanggalMulai, $tanggalSelesai)
     {
@@ -564,6 +594,33 @@ class RiwayatKehadiranController extends Controller
                     if ($attendanceRecord->settingKehadiran) {
                         $employeeData['lokasi_masuk'] = $attendanceRecord->settingKehadiran->nama_gedung;
                         $employeeData['lokasi_keluar'] = $attendanceRecord->settingKehadiran->nama_gedung;
+                    }
+
+                    // Set keterangan based on attendance status and approval
+                    if ($attendanceRecord->jam_masuk || $attendanceRecord->jam_keluar) {
+                        $employeeData['keterangan'] = 'Hadir';
+                    } else {
+                        // Check for approved izin/cuti
+                        if ($attendanceRecord->cutiRecord && $attendanceRecord->cutiRecord->status_pengajuan === 'disetujui') {
+                            $employeeData['keterangan'] = 'Cuti';
+                        } elseif ($attendanceRecord->izinRecord && $attendanceRecord->izinRecord->status_pengajuan === 'disetujui') {
+                            $jenisIzin = $attendanceRecord->izinRecord->jenis_izin ?? 'Izin';
+                            $employeeData['keterangan'] = stripos($jenisIzin, 'sakit') !== false ? 'Sakit' : 'Izin';
+                        } elseif ($attendanceRecord->jenisKehadiran) {
+                            $jenisKehadiran = $attendanceRecord->jenisKehadiran->nama_jenis ?? 'Alpha';
+                            $employeeData['keterangan'] = $jenisKehadiran;
+                        } elseif ($attendanceRecord->cutiRecord || $attendanceRecord->izinRecord) {
+                            // Has submission but not approved
+                            $status = '';
+                            if ($attendanceRecord->cutiRecord) {
+                                $status = $attendanceRecord->cutiRecord->status_pengajuan ?? 'belum diajukan';
+                            } elseif ($attendanceRecord->izinRecord) {
+                                $status = $attendanceRecord->izinRecord->status_pengajuan ?? 'belum diajukan';
+                            }
+                            $employeeData['keterangan'] = 'Pengajuan ' . ucfirst($status);
+                        } else {
+                            $employeeData['keterangan'] = 'Alpha';
+                        }
                     }
                 }
 

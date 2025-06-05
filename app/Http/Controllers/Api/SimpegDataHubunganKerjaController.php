@@ -135,6 +135,8 @@ class SimpegDataHubunganKerjaController extends Controller
                 ['field' => 'nama_hub_kerja', 'label' => 'Hubungan Kerja', 'sortable' => true, 'sortable_field' => 'nama_hub_kerja'],
                 ['field' => 'nama_status_aktif', 'label' => 'Status Aktif', 'sortable' => true, 'sortable_field' => 'nama_status_aktif'],
                 ['field' => 'pejabat_penetap', 'label' => 'Pejabat Penetap', 'sortable' => true, 'sortable_field' => 'pejabat_penetap'],
+                ['field' => 'status_pengajuan', 'label' => 'Status Pengajuan', 'sortable' => true, 'sortable_field' => 'status_pengajuan'],
+                ['field' => 'is_aktif', 'label' => 'Status', 'sortable' => true, 'sortable_field' => 'is_aktif'],
                 ['field' => 'aksi', 'label' => 'Aksi', 'sortable' => false]
             ],
             'table_rows_options' => [10, 25, 50, 100],
@@ -275,6 +277,8 @@ class SimpegDataHubunganKerjaController extends Controller
             'tgl_sk' => 'required|date',
             'pejabat_penetap' => 'required|string|max:100',
             'file_hubungan_kerja' => 'nullable|file|mimes:pdf|max:5120', // Max 5MB
+            'status_pengajuan' => 'nullable|in:draft,diajukan,disetujui,ditolak',
+            'is_aktif' => 'nullable|in:0,1,true,false'
         ]);
 
         if ($validator->fails()) {
@@ -288,12 +292,29 @@ class SimpegDataHubunganKerjaController extends Controller
         $data['pegawai_id'] = $pegawai->id;
         $data['tgl_input'] = now()->toDateString();
 
+        // Set default status pengajuan if not provided
+        if (!isset($data['status_pengajuan']) && \Schema::hasColumn('simpeg_data_hubungan_kerja', 'status_pengajuan')) {
+            $data['status_pengajuan'] = 'draft';
+        }
+
+        // Convert is_aktif to boolean if column exists
+        if (isset($data['is_aktif']) && \Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')) {
+            $data['is_aktif'] = in_array($data['is_aktif'], [1, '1', 'true', true], true);
+        }
+
         // Handle file upload
         if ($request->hasFile('file_hubungan_kerja')) {
             $file = $request->file('file_hubungan_kerja');
             $fileName = 'hubungan_kerja_' . $pegawai->id . '_' . time() . '.' . $file->getClientOriginalExtension();
             $filePath = $file->storeAs('uploads/hubungan_kerja', $fileName, 'public');
             $data['file_hubungan_kerja'] = $filePath;
+        }
+
+        // Jika diaktifkan, nonaktifkan yang lain
+        if (isset($data['is_aktif']) && $data['is_aktif'] && \Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')) {
+            SimpegDataHubunganKerja::where('pegawai_id', $pegawai->id)
+                ->where('is_aktif', true)
+                ->update(['is_aktif' => false]);
         }
 
         $dataHubunganKerja = SimpegDataHubunganKerja::create($data);
@@ -338,6 +359,8 @@ class SimpegDataHubunganKerjaController extends Controller
             'tgl_sk' => 'sometimes|date',
             'pejabat_penetap' => 'sometimes|string|max:100',
             'file_hubungan_kerja' => 'nullable|file|mimes:pdf|max:5120', // Max 5MB
+            'status_pengajuan' => 'nullable|in:draft,diajukan,disetujui,ditolak',
+            'is_aktif' => 'nullable|in:0,1,true,false'
         ]);
 
         if ($validator->fails()) {
@@ -350,6 +373,11 @@ class SimpegDataHubunganKerjaController extends Controller
         $oldData = $dataHubunganKerja->getOriginal();
         $data = $request->except(['file_hubungan_kerja']);
 
+        // Convert is_aktif to boolean if column exists
+        if (isset($data['is_aktif']) && \Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')) {
+            $data['is_aktif'] = in_array($data['is_aktif'], [1, '1', 'true', true], true);
+        }
+
         // Handle file upload
         if ($request->hasFile('file_hubungan_kerja')) {
             // Delete old file if exists
@@ -361,6 +389,14 @@ class SimpegDataHubunganKerjaController extends Controller
             $fileName = 'hubungan_kerja_' . $pegawai->id . '_' . time() . '.' . $file->getClientOriginalExtension();
             $filePath = $file->storeAs('uploads/hubungan_kerja', $fileName, 'public');
             $data['file_hubungan_kerja'] = $filePath;
+        }
+
+        // Jika diaktifkan, nonaktifkan yang lain
+        if (isset($data['is_aktif']) && $data['is_aktif'] && \Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')) {
+            SimpegDataHubunganKerja::where('pegawai_id', $pegawai->id)
+                ->where('id', '!=', $id)
+                ->where('is_aktif', true)
+                ->update(['is_aktif' => false]);
         }
 
         $dataHubunganKerja->update($data);
@@ -488,6 +524,108 @@ class SimpegDataHubunganKerjaController extends Controller
         }
     }
 
+    // NEW: Update status pengajuan
+    public function updateStatusPengajuan(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'status_pengajuan' => 'required|in:draft,diajukan,disetujui,ditolak'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $pegawai = Auth::user();
+
+        if (!$pegawai) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pegawai tidak ditemukan'
+            ], 404);
+        }
+
+        $dataHubunganKerja = SimpegDataHubunganKerja::where('pegawai_id', $pegawai->id)
+            ->find($id);
+
+        if (!$dataHubunganKerja) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data hubungan kerja tidak ditemukan'
+            ], 404);
+        }
+
+        if (!\Schema::hasColumn('simpeg_data_hubungan_kerja', 'status_pengajuan')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Field status_pengajuan tidak tersedia di tabel ini'
+            ], 400);
+        }
+
+        $oldData = $dataHubunganKerja->getOriginal();
+        $dataHubunganKerja->update(['status_pengajuan' => $request->status_pengajuan]);
+
+        ActivityLogger::log('update', $dataHubunganKerja, $oldData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status pengajuan berhasil diperbarui'
+        ]);
+    }
+
+    // NEW: Activate/Deactivate hubungan kerja
+    public function toggleActive(Request $request, $id)
+    {
+        $pegawai = Auth::user();
+
+        if (!$pegawai) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pegawai tidak ditemukan'
+            ], 404);
+        }
+
+        $dataHubunganKerja = SimpegDataHubunganKerja::where('pegawai_id', $pegawai->id)
+            ->find($id);
+
+        if (!$dataHubunganKerja) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data hubungan kerja tidak ditemukan'
+            ], 404);
+        }
+
+        if (!\Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Field is_aktif tidak tersedia di tabel ini'
+            ], 400);
+        }
+
+        $currentStatus = $dataHubunganKerja->is_aktif ?? false;
+        $newStatus = !$currentStatus;
+
+        // Jika mengaktifkan, nonaktifkan yang lain
+        if ($newStatus) {
+            SimpegDataHubunganKerja::where('pegawai_id', $pegawai->id)
+                ->where('id', '!=', $id)
+                ->update(['is_aktif' => false]);
+        }
+
+        $oldData = $dataHubunganKerja->getOriginal();
+        $dataHubunganKerja->update(['is_aktif' => $newStatus]);
+
+        ActivityLogger::log('update', $dataHubunganKerja, $oldData);
+
+        return response()->json([
+            'success' => true,
+            'message' => $newStatus ? 'Hubungan kerja berhasil diaktifkan' : 'Hubungan kerja berhasil dinonaktifkan',
+            'is_aktif' => $newStatus
+        ]);
+    }
+
     // Get dropdown options for create/update forms
     public function getFormOptions()
     {
@@ -515,7 +653,13 @@ class SimpegDataHubunganKerjaController extends Controller
             'success' => true,
             'form_options' => [
                 'hubungan_kerja' => $hubunganKerja,
-                'status_aktif' => $statusAktif
+                'status_aktif' => $statusAktif,
+                'status_pengajuan' => [
+                    ['id' => 'draft', 'nama' => 'Draft'],
+                    ['id' => 'diajukan', 'nama' => 'Diajukan'],
+                    ['id' => 'disetujui', 'nama' => 'Disetujui'],
+                    ['id' => 'ditolak', 'nama' => 'Ditolak']
+                ]
             ]
         ]);
     }
@@ -557,12 +701,49 @@ class SimpegDataHubunganKerjaController extends Controller
                 ];
             });
 
+        // Statistics berdasarkan status pengajuan (jika ada)
+        $statisticsByStatusPengajuan = [];
+        if (\Schema::hasColumn('simpeg_data_hubungan_kerja', 'status_pengajuan')) {
+            $statisticsByStatusPengajuan = SimpegDataHubunganKerja::where('pegawai_id', $pegawai->id)
+                ->selectRaw('status_pengajuan, COUNT(*) as total')
+                ->groupBy('status_pengajuan')
+                ->pluck('total', 'status_pengajuan')
+                ->map(function($total, $status) {
+                    $labels = [
+                        'draft' => 'Draft',
+                        'diajukan' => 'Diajukan',
+                        'disetujui' => 'Disetujui',
+                        'ditolak' => 'Ditolak'
+                    ];
+                    return [
+                        'nama' => $labels[$status] ?? $status,
+                        'total' => $total
+                    ];
+                });
+        }
+
+        // Statistics berdasarkan is_aktif (jika ada)
+        $statisticsByIsAktif = [];
+        if (\Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')) {
+            $aktifCount = SimpegDataHubunganKerja::where('pegawai_id', $pegawai->id)
+                ->where('is_aktif', true)->count();
+            $nonAktifCount = SimpegDataHubunganKerja::where('pegawai_id', $pegawai->id)
+                ->where('is_aktif', false)->count();
+            
+            $statisticsByIsAktif = [
+                'aktif' => ['nama' => 'Aktif', 'total' => $aktifCount],
+                'non_aktif' => ['nama' => 'Tidak Aktif', 'total' => $nonAktifCount]
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'statistics' => [
                 'total' => $totalData,
                 'by_hubungan_kerja' => $statisticsByHubunganKerja,
-                'by_status_aktif' => $statisticsByStatusAktif
+                'by_status_aktif' => $statisticsByStatusAktif,
+                'by_status_pengajuan' => $statisticsByStatusPengajuan,
+                'by_is_aktif' => $statisticsByIsAktif
             ]
         ]);
     }
@@ -572,7 +753,9 @@ class SimpegDataHubunganKerjaController extends Controller
     {
         $config = [
             'max_file_size' => 5120, // 5MB in KB
-            'allowed_file_types' => ['pdf']
+            'allowed_file_types' => ['pdf'],
+            'has_status_pengajuan' => \Schema::hasColumn('simpeg_data_hubungan_kerja', 'status_pengajuan'),
+            'has_is_aktif' => \Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')
         ];
 
         return response()->json([
@@ -707,6 +890,23 @@ class SimpegDataHubunganKerjaController extends Controller
             'updated_at' => $dataHubunganKerja->updated_at
         ];
 
+        // Add status fields if columns exist
+        if (\Schema::hasColumn('simpeg_data_hubungan_kerja', 'status_pengajuan')) {
+            $data['status_pengajuan'] = $dataHubunganKerja->status_pengajuan ?? 'draft';
+            $statusLabels = [
+                'draft' => 'Draft',
+                'diajukan' => 'Diajukan', 
+                'disetujui' => 'Disetujui',
+                'ditolak' => 'Ditolak'
+            ];
+            $data['status_pengajuan_label'] = $statusLabels[$data['status_pengajuan']] ?? $data['status_pengajuan'];
+        }
+
+        if (\Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')) {
+            $data['is_aktif'] = $dataHubunganKerja->is_aktif ?? false;
+            $data['is_aktif_label'] = $data['is_aktif'] ? 'Aktif' : 'Tidak Aktif';
+        }
+
         // Add action URLs if requested
         if ($includeActions) {
             // Get URL prefix from request
@@ -719,6 +919,15 @@ class SimpegDataHubunganKerjaController extends Controller
                 'delete_url' => url("/api/{$prefix}/hubungankerja/{$dataHubunganKerja->id}"),
                 'download_url' => $dataHubunganKerja->file_hubungan_kerja ? url("/api/{$prefix}/hubungankerja/{$dataHubunganKerja->id}/download") : null,
             ];
+
+            // Add status action URLs if columns exist
+            if (\Schema::hasColumn('simpeg_data_hubungan_kerja', 'status_pengajuan')) {
+                $data['aksi']['status_url'] = url("/api/{$prefix}/hubungankerja/{$dataHubunganKerja->id}/status");
+            }
+
+            if (\Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')) {
+                $data['aksi']['toggle_active_url'] = url("/api/{$prefix}/hubungankerja/{$dataHubunganKerja->id}/toggle-active");
+            }
 
             // Action URLs
             $data['actions'] = [];
@@ -749,6 +958,18 @@ class SimpegDataHubunganKerjaController extends Controller
                     'label' => 'Download File',
                     'icon' => 'download',
                     'color' => 'success'
+                ];
+            }
+            
+            // Toggle active action if column exists
+            if (\Schema::hasColumn('simpeg_data_hubungan_kerja', 'is_aktif')) {
+                $isAktif = $dataHubunganKerja->is_aktif ?? false;
+                $data['actions']['toggle_active'] = [
+                    'url' => $data['aksi']['toggle_active_url'],
+                    'method' => 'POST',
+                    'label' => $isAktif ? 'Nonaktifkan' : 'Aktifkan',
+                    'icon' => $isAktif ? 'pause-circle' : 'play-circle',
+                    'color' => $isAktif ? 'secondary' : 'primary'
                 ];
             }
             

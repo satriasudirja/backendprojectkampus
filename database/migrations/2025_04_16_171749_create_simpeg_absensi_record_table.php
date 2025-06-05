@@ -23,7 +23,6 @@ return new class extends Migration
             $table->time('jam_keluar')->nullable();
             $table->boolean('terlambat')->nullable();
             $table->boolean('pulang_awal')->nullable();
-            $table->string('file_foto',255);
             $table->string('check_sum_absensi', 255);
             $table->softDeletes();
             $table->timestamps();
