@@ -17,6 +17,24 @@ use Illuminate\Support\Facades\Auth;
 
 class SimpegRiwayatDiklatController extends Controller
 {
+    //sasasa
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     // Get all riwayat diklat (for admin with hierarchical unit filter)
     public function index(Request $request)
     {
