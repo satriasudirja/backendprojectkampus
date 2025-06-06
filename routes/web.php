@@ -9,6 +9,10 @@ Route::get('/', function () {
 Route::get('/test', function () {
     return 'Test route works!';
 });
+// TAMBAHKAN OVERRIDE TEST INI:
+Route::get('/captcha/slide-captcha', function () {
+    return 'Route override works! Controller was the problem.';
+});
 
 
 // Route::middleware('web')->group(function () {
