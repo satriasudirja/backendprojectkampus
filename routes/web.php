@@ -6,17 +6,21 @@ use App\Http\Controllers\CaptchaController;
 Route::get('/', function () {
     return view('welcome');
 });
+Route::get('/test', function () {
+    return 'Test route works!';
+});
 
-Route::middleware('web')->group(function () {
+
+// Route::middleware('web')->group(function () {
     Route::get('/captcha/slide-captcha', [CaptchaController::class, 'showSlideCaptcha'])
          ->name('captcha.slide-captcha');
     Route::get('/captcha/image/{type}/{id}', [CaptchaController::class, 'serveImage'])
          ->name('captcha.image');
 
-    Route::fallback(function () {
-        return response()->view('errors.404', [], 404);
-    });
-});
+//     Route::fallback(function () {
+//         return response()->view('errors.404', [], 404);
+//     });
+// });
 
 // // Route untuk dokumentasi Swagger
 // Route::get('/api/documentation', function () {
