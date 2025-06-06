@@ -695,4 +695,7 @@ class SimpegRiwayatJabatanStrukturalController extends Controller
 
         return $data;
     }
+
+
+    
 }
