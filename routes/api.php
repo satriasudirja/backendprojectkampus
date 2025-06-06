@@ -37,7 +37,7 @@ use App\Http\Controllers\Api\SimpegKategoriSertifikasiController;
 use App\Http\Controllers\Api\SimpegMediaPublikasiController;
 use App\Http\Controllers\Api\SimpegJenjangPendidikanController;
 
-use App\Http\Controllers\Api\SimpegJenispelanggaranController;
+use App\Http\Controllers\Api\SimpegJenisPelanggaranController;
 use App\Http\Controllers\Api\SimpegJenisPenghargaaniController;
 use App\Http\Controllers\Api\SimpegJenisPublikasiController;
 use App\Http\Controllers\Api\SimpegJenisKenaikanPangkatController;
@@ -50,6 +50,9 @@ use App\Http\Controllers\Api\SimpegGajiSlipController;
 use App\Http\Controllers\Api\SimpegGajiPeriodeController;
 use App\Http\Controllers\Api\SimpegGajiTunjanganKhususController;
 use App\Http\Controllers\Api\SimpegGajiLemburController;
+
+
+
 
 use App\Http\Controllers\Api\SimpegRiwayatPangkatController;
 use App\Http\Controllers\Api\SimpegRiwayatPekerjaanDosenController;
