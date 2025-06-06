@@ -17,11 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'jwt.verify' => \App\Http\Middleware\JwtMiddleware::class,
             // 'role' => \App\Http\Middleware\CheckRole::class,
-
-
-        Intervention\Image\ImageServiceProvider::class,
-
-
+        // Intervention\Image\ImageServiceProvider::class,
             'auth' => \App\Http\Middleware\Authenticate::class,
             'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
             'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
