@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CaptchaController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return 'tess';
 });
 Route::get('/test', function () {
     return 'Test route works!';
