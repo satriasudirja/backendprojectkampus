@@ -89,6 +89,13 @@ use App\Http\Controllers\Api\SimpegRiwayatDiklatController;
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
+use App\Http\Controllers\CaptchaController;
+
+Route::get('api/captcha/slide-captcha', [CaptchaController::class, 'showSlideCaptcha'])->name('captcha.slide-captcha');
+
+// Route untuk menampilkan gambar captcha dari private storage
+Route::get('api/captcha/image/{type}/{id}', [CaptchaController::class, 'serveImage'])->name('captcha.image');
+
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
