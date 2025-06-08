@@ -18,15 +18,18 @@ return new class extends Migration
             $table->integer('pegawai_id');
             
             // Data penghargaan
-            $table->string('kategori_penghargaan', 100);
-            $table->string('tingkat_penghargaan', 50);
-            $table->string('jenis_penghargaan', 100);
-            $table->string('nama_penghargaan', 255);
-            $table->date('tanggal');  // Diperbaiki dari 'tanggai' ke 'tanggal'
-            $table->string('instansi_pemberi', 255);
-            $table->string('status_pengajuan', 50)->default('diajukan');
-            
+        
+
+            $table->string('jenis_penghargaan', 100)->nullable();
+            $table->string('nama_penghargaan', 255)->nullable();
+            $table->string('no_sk', 100)->nullable();
+              $table->date('tanggal_sk')->nullable();
+                $table->string('keterangan', 255)->nullable();
+            $table->date('tanggal_penghargaan')->nullable();  // Diperbaiki dari 'tanggai' ke 'tanggal'
+            $table->date('file_penghargaan')->nullable();  
+       
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

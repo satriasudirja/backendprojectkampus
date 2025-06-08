@@ -115,11 +115,12 @@ class PegawaiController extends Controller
                         'unit_kerja' => url("/api/{$prefix}/pegawai/riwayat-unit-kerja/" . $item->id),
                         'pendidikan' => url("/api/{$prefix}/pegawai/info-pendidikan/" . $item->id),
                         'pangkat' => url("/api/{$prefix}/pegawai/riwayat-pangkat/" . $item->id),
+                        'akademik' => url("/api/{$prefix}/pegawai/riwayat-jabatan-akademik/" . $item->id),
                         'fungsional' => url("/api/{$prefix}/pegawai/riwayat-fungsional/" . $item->id),
                         'jenjang_fungsional' => url("/api/{$prefix}/pegawai/riwayat-jenjang-fungsional/" . $item->id),
                         'jabatan_struktural' => url("/api/{$prefix}/pegawai/riwayat-jabatan-struktural/" . $item->id),
                         'hubungan_kerja' => url("/api/{$prefix}/pegawai/riwayat-hubungan-kerja/" . $item->id),
-                        'rekap_kehadiran' => url("/api/{$prefix}/pegawai/rekap-kehadiran/" . $item->id)
+                        'rekap_kehadiran' => url("/api/{$prefix}/pegawai/riwayat-kehadiran/" . $item->id)
                     ]
                 ]
             ];

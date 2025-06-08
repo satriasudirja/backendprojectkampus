@@ -12,19 +12,15 @@ class SimpegDataPenghargaan extends Model
     protected $table = 'simpeg_data_penghargaan';
 
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
-
     protected $fillable = [
-        'id',
         'pegawai_id',
-        'kategori_penghargaan',
-        'tingkat_penghargaan',
-        'jenis_penghargaan',
+    
+         'jenis_penghargaan',
         'nama_penghargaan',
-        'tanggal',
-        'instansi_pemberi',
-        'status_pengajuan'
+        'no_sk',
+        'tanggal_sk',
+        'tanggal_penghargaan',
+        'keterangan'
     ];
 
     protected $casts = [

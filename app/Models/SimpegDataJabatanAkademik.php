@@ -24,13 +24,17 @@ class SimpegDataJabatanAkademik extends Model
         'pejabat_penetap',
         'file_jabatan',
         'tgl_input',
-        'status_pengajuan'
+        'status_pengajuan',
+        'tgl_disetujui',
+          'tgl_ditolak',
     ];
 
     protected $casts = [
         'tmt_jabatan' => 'date',
         'tgl_sk' => 'date',
-        'tgl_input' => 'date'
+        'tgl_input' => 'date',
+        'tgl_disetujui' => 'date',
+        'tgl_ditolak' => 'date'
     ];
 
     // Relasi ke tabel pegawai

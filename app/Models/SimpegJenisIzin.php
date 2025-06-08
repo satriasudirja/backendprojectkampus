@@ -11,8 +11,6 @@ class SimpegJenisIzin extends Model
 
     protected $table = 'simpeg_jenis_izin';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
         'jenis_kehadiran_id',
@@ -29,6 +27,6 @@ class SimpegJenisIzin extends Model
 
     public function jenisKehadiran()
     {
-        return $this->belongsTo(JenisKehadiran::class, 'jenis_kehadiran_id');
+        return $this->belongsTo(SimpegJenisKehadiran::class, 'jenis_kehadiran_id');
     }
 }

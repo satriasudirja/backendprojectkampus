@@ -26,6 +26,12 @@ return new class extends Migration
             $table->foreign('jenis_kehadiran_id')
                   ->references('id')->on('simpeg_jenis_kehadiran')
                   ->onDelete('restrict');
+            $table->foreign('cuti_record_id')
+                  ->references('id')->on('simpeg_cuti_record')
+                  ->onDelete('cascade');
+            $table->foreign('izin_record_id')
+                  ->references('id')->on('simpeg_izin_record')
+                  ->onDelete('cascade');
         });
     }
 
@@ -38,6 +44,8 @@ return new class extends Migration
             $table->dropForeign(['pegawai_id']);
             $table->dropForeign(['setting_kehadiran_id']);
             $table->dropForeign(['jenis_kehadiran_id']);
+             $table->dropForeign(['cuti_record_id']);
+              $table->dropForeign(['izin_record_id']);
         });
     }
 };

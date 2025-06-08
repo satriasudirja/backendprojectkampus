@@ -19,6 +19,10 @@ return new class extends Migration
             $table->date('tgl_pelanggaran');
             $table->string('no_sk', 100);
             $table->date('tgl_sk');
+            $table->string('keterangan', 255);
+            $table->string('file_foto', 255);
+             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

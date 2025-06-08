@@ -14,14 +14,22 @@ class SimpegJamKerja extends Model
     protected $primaryKey = 'id';
 
 
-    protected $fillable = [
-        'jenis_jam_kerja',
-        'jam_normal',
-        'jam_datang',
-        'jam_pulang',
-    ];
+protected $fillable = [
+    'jenis_jam_kerja',
+    'jam_normal',
+    'jam_masuk',        // Format: H:i:s
+    'jam_keluar',       // Format: H:i:s
+    'is_default',
+    'is_active',
+    'toleransi_terlambat',    // dalam menit
+    'toleransi_pulang_awal',  // dalam menit
+];
 
-    protected $casts = [
-        'jam_normal' => 'boolean',
-    ];
+protected $casts = [
+    'jam_normal' => 'boolean',
+    'is_default' => 'boolean',
+    'is_active' => 'boolean',
+    'toleransi_terlambat' => 'integer',
+    'toleransi_pulang_awal' => 'integer',
+];
 }
