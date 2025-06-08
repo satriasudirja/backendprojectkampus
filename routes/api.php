@@ -89,6 +89,12 @@ use App\Http\Controllers\Api\SimpegRiwayatDiklatController;
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
+use App\Http\Controllers\Api\SimpegRumpunBidangIlmuController;
+
+use App\Http\Controllers\Api\SimpegDataRiwayatTesController;
+use App\Http\Controllers\Api\SimpegDataSertifikasidosenController;
+
+
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::get('captcha', [AuthController::class, 'generateCaptcha']);
@@ -457,6 +463,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('gaji-periode', SimpegGajiPeriodeController::class);
         Route::apiResource('jenis-hari', SimpegJenisHariController::class);
         Route::apiResource('jenis-kehadiran', SimpegJenisKehadiranController::class);
+        Route::apiResource('rumpun-bidang-ilmu', SimpegJenisKehadiranController::class);
 
         Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
         Route::get('/unit-kerja/dropdown', [UnitKerjaController::class, 'getUnitsDropdown']);
@@ -555,6 +562,84 @@ Route::middleware('auth:api')->group(function () {
             Route::get('/filter-options', [SimpegDataAnakController::class, 'getFilterOptions']);
             Route::get('/available-actions', [SimpegDataAnakController::class, 'getAvailableActions']);
         });
+
+        // Data Riwayat Tes Routes
+        Route::prefix('datariwayattes')->group(function () {
+            // ========================================
+            // STATIC ROUTES (HARUS DI ATAS!)
+            // ========================================
+            
+            // Configuration & Statistics Routes
+            Route::get('/config/system', [SimpegDataRiwayatTesController::class, 'getSystemConfig']);
+            Route::get('/statistics/status', [SimpegDataRiwayatTesController::class, 'getStatusStatistics']);
+            Route::get('/filter-options', [SimpegDataRiwayatTesController::class, 'getFilterOptions']);
+            Route::get('/available-actions', [SimpegDataRiwayatTesController::class, 'getAvailableActions']);
+            
+            // Utility Routes
+            Route::get('/jenis-tes/list', [SimpegDataRiwayatTesController::class, 'getJenisTes']);
+            Route::patch('/fix-existing-data', [SimpegDataRiwayatTesController::class, 'fixExistingData']);
+            Route::patch('/bulk-fix-existing-data', [SimpegDataRiwayatTesController::class, 'bulkFixExistingData']);
+            
+            // ========================================
+            // BATCH OPERATIONS ROUTES (HARUS SEBELUM {id} ROUTES!)
+            // ========================================
+            Route::delete('/batch/delete', [SimpegDataRiwayatTesController::class, 'batchDelete']);
+            Route::patch('/batch/submit', [SimpegDataRiwayatTesController::class, 'batchSubmitDrafts']);
+            Route::patch('/batch/status', [SimpegDataRiwayatTesController::class, 'batchUpdateStatus']);
+            
+            // ========================================
+            // CRUD OPERATIONS (PARAMETER ROUTES DI BAWAH!)
+            // ========================================
+            Route::get('/', [SimpegDataRiwayatTesController::class, 'index']);
+            Route::post('/', [SimpegDataRiwayatTesController::class, 'store']);
+            Route::get('/{id}', [SimpegDataRiwayatTesController::class, 'show']);
+            Route::put('/{id}', [SimpegDataRiwayatTesController::class, 'update']);
+            Route::delete('/{id}', [SimpegDataRiwayatTesController::class, 'destroy']);
+            
+            // ========================================
+            // STATUS PENGAJUAN ROUTES (DENGAN {id} DI BAWAH!)
+            // ========================================
+            Route::patch('/{id}/submit', [SimpegDataRiwayatTesController::class, 'submitDraft']);
+        });
+
+
+        // Data Sertifikasi Dosen Routes
+        Route::prefix('datasertifikasidosen')->group(function () {
+            // ======================================
+            // BATCH OPERATIONS ROUTES (HARUS DI ATAS!)
+            // ======================================
+            Route::delete('/batch/delete', [SimpegDataSertifikasidosenController::class, 'batchDelete']);
+            Route::patch('/batch/submit', [SimpegDataSertifikasidosenController::class, 'batchSubmitDrafts']);
+            Route::patch('/batch/status', [SimpegDataSertifikasidosenController::class, 'batchUpdateStatus']);
+            
+            // ======================================
+            // CONFIGURATION & STATISTICS ROUTES
+            // ======================================
+            Route::get('/config/system', [SimpegDataSertifikasidosenController::class, 'getSystemConfig']);
+            Route::get('/statistics/status', [SimpegDataSertifikasidosenController::class, 'getStatusStatistics']);
+            Route::get('/filter-options', [SimpegDataSertifikasidosenController::class, 'getFilterOptions']);
+            Route::get('/available-actions', [SimpegDataSertifikasidosenController::class, 'getAvailableActions']);
+            
+            // ======================================
+            // DATA FIX ROUTES
+            // ======================================
+            Route::patch('/fix/existing-data', [SimpegDataSertifikasidosenController::class, 'fixExistingData']);
+            
+            // ======================================
+            // CRUD ROUTES (HARUS DI BAWAH SEMUA ROUTE STATIS!)
+            // ======================================
+            Route::get('/', [SimpegDataSertifikasidosenController::class, 'index']);
+            Route::post('/', [SimpegDataSertifikasidosenController::class, 'store']);
+            Route::get('/{id}', [SimpegDataSertifikasidosenController::class, 'show']);
+            Route::put('/{id}', [SimpegDataSertifikasidosenController::class, 'update']);
+            Route::delete('/{id}', [SimpegDataSertifikasidosenController::class, 'destroy']);
+            
+            // ======================================
+            // STATUS PENGAJUAN ROUTES
+            // ======================================
+            Route::patch('/{id}/submit', [SimpegDataSertifikasidosenController::class, 'submitDraft']);
+        });
+
 
         // Data Organisasi Routes
         Route::prefix('dataorganisasi')->group(function () {

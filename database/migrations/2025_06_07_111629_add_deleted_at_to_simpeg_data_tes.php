@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('simpeg_daftar_jenis_test', function (Blueprint $table) {
+        Schema::table('simpeg_data_tes', function (Blueprint $table) {
             //
             $table->softDeletes();
         });
@@ -22,9 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('simpeg_daftar_jenis_test', function (Blueprint $table) {
+        Schema::table('simpeg_data_tes', function (Blueprint $table) {
             //
-            $table->dropSoftDeletes();
+             $table->dropSoftDeletes();
         });
     }
 };
