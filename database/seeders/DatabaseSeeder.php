@@ -13,12 +13,12 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+                  SimpegUnitKerjaSeeder::class,
             //   SimpegJabatanStrukturalSeeder::class,
             SimpegUserRoleSeeder::class, 
             SimpegJabatanAkademikSeeder::class,  
             SimpegStatusPernikahanSeeder::class,
             SimpegSukuSeeder::class,
-            SimpegUnitKerjaSeeder::class,
             SimpegStatusAktifSeeder::class,
             RumpunBidangIlmuSeeder::class,
 

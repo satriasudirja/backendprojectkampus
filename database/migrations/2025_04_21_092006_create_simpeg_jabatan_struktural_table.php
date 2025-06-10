@@ -18,9 +18,9 @@ return new class extends Migration
             $table->integer('pangkat_id');
             $table->integer('eselon_id');
             $table->string('kode', 5);
-            $table->string('singkatan', 50);
-            $table->string('alamat_email', 100);
-            $table->integer('beban_sks');
+            $table->string('singkatan', 100);
+            $table->string('alamat_email', 100)->nullable();
+            $table->integer('beban_sks')->nullable();
             $table->boolean('is_pimpinan');
             $table->boolean('aktif');
             $table->text('keterangan')->nullable();

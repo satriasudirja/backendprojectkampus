@@ -86,6 +86,7 @@ use App\Http\Controllers\Api\SimpegRiwayatHubunganKerjaController;
 use App\Http\Controllers\Api\SimpegRiwayatJabatanStrukturalController;
 use App\Http\Controllers\Api\SimpegSettingKehadiranController;
 use App\Http\Controllers\Api\SimpegRiwayatDiklatController;
+use App\Http\Controllers\Api\EvaluasiKinerjaController;
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
@@ -109,6 +110,23 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+         Route::prefix('evaluasi-kinerja')->group(function () {
+          Route::get('/pegawai', [EvaluasiKinerjaController::class, 'index']);
+    
+    // Get detail pegawai dan riwayat evaluasinya
+    Route::get('/pegawai/{pegawaiId}', [EvaluasiKinerjaController::class, 'show']);
+    
+    // CRUD evaluasi kinerja
+    Route::post('/', [EvaluasiKinerjaController::class, 'store']);
+    Route::put('/{id}', [EvaluasiKinerjaController::class, 'update']);
+    Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy']);
+    
+    // Debug endpoint untuk melihat hierarki (optional, bisa dihapus di production)
+    Route::get('/debug-hierarki', [EvaluasiKinerjaController::class, 'debugHierarki']);
+    });
+
+
+
         Route::prefix('pegawai/riwayat-diklat')->group(function () {
     
     // GET: Mendapatkan semua riwayat diklat dengan filter dan pagination
@@ -470,10 +488,25 @@ Route::middleware('auth:api')->group(function () {
     });
 
     // Dosen Routes
-    Route::middleware('role:Dosen')->prefix('dosen')->group(function () {
+    Route::middleware('role:Dosen,Tenaga Kependidikan,Dosen Praktisi/Industri')->prefix('dosen')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
+
+         Route::prefix('evaluasi-kinerja')->group(function () {
+          Route::get('/pegawai', [EvaluasiKinerjaController::class, 'index']);
+    
+    // Get detail pegawai dan riwayat evaluasinya
+    Route::get('/pegawai/{pegawaiId}', [EvaluasiKinerjaController::class, 'show']);
+    
+    // CRUD evaluasi kinerja
+    Route::post('/', [EvaluasiKinerjaController::class, 'store']);
+    Route::put('/{id}', [EvaluasiKinerjaController::class, 'update']);
+    Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy']);
+    
+    // Debug endpoint untuk melihat hierarki (optional, bisa dihapus di production)
+    Route::get('/debug-hierarki', [EvaluasiKinerjaController::class, 'debugHierarki']);
+    });
         Route::prefix('absensi')->group(function () {
 
             // Get status absensi hari ini
