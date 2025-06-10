@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\SimpegDataRiwayatPekerjaan;
-use App\Models\SimpegDataPendukung;
+use App\Models\SimpegDataTes;
+use App\Models\SimpegDaftarJenisTest;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegPegawai;
 use Illuminate\Http\Request;
@@ -14,9 +14,9 @@ use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-class SimpegDataRiwayatPekerjaanDosenController extends Controller
+class SimpegDataRiwayatTesController extends Controller
 {
-    // Get all data riwayat pekerjaan for logged in dosen
+    // Get all data riwayat tes for logged in pegawai
     public function index(Request $request) 
     {
         // Pastikan user sudah login
@@ -61,15 +61,20 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         $statusPengajuan = $request->status_pengajuan;
 
         // Query HANYA untuk pegawai yang sedang login
-        $query = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id);
+        $query = SimpegDataTes::where('pegawai_id', $pegawai->id)
+            ->with(['jenisTes']);
 
         // Filter by search
         if ($search) {
             $query->where(function($q) use ($search) {
-                $q->where('bidang_usaha', 'like', '%'.$search.'%')
-                  ->orWhere('jenis_pekerjaan', 'like', '%'.$search.'%')
-                  ->orWhere('jabatan', 'like', '%'.$search.'%')
-                  ->orWhere('instansi', 'like', '%'.$search.'%');
+                $q->where('nama_tes', 'like', '%'.$search.'%')
+                  ->orWhere('penyelenggara', 'like', '%'.$search.'%')
+                  ->orWhere('skor', 'like', '%'.$search.'%')
+                  ->orWhere('tgl_tes', 'like', '%'.$search.'%')
+                  ->orWhereHas('jenisTes', function($jq) use ($search) {
+                      $jq->where('jenis_tes', 'like', '%'.$search.'%')
+                        ->orWhere('kode', 'like', '%'.$search.'%');
+                  });
             });
         }
 
@@ -79,34 +84,37 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
 
         // Additional filters
-        if ($request->filled('bidang_usaha')) {
-            $query->where('bidang_usaha', 'like', '%'.$request->bidang_usaha.'%');
+        if ($request->filled('jenis_tes_id')) {
+            $query->where('jenis_tes_id', $request->jenis_tes_id);
         }
-        if ($request->filled('jenis_pekerjaan')) {
-            $query->where('jenis_pekerjaan', 'like', '%'.$request->jenis_pekerjaan.'%');
+        if ($request->filled('nama_tes')) {
+            $query->where('nama_tes', 'like', '%'.$request->nama_tes.'%');
         }
-        if ($request->filled('instansi')) {
-            $query->where('instansi', 'like', '%'.$request->instansi.'%');
+        if ($request->filled('penyelenggara')) {
+            $query->where('penyelenggara', 'like', '%'.$request->penyelenggara.'%');
         }
-        if ($request->filled('mulai_bekerja')) {
-            $query->whereDate('mulai_bekerja', $request->mulai_bekerja);
+        if ($request->filled('tgl_tes')) {
+            $query->whereDate('tgl_tes', $request->tgl_tes);
         }
-        if ($request->filled('area_pekerjaan')) {
-            $query->where('area_pekerjaan', $request->area_pekerjaan);
+        if ($request->filled('skor_min')) {
+            $query->where('skor', '>=', $request->skor_min);
+        }
+        if ($request->filled('skor_max')) {
+            $query->where('skor', '<=', $request->skor_max);
         }
 
         // Execute query dengan pagination
-        $dataPekerjaan = $query->orderBy('mulai_bekerja', 'desc')->paginate($perPage);
+        $dataRiwayatTes = $query->orderBy('tgl_tes', 'desc')->paginate($perPage);
 
         // Transform the collection to include formatted data with action URLs
-        $dataPekerjaan->getCollection()->transform(function ($item) {
-            return $this->formatDataPekerjaan($item, true);
+        $dataRiwayatTes->getCollection()->transform(function ($item) {
+            return $this->formatDataRiwayatTes($item, true);
         });
 
         return response()->json([
             'success' => true,
-            'data' => $dataPekerjaan,
-            'empty_data' => $dataPekerjaan->isEmpty(),
+            'data' => $dataRiwayatTes,
+            'empty_data' => $dataRiwayatTes->isEmpty(),
             'pegawai_info' => $this->formatPegawaiInfo($pegawai),
             'filters' => [
                 'status_pengajuan' => [
@@ -115,23 +123,26 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     ['id' => 'diajukan', 'nama' => 'Diajukan'],
                     ['id' => 'disetujui', 'nama' => 'Disetujui'],
                     ['id' => 'ditolak', 'nama' => 'Ditolak']
-                ]
+                ],
+                'jenis_tes' => SimpegDaftarJenisTest::select('id', 'jenis_tes as nama', 'kode')
+                    ->orderBy('jenis_tes')
+                    ->get()
+                    ->toArray()
             ],
             'table_columns' => [
-                ['field' => 'bidang_usaha', 'label' => 'Bidang Usaha', 'sortable' => true, 'sortable_field' => 'bidang_usaha'],
-                ['field' => 'jenis_pekerjaan', 'label' => 'Jenis Pekerjaan', 'sortable' => true, 'sortable_field' => 'jenis_pekerjaan'],
-                ['field' => 'jabatan', 'label' => 'Jabatan', 'sortable' => true, 'sortable_field' => 'jabatan'],
-                ['field' => 'instansi', 'label' => 'Instansi', 'sortable' => true, 'sortable_field' => 'instansi'],
-                ['field' => 'mulai_bekerja', 'label' => 'Mulai Bekerja', 'sortable' => true, 'sortable_field' => 'mulai_bekerja'],
-                ['field' => 'selesai_bekerja', 'label' => 'Selesai Bekerja', 'sortable' => true, 'sortable_field' => 'selesai_bekerja'],
+                ['field' => 'jenis_tes', 'label' => 'Jenis Tes', 'sortable' => true, 'sortable_field' => 'jenis_tes_id'],
+                ['field' => 'nama_tes', 'label' => 'Nama Tes', 'sortable' => true, 'sortable_field' => 'nama_tes'],
+                ['field' => 'penyelenggara', 'label' => 'Penyelenggara', 'sortable' => true, 'sortable_field' => 'penyelenggara'],
+                ['field' => 'tgl_tes', 'label' => 'Tanggal Tes', 'sortable' => true, 'sortable_field' => 'tgl_tes'],
+                ['field' => 'skor', 'label' => 'Skor', 'sortable' => true, 'sortable_field' => 'skor'],
                 ['field' => 'status_pengajuan', 'label' => 'Status Pengajuan', 'sortable' => true, 'sortable_field' => 'status_pengajuan'],
                 ['field' => 'aksi', 'label' => 'Aksi', 'sortable' => false]
             ],
             'table_rows_options' => [10, 25, 50, 100],
-            'tambah_data_url' => url("/api/dosen/data-riwayat-pekerjaan-dosen"),
+            'tambah_data_url' => url("/api/dosen/datariwayattes"),
             'batch_actions' => [
                 'delete' => [
-                    'url' => url("/api/dosen/data-riwayat-pekerjaan-dosen/batch/delete"),
+                    'url' => url("/api/dosen/datariwayattes/batch/delete"),
                     'method' => 'DELETE',
                     'label' => 'Hapus Terpilih',
                     'icon' => 'trash',
@@ -139,7 +150,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     'confirm' => true
                 ],
                 'submit' => [
-                    'url' => url("/api/dosen/data-riwayat-pekerjaan-dosen/batch/submit"),
+                    'url' => url("/api/dosen/datariwayattes/batch/submit"),
                     'method' => 'PATCH',
                     'label' => 'Ajukan Terpilih',
                     'icon' => 'paper-plane',
@@ -147,7 +158,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     'confirm' => true
                 ],
                 'update_status' => [
-                    'url' => url("/api/dosen/data-riwayat-pekerjaan-dosen/batch/status"),
+                    'url' => url("/api/dosen/datariwayattes/batch/status"),
                     'method' => 'PATCH',
                     'label' => 'Update Status Terpilih',
                     'icon' => 'check-circle',
@@ -155,12 +166,12 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                 ]
             ],
             'pagination' => [
-                'current_page' => $dataPekerjaan->currentPage(),
-                'per_page' => $dataPekerjaan->perPage(),
-                'total' => $dataPekerjaan->total(),
-                'last_page' => $dataPekerjaan->lastPage(),
-                'from' => $dataPekerjaan->firstItem(),
-                'to' => $dataPekerjaan->lastItem()
+                'current_page' => $dataRiwayatTes->currentPage(),
+                'per_page' => $dataRiwayatTes->perPage(),
+                'total' => $dataRiwayatTes->total(),
+                'last_page' => $dataRiwayatTes->lastPage(),
+                'from' => $dataRiwayatTes->firstItem(),
+                'to' => $dataRiwayatTes->lastItem()
             ]
         ]);
     }
@@ -178,7 +189,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
 
         // Update data yang status_pengajuan-nya null menjadi draft
-        $updatedCount = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $updatedCount = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->whereNull('status_pengajuan')
             ->update([
                 'status_pengajuan' => 'draft',
@@ -187,12 +198,28 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Berhasil memperbaiki {$updatedCount} data riwayat pekerjaan",
+            'message' => "Berhasil memperbaiki {$updatedCount} data riwayat tes",
             'updated_count' => $updatedCount
         ]);
     }
 
-    // Get detail data riwayat pekerjaan
+    // Bulk fix all existing data (admin only atau bisa untuk semua user)
+    public function bulkFixExistingData()
+    {
+        $updatedCount = SimpegDataTes::whereNull('status_pengajuan')
+            ->update([
+                'status_pengajuan' => 'draft',
+                'tgl_input' => DB::raw('COALESCE(tgl_input, created_at)')
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil memperbaiki {$updatedCount} data riwayat tes dari semua pegawai",
+            'updated_count' => $updatedCount
+        ]);
+    }
+
+    // Get detail data riwayat tes
     public function show($id)
     {
         $pegawai = Auth::user();
@@ -204,14 +231,14 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->with('dataPendukung')
+        $dataRiwayatTes = SimpegDataTes::where('pegawai_id', $pegawai->id)
+            ->with(['jenisTes'])
             ->find($id);
 
-        if (!$dataPekerjaan) {
+        if (!$dataRiwayatTes) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan tidak ditemukan'
+                'message' => 'Data riwayat tes tidak ditemukan'
             ], 404);
         }
 
@@ -223,11 +250,11 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                 'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
                 'dataPendidikanFormal.jenjangPendidikan'
             ])),
-            'data' => $this->formatDataPekerjaan($dataPekerjaan)
+            'data' => $this->formatDataRiwayatTes($dataRiwayatTes)
         ]);
     }
 
-    // Store new data riwayat pekerjaan dengan draft/submit mode
+    // Store new data riwayat tes dengan draft/submit mode
     public function store(Request $request)
     {
         $pegawai = Auth::user();
@@ -240,21 +267,12 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'bidang_usaha' => 'required|string|max:200',
-            'jenis_pekerjaan' => 'required|string|max:50',
-            'jabatan' => 'required|string|max:50',
-            'instansi' => 'required|string|max:100',
-            'divisi' => 'nullable|string|max:100',
-            'deskripsi' => 'nullable|string',
-            'mulai_bekerja' => 'required|date',
-            'selesai_bekerja' => 'nullable|date|after_or_equal:mulai_bekerja',
-            'area_pekerjaan' => 'required|boolean',
-            'dokumen_pendukung' => 'nullable|array',
-            'dokumen_pendukung.*.tipe_dokumen' => 'required|string|in:file',
-            'dokumen_pendukung.*.file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'dokumen_pendukung.*.nama_dokumen' => 'required|string|max:100',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|string',
-            'dokumen_pendukung.*.keterangan' => 'nullable|string',
+            'jenis_tes_id' => 'required|integer|exists:simpeg_daftar_jenis_test,id',
+            'nama_tes' => 'required|string|max:100',
+            'penyelenggara' => 'required|string|max:100',
+            'tgl_tes' => 'required|date|before_or_equal:today',
+            'skor' => 'required|numeric|min:0|max:999.99',
+            'file_pendukung' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'submit_type' => 'sometimes|in:draft,submit', // Optional, default to draft
             'keterangan' => 'nullable|string'
         ]);
@@ -266,53 +284,41 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 422);
         }
 
-        // Start database transaction
-        DB::beginTransaction();
+        $data = $request->except(['file_pendukung', 'submit_type']);
+        $data['pegawai_id'] = $pegawai->id;
+        $data['tgl_input'] = now()->toDateString();
 
-        try {
-            $data = $request->except(['dokumen_pendukung', 'submit_type']);
-            $data['pegawai_id'] = $pegawai->id;
-            $data['tgl_input'] = now()->toDateString();
-
-            // Set status berdasarkan submit_type (default: draft)
-            $submitType = $request->input('submit_type', 'draft');
-            if ($submitType === 'submit') {
-                $data['status_pengajuan'] = 'diajukan';
-                $data['tgl_diajukan'] = now();
-                $message = 'Data riwayat pekerjaan berhasil diajukan untuk persetujuan';
-            } else {
-                $data['status_pengajuan'] = 'draft';
-                $message = 'Data riwayat pekerjaan berhasil disimpan sebagai draft';
-            }
-
-            $dataPekerjaan = SimpegDataRiwayatPekerjaan::create($data);
-
-            // Handle dokumen pendukung
-            if ($request->hasFile('dokumen_pendukung')) {
-                $this->saveDokumenPendukung($request->file('dokumen_pendukung'), $request->dokumen_pendukung, $dataPekerjaan);
-            }
-
-            DB::commit();
-            
-            ActivityLogger::log('create', $dataPekerjaan, $dataPekerjaan->toArray());
-
-            return response()->json([
-                'success' => true,
-                'data' => $this->formatDataPekerjaan($dataPekerjaan->fresh(['dataPendukung'])),
-                'message' => $message
-            ], 201);
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage()
-            ], 500);
+        // Set status berdasarkan submit_type (default: draft)
+        $submitType = $request->input('submit_type', 'draft');
+        if ($submitType === 'submit') {
+            $data['status_pengajuan'] = 'diajukan';
+            $data['tgl_diajukan'] = now();
+            $message = 'Data riwayat tes berhasil diajukan untuk persetujuan';
+        } else {
+            $data['status_pengajuan'] = 'draft';
+            $message = 'Data riwayat tes berhasil disimpan sebagai draft';
         }
+
+        // Handle file upload
+        if ($request->hasFile('file_pendukung')) {
+            $file = $request->file('file_pendukung');
+            $fileName = 'tes_'.time().'_'.$pegawai->id.'_'.uniqid().'.'.$file->getClientOriginalExtension();
+            $file->storeAs('public/pegawai/tes/dokumen', $fileName);
+            $data['file_pendukung'] = $fileName;
+        }
+
+        $dataRiwayatTes = SimpegDataTes::create($data);
+
+        ActivityLogger::log('create', $dataRiwayatTes, $dataRiwayatTes->toArray());
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatDataRiwayatTes($dataRiwayatTes->load('jenisTes')),
+            'message' => $message
+        ], 201);
     }
 
-    // Update data riwayat pekerjaan dengan validasi status
+    // Update data riwayat tes dengan validasi status
     public function update(Request $request, $id)
     {
         $pegawai = Auth::user();
@@ -324,20 +330,19 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->with('dataPendukung')
+        $dataRiwayatTes = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->find($id);
 
-        if (!$dataPekerjaan) {
+        if (!$dataRiwayatTes) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan tidak ditemukan'
+                'message' => 'Data riwayat tes tidak ditemukan'
             ], 404);
         }
 
         // Validasi apakah bisa diedit berdasarkan status
         $editableStatuses = ['draft', 'ditolak'];
-        if (!in_array($dataPekerjaan->status_pengajuan, $editableStatuses)) {
+        if (!in_array($dataRiwayatTes->status_pengajuan, $editableStatuses)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tidak dapat diedit karena sudah diajukan atau disetujui'
@@ -345,25 +350,14 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'bidang_usaha' => 'sometimes|string|max:200',
-            'jenis_pekerjaan' => 'sometimes|string|max:50',
-            'jabatan' => 'sometimes|string|max:50',
-            'instansi' => 'sometimes|string|max:100',
-            'divisi' => 'nullable|string|max:100',
-            'deskripsi' => 'nullable|string',
-            'mulai_bekerja' => 'sometimes|date',
-            'selesai_bekerja' => 'nullable|date|after_or_equal:mulai_bekerja',
-            'area_pekerjaan' => 'sometimes|boolean',
-            'dokumen_pendukung' => 'nullable|array',
-            'dokumen_pendukung.*.tipe_dokumen' => 'required|string|in:file',
-            'dokumen_pendukung.*.file' => 'sometimes|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'dokumen_pendukung.*.nama_dokumen' => 'required|string|max:100',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|string',
-            'dokumen_pendukung.*.keterangan' => 'nullable|string',
+            'jenis_tes_id' => 'sometimes|integer|exists:simpeg_daftar_jenis_test,id',
+            'nama_tes' => 'sometimes|string|max:100',
+            'penyelenggara' => 'sometimes|string|max:100',
+            'tgl_tes' => 'sometimes|date|before_or_equal:today',
+            'skor' => 'sometimes|numeric|min:0|max:999.99',
+            'file_pendukung' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'submit_type' => 'sometimes|in:draft,submit',
-            'keterangan' => 'nullable|string',
-            'dokumen_to_delete' => 'nullable|array',
-            'dokumen_to_delete.*' => 'integer|exists:simpeg_data_pendukung,id'
+            'keterangan' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -373,75 +367,49 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 422);
         }
 
-        // Start database transaction
-        DB::beginTransaction();
+        $oldData = $dataRiwayatTes->getOriginal();
+        $data = $request->except(['file_pendukung', 'submit_type']);
 
-        try {
-            $oldData = $dataPekerjaan->getOriginal();
-            $data = $request->except(['dokumen_pendukung', 'submit_type', 'dokumen_to_delete']);
-
-            // Reset status jika dari ditolak
-            if ($dataPekerjaan->status_pengajuan === 'ditolak') {
-                $data['status_pengajuan'] = 'draft';
-                $data['tgl_ditolak'] = null;
-                $data['keterangan'] = $request->keterangan ?? null;
-            }
-
-            // Handle submit_type
-            if ($request->submit_type === 'submit') {
-                $data['status_pengajuan'] = 'diajukan';
-                $data['tgl_diajukan'] = now();
-                $message = 'Data riwayat pekerjaan berhasil diperbarui dan diajukan untuk persetujuan';
-            } else {
-                $message = 'Data riwayat pekerjaan berhasil diperbarui';
-            }
-
-            $dataPekerjaan->update($data);
-
-            // Handle dokumen yang akan dihapus
-            if ($request->has('dokumen_to_delete') && is_array($request->dokumen_to_delete)) {
-                foreach ($request->dokumen_to_delete as $dokumenId) {
-                    $dokumen = SimpegDataPendukung::where('id', $dokumenId)
-                        ->where('pendukungable_type', 'App\Models\SimpegDataRiwayatPekerjaan')
-                        ->where('pendukungable_id', $dataPekerjaan->id)
-                        ->first();
-                    
-                    if ($dokumen) {
-                        // Hapus file dari storage
-                        if ($dokumen->file_path) {
-                            Storage::delete('public/pegawai/riwayat-pekerjaan/' . $dokumen->file_path);
-                        }
-                        $dokumen->delete();
-                    }
-                }
-            }
-
-            // Handle dokumen pendukung baru
-            if ($request->hasFile('dokumen_pendukung')) {
-                $this->saveDokumenPendukung($request->file('dokumen_pendukung'), $request->dokumen_pendukung, $dataPekerjaan);
-            }
-
-            DB::commit();
-            
-            ActivityLogger::log('update', $dataPekerjaan, $oldData);
-
-            return response()->json([
-                'success' => true,
-                'data' => $this->formatDataPekerjaan($dataPekerjaan->fresh(['dataPendukung'])),
-                'message' => $message
-            ]);
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()
-            ], 500);
+        // Reset status jika dari ditolak
+        if ($dataRiwayatTes->status_pengajuan === 'ditolak') {
+            $data['status_pengajuan'] = 'draft';
+            $data['tgl_ditolak'] = null;
+            $data['keterangan'] = $request->keterangan ?? null;
         }
+
+        // Handle submit_type
+        if ($request->submit_type === 'submit') {
+            $data['status_pengajuan'] = 'diajukan';
+            $data['tgl_diajukan'] = now();
+            $message = 'Data riwayat tes berhasil diperbarui dan diajukan untuk persetujuan';
+        } else {
+            $message = 'Data riwayat tes berhasil diperbarui';
+        }
+
+        // Handle file upload
+        if ($request->hasFile('file_pendukung')) {
+            if ($dataRiwayatTes->file_pendukung) {
+                Storage::delete('public/pegawai/tes/dokumen/'.$dataRiwayatTes->file_pendukung);
+            }
+
+            $file = $request->file('file_pendukung');
+            $fileName = 'tes_'.time().'_'.$pegawai->id.'_'.uniqid().'.'.$file->getClientOriginalExtension();
+            $file->storeAs('public/pegawai/tes/dokumen', $fileName);
+            $data['file_pendukung'] = $fileName;
+        }
+
+        $dataRiwayatTes->update($data);
+
+        ActivityLogger::log('update', $dataRiwayatTes, $oldData);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatDataRiwayatTes($dataRiwayatTes->load('jenisTes')),
+            'message' => $message
+        ]);
     }
 
-    // Delete data riwayat pekerjaan
+    // Delete data riwayat tes
     public function destroy($id)
     {
         $pegawai = Auth::user();
@@ -453,49 +421,30 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->with('dataPendukung')
+        $dataRiwayatTes = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->find($id);
 
-        if (!$dataPekerjaan) {
+        if (!$dataRiwayatTes) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan tidak ditemukan'
+                'message' => 'Data riwayat tes tidak ditemukan'
             ], 404);
         }
 
-        // Start database transaction
-        DB::beginTransaction();
-
-        try {
-            // Delete all dokumen pendukung
-            foreach ($dataPekerjaan->dataPendukung as $dokumen) {
-                if ($dokumen->file_path) {
-                    Storage::delete('public/pegawai/riwayat-pekerjaan/' . $dokumen->file_path);
-                }
-                $dokumen->delete();
-            }
-
-            $oldData = $dataPekerjaan->toArray();
-            $dataPekerjaan->delete();
-
-            DB::commit();
-            
-            ActivityLogger::log('delete', $dataPekerjaan, $oldData);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Data riwayat pekerjaan berhasil dihapus'
-            ]);
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
-            ], 500);
+        // Delete file if exists
+        if ($dataRiwayatTes->file_pendukung) {
+            Storage::delete('public/pegawai/tes/dokumen/'.$dataRiwayatTes->file_pendukung);
         }
+
+        $oldData = $dataRiwayatTes->toArray();
+        $dataRiwayatTes->delete();
+
+        ActivityLogger::log('delete', $dataRiwayatTes, $oldData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data riwayat tes berhasil dihapus'
+        ]);
     }
 
     // Submit draft ke diajukan
@@ -510,38 +459,38 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $dataRiwayatTes = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->where('status_pengajuan', 'draft')
             ->find($id);
 
-        if (!$dataPekerjaan) {
+        if (!$dataRiwayatTes) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan draft tidak ditemukan atau sudah diajukan'
+                'message' => 'Data riwayat tes draft tidak ditemukan atau sudah diajukan'
             ], 404);
         }
 
-        $oldData = $dataPekerjaan->getOriginal();
+        $oldData = $dataRiwayatTes->getOriginal();
         
-        $dataPekerjaan->update([
+        $dataRiwayatTes->update([
             'status_pengajuan' => 'diajukan',
             'tgl_diajukan' => now()
         ]);
 
-        ActivityLogger::log('update', $dataPekerjaan, $oldData);
+        ActivityLogger::log('update', $dataRiwayatTes, $oldData);
 
         return response()->json([
             'success' => true,
-            'message' => 'Data riwayat pekerjaan berhasil diajukan untuk persetujuan'
+            'message' => 'Data riwayat tes berhasil diajukan untuk persetujuan'
         ]);
     }
 
-    // Batch delete data riwayat pekerjaan
+    // Batch delete data riwayat tes
     public function batchDelete(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_riwayat_pekerjaan,id'
+            'ids.*' => 'required|integer|exists:simpeg_data_tes,id'
         ]);
 
         if ($validator->fails()) {
@@ -560,73 +509,55 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataList = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $dataRiwayatTesList = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->whereIn('id', $request->ids)
-            ->with('dataPendukung')
             ->get();
 
-        if ($dataList->isEmpty()) {
+        if ($dataRiwayatTesList->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan tidak ditemukan atau tidak memiliki akses'
+                'message' => 'Data riwayat tes tidak ditemukan atau tidak memiliki akses'
             ], 404);
         }
 
         $deletedCount = 0;
         $errors = [];
 
-        DB::beginTransaction();
-
-        try {
-            foreach ($dataList as $dataPekerjaan) {
-                try {
-                    // Delete all dokumen pendukung
-                    foreach ($dataPekerjaan->dataPendukung as $dokumen) {
-                        if ($dokumen->file_path) {
-                            Storage::delete('public/pegawai/riwayat-pekerjaan/' . $dokumen->file_path);
-                        }
-                        $dokumen->delete();
-                    }
-
-                    $oldData = $dataPekerjaan->toArray();
-                    $dataPekerjaan->delete();
-                    
-                    ActivityLogger::log('delete', $dataPekerjaan, $oldData);
-                    $deletedCount++;
-                    
-                } catch (\Exception $e) {
-                    $errors[] = [
-                        'id' => $dataPekerjaan->id,
-                        'instansi' => $dataPekerjaan->instansi,
-                        'error' => 'Gagal menghapus: ' . $e->getMessage()
-                    ];
+        foreach ($dataRiwayatTesList as $dataRiwayatTes) {
+            try {
+                // Delete file if exists
+                if ($dataRiwayatTes->file_pendukung) {
+                    Storage::delete('public/pegawai/tes/dokumen/'.$dataRiwayatTes->file_pendukung);
                 }
-            }
 
-            DB::commit();
-
-            if ($deletedCount == count($request->ids)) {
-                return response()->json([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} data riwayat pekerjaan",
-                    'deleted_count' => $deletedCount
-                ]);
-            } else {
-                return response()->json([
-                    'success' => $deletedCount > 0,
-                    'message' => "Berhasil menghapus {$deletedCount} dari " . count($request->ids) . " data riwayat pekerjaan",
-                    'deleted_count' => $deletedCount,
-                    'errors' => $errors
-                ], $deletedCount > 0 ? 207 : 422);
+                $oldData = $dataRiwayatTes->toArray();
+                $dataRiwayatTes->delete();
+                
+                ActivityLogger::log('delete', $dataRiwayatTes, $oldData);
+                $deletedCount++;
+                
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'id' => $dataRiwayatTes->id,
+                    'nama_tes' => $dataRiwayatTes->nama_tes,
+                    'error' => 'Gagal menghapus: ' . $e->getMessage()
+                ];
             }
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
+        }
+
+        if ($deletedCount == count($request->ids)) {
             return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
-            ], 500);
+                'success' => true,
+                'message' => "Berhasil menghapus {$deletedCount} data riwayat tes",
+                'deleted_count' => $deletedCount
+            ]);
+        } else {
+            return response()->json([
+                'success' => $deletedCount > 0,
+                'message' => "Berhasil menghapus {$deletedCount} dari " . count($request->ids) . " data riwayat tes",
+                'deleted_count' => $deletedCount,
+                'errors' => $errors
+            ], $deletedCount > 0 ? 207 : 422);
         }
     }
 
@@ -654,7 +585,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $updatedCount = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $updatedCount = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->where('status_pengajuan', 'draft')
             ->whereIn('id', $request->ids)
             ->update([
@@ -664,7 +595,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Berhasil mengajukan {$updatedCount} data riwayat pekerjaan untuk persetujuan",
+            'message' => "Berhasil mengajukan {$updatedCount} data riwayat tes untuk persetujuan",
             'updated_count' => $updatedCount
         ]);
     }
@@ -708,7 +639,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                 break;
         }
 
-        $updatedCount = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $updatedCount = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->whereIn('id', $request->ids)
             ->update($updateData);
 
@@ -731,7 +662,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $statistics = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $statistics = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->selectRaw('status_pengajuan, COUNT(*) as total')
             ->groupBy('status_pengajuan')
             ->get()
@@ -817,37 +748,29 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $bidangUsaha = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $jenisTesList = SimpegDaftarJenisTest::select('id', 'jenis_tes as nama', 'kode')
+            ->orderBy('jenis_tes')
+            ->get()
+            ->toArray();;
+
+        $penyelenggaraList = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->distinct()
-            ->pluck('bidang_usaha')
+            ->pluck('penyelenggara')
             ->filter()
             ->values();
 
-        $jenisPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $namaTesList = SimpegDataTes::where('pegawai_id', $pegawai->id)
             ->distinct()
-            ->pluck('jenis_pekerjaan')
-            ->filter()
-            ->values();
-
-        $instansi = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->distinct()
-            ->pluck('instansi')
-            ->filter()
-            ->values();
-
-        $jabatan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->distinct()
-            ->pluck('jabatan')
+            ->pluck('nama_tes')
             ->filter()
             ->values();
 
         return response()->json([
             'success' => true,
             'filter_options' => [
-                'bidang_usaha' => $bidangUsaha,
-                'jenis_pekerjaan' => $jenisPekerjaan,
-                'instansi' => $instansi,
-                'jabatan' => $jabatan,
+                'jenis_tes' => $jenisTesList,
+                'penyelenggara' => $penyelenggaraList,
+                'nama_tes' => $namaTesList,
                 'status_pengajuan' => [
                     ['id' => 'semua', 'nama' => 'Semua'],
                     ['id' => 'draft', 'nama' => 'Draft'],
@@ -885,7 +808,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                         'icon' => 'trash',
                         'color' => 'danger',
                         'confirm' => true,
-                        'confirm_message' => 'Apakah Anda yakin ingin menghapus data riwayat pekerjaan ini?',
+                        'confirm_message' => 'Apakah Anda yakin ingin menghapus data riwayat tes ini?',
                         'condition' => 'can_delete'
                     ],
                     [
@@ -903,7 +826,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                         'icon' => 'trash',
                         'color' => 'danger',
                         'confirm' => true,
-                        'confirm_message' => 'Apakah Anda yakin ingin menghapus semua data riwayat pekerjaan yang dipilih?'
+                        'confirm_message' => 'Apakah Anda yakin ingin menghapus semua data riwayat tes yang dipilih?'
                     ],
                     [
                         'key' => 'batch_submit',
@@ -928,27 +851,17 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         ]);
     }
 
-    // Helper: Menyimpan dokumen pendukung
-    private function saveDokumenPendukung($files, $dokumenData, $dataPekerjaan)
+    // Get list jenis tes untuk dropdown
+    public function getJenisTes()
     {
-        foreach ($files as $index => $file) {
-            if (!$file) continue;
-            
-            $fileName = 'riwayat_pekerjaan_' . time() . '_' . $index . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/pegawai/riwayat-pekerjaan', $fileName);
-            
-            // FIXED: Gunakan polymorphic relationship yang benar
-            SimpegDataPendukung::create([
-                'tipe_dokumen' => $dokumenData[$index]['tipe_dokumen'] ?? 'file',
-                'file_path' => $fileName,
-                'nama_dokumen' => $dokumenData[$index]['nama_dokumen'] ?? 'Dokumen Riwayat Pekerjaan',
-                'jenis_dokumen_id' => $dokumenData[$index]['jenis_dokumen_id'] ?? null,
-                'keterangan' => $dokumenData[$index]['keterangan'] ?? null,
-                // FIXED: Gunakan polymorphic columns yang benar
-                'pendukungable_type' => 'App\Models\SimpegDataRiwayatPekerjaan',
-                'pendukungable_id' => $dataPekerjaan->id
-            ]);
-        }
+        $jenisTesList = SimpegDaftarJenisTest::select('id', 'kode', 'jenis_tes as nama', 'nilai_minimal', 'nilai_maksimal')
+            ->orderBy('jenis_tes')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $jenisTesList
+        ]);
     }
 
     // Helper: Format pegawai info
@@ -1018,11 +931,11 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         ];
     }
 
-    // Helper: Format data pekerjaan response
-    protected function formatDataPekerjaan($dataPekerjaan, $includeActions = true)
+    // Helper: Format data riwayat tes response
+    protected function formatDataRiwayatTes($dataRiwayatTes, $includeActions = true)
     {
         // Handle null status_pengajuan - set default to draft
-        $status = $dataPekerjaan->status_pengajuan ?? 'draft';
+        $status = $dataRiwayatTes->status_pengajuan ?? 'draft';
         $statusInfo = $this->getStatusInfo($status);
         
         $canEdit = in_array($status, ['draft', 'ditolak']);
@@ -1030,61 +943,40 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         $canDelete = in_array($status, ['draft', 'ditolak']);
         
         $data = [
-            'id' => $dataPekerjaan->id,
-            'bidang_usaha' => $dataPekerjaan->bidang_usaha,
-            'jenis_pekerjaan' => $dataPekerjaan->jenis_pekerjaan,
-            'jabatan' => $dataPekerjaan->jabatan,
-            'instansi' => $dataPekerjaan->instansi,
-            'divisi' => $dataPekerjaan->divisi,
-            'deskripsi' => $dataPekerjaan->deskripsi,
-            'mulai_bekerja' => $dataPekerjaan->mulai_bekerja,
-            'selesai_bekerja' => $dataPekerjaan->selesai_bekerja,
-            'area_pekerjaan' => $dataPekerjaan->area_pekerjaan,
-            'area_pekerjaan_text' => $dataPekerjaan->area_pekerjaan ? 'Dalam Negeri' : 'Luar Negeri',
+            'id' => $dataRiwayatTes->id,
+            'jenis_tes_id' => $dataRiwayatTes->jenis_tes_id,
+            'jenis_tes' => $dataRiwayatTes->jenisTes ? $dataRiwayatTes->jenisTes->jenis_tes : '-',
+            'nama_tes' => $dataRiwayatTes->nama_tes,
+            'penyelenggara' => $dataRiwayatTes->penyelenggara,
+            'tgl_tes' => $dataRiwayatTes->tgl_tes,
+            'skor' => $dataRiwayatTes->skor,
             'status_pengajuan' => $status,
             'status_info' => $statusInfo,
-            'keterangan' => $dataPekerjaan->keterangan,
+            'keterangan' => $dataRiwayatTes->keterangan,
             'can_edit' => $canEdit,
             'can_submit' => $canSubmit,
             'can_delete' => $canDelete,
             'timestamps' => [
-                'tgl_input' => $dataPekerjaan->tgl_input,
-                'tgl_diajukan' => $dataPekerjaan->tgl_diajukan,
-                'tgl_disetujui' => $dataPekerjaan->tgl_disetujui,
-                'tgl_ditolak' => $dataPekerjaan->tgl_ditolak
+                'tgl_input' => $dataRiwayatTes->tgl_input,
+                'tgl_diajukan' => $dataRiwayatTes->tgl_diajukan ?? null,
+                'tgl_disetujui' => $dataRiwayatTes->tgl_disetujui ?? null,
+                'tgl_ditolak' => $dataRiwayatTes->tgl_ditolak ?? null
             ],
-            'created_at' => $dataPekerjaan->created_at,
-            'updated_at' => $dataPekerjaan->updated_at
+            'dokumen' => $dataRiwayatTes->file_pendukung ? [
+                'nama_file' => $dataRiwayatTes->file_pendukung,
+                'url' => url('storage/pegawai/tes/dokumen/'.$dataRiwayatTes->file_pendukung)
+            ] : null,
+            'created_at' => $dataRiwayatTes->created_at,
+            'updated_at' => $dataRiwayatTes->updated_at
         ];
-
-        // Add dokumen pendukung if available
-        if ($dataPekerjaan->relationLoaded('dataPendukung')) {
-            $data['dokumen_pendukung'] = $dataPekerjaan->dataPendukung->map(function($dokumen) {
-                return [
-                    'id' => $dokumen->id,
-                    'tipe_dokumen' => $dokumen->tipe_dokumen,
-                    'nama_dokumen' => $dokumen->nama_dokumen,
-                    'jenis_dokumen_id' => $dokumen->jenis_dokumen_id,
-                    'keterangan' => $dokumen->keterangan,
-                    'file' => [
-                        'nama_file' => $dokumen->file_path,
-                        'url' => url('storage/pegawai/riwayat-pekerjaan/'.$dokumen->file_path)
-                    ]
-                ];
-            });
-        }
 
         // Add action URLs if requested
         if ($includeActions) {
-            // Get URL prefix from request
-            $request = request();
-            $prefix = $request->segment(2) ?? 'dosen'; // fallback to 'dosen'
-            
             $data['aksi'] = [
-                'detail_url' => url("/api/{$prefix}/data-riwayat-pekerjaan-dosen/{$dataPekerjaan->id}"),
-                'update_url' => url("/api/{$prefix}/data-riwayat-pekerjaan-dosen/{$dataPekerjaan->id}"),
-                'delete_url' => url("/api/{$prefix}/data-riwayat-pekerjaan-dosen/{$dataPekerjaan->id}"),
-                'submit_url' => url("/api/{$prefix}/data-riwayat-pekerjaan-dosen/{$dataPekerjaan->id}/submit"),
+                'detail_url' => url("/api/dosen/datariwayattes/{$dataRiwayatTes->id}"),
+                'update_url' => url("/api/dosen/datariwayattes/{$dataRiwayatTes->id}"),
+                'delete_url' => url("/api/dosen/datariwayattes/{$dataRiwayatTes->id}"),
+                'submit_url' => url("/api/dosen/datariwayattes/{$dataRiwayatTes->id}/submit"),
             ];
 
             // Conditional action URLs based on permissions
@@ -1108,7 +1000,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     'icon' => 'trash',
                     'color' => 'danger',
                     'confirm' => true,
-                    'confirm_message' => 'Apakah Anda yakin ingin menghapus data riwayat pekerjaan di "' . $dataPekerjaan->instansi . '"?'
+                    'confirm_message' => 'Apakah Anda yakin ingin menghapus data riwayat tes "' . $dataRiwayatTes->nama_tes . '"?'
                 ];
             }
             
@@ -1120,7 +1012,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     'icon' => 'paper-plane',
                     'color' => 'primary',
                     'confirm' => true,
-                    'confirm_message' => 'Apakah Anda yakin ingin mengajukan data riwayat pekerjaan di "' . $dataPekerjaan->instansi . '" untuk persetujuan?'
+                    'confirm_message' => 'Apakah Anda yakin ingin mengajukan data riwayat tes "' . $dataRiwayatTes->nama_tes . '" untuk persetujuan?'
                 ];
             }
             

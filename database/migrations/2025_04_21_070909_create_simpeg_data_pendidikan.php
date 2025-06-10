@@ -1,4 +1,4 @@
-<?php 
+<?php
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,39 +10,35 @@ return new class extends Migration
         Schema::create('simpeg_data_pendidikan', function (Blueprint $table) {
             // Kolom utama
             $table->bigIncrements('id');
-            $table->integer('pegawai_id'); // Diperbaiki dari 'pegawa1_id'
+            $table->unsignedBigInteger('pegawai_id'); 
             
             // Informasi pengajuan
             $table->string('jenis_kegiatan', 50);
-            $table->string('status_pengajuan', 50);
-            $table->date('tanggal_pengajuan');
-            $table->string('sk_penugasan', 50)->nullable(); // Diperbaiki dari 'sk_pengasan'
+            $table->string('status_pengajuan', 50)->default('draft');
+            // $table->date('tanggal_pengajuan'); // <-- REKOMENDASI: Hapus kolom ini
+            $table->string('sk_penugasan', 50)->nullable(); 
             
-            // Informasi pendidikan
+            // Informasi pendidikan & lainnya
             $table->string('perguruan_tinggi_sasaran', 100)->nullable();
             $table->string('bidang_tugas', 100)->nullable();
             $table->integer('lama_kegiatan')->nullable();
             $table->string('nama_kegiatan', 100)->nullable();
-            
-            // Informasi bahan ajar
             $table->string('jenis_bahan_ajar', 100)->nullable();
             $table->string('judul_bahan_ajar', 200)->nullable();
             $table->string('penerbit', 50)->nullable();
-            $table->string('penyelenggara', 100)->nullable(); // Diperbaiki dari 'penyelenggana'
-            
-            // Informasi tambahan
+            $table->string('penyelenggara', 100)->nullable(); 
             $table->string('tugas_tambahan', 255)->nullable();
             $table->date('tanggal_mulai')->nullable();
             $table->date('tanggal_akhir')->nullable();
             $table->date('tanggal_pelaksanaan')->nullable();
             
+            // --- KOLOM BARU DITAMBAHKAN DI SINI ---
+            $table->timestamp('tgl_diajukan')->nullable();
+            $table->timestamp('tgl_disetujui')->nullable();
+            $table->timestamp('tgl_ditolak')->nullable();
+            // -----------------------------------------
+            
             $table->timestamps();
-
-            // Foreign key
-            // $table->foreign('pegawai_id')
-            //       ->references('id')
-            //       ->on('pegawai')
-            //       ->onDelete('cascade');
         });
     }
 

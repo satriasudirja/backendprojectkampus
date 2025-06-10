@@ -20,6 +20,7 @@ class SimpegMasterPangkatController extends Controller
         $pangkat->getCollection()->transform(function ($item) use ($prefix) {
             $item->update_url = url("/api/{$prefix}/pangkat/" . $item->id);
             $item->delete_url = url("/api/{$prefix}/pangkat/" . $item->id);
+            $item->formatted_tunjangan = $item->formatted_tunjangan; // Tambahkan format tunjangan
             return $item;
         });
 
@@ -52,11 +53,13 @@ class SimpegMasterPangkatController extends Controller
         $request->validate([
             'pangkat' => 'required|string|max:6',
             'nama_golongan' => 'required|string|max:30',
+            'tunjangan' => 'required|numeric|min:0',
         ]);
 
         $pangkat = SimpegMasterPangkat::create([
             'pangkat' => $request->pangkat,
             'nama_golongan' => $request->nama_golongan,
+            'tunjangan' => $request->tunjangan,
         ]);
 
         ActivityLogger::log('create', $pangkat, $pangkat->toArray());
@@ -79,6 +82,7 @@ class SimpegMasterPangkatController extends Controller
         $request->validate([
             'pangkat' => 'required|string|max:6',
             'nama_golongan' => 'required|string|max:30',
+            'tunjangan' => 'required|numeric|min:0',
         ]);
 
         $old = $pangkat->getOriginal();
@@ -86,6 +90,7 @@ class SimpegMasterPangkatController extends Controller
         $pangkat->update([
             'pangkat' => $request->pangkat,
             'nama_golongan' => $request->nama_golongan,
+            'tunjangan' => $request->tunjangan,
         ]);
 
         $changes = array_diff_assoc($pangkat->toArray(), $old);

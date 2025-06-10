@@ -14,7 +14,6 @@ class SimpegDataRiwayatPekerjaan extends Model
 
     protected $primaryKey = 'id';
 
-
     protected $fillable = [
         'id',
         'pegawai_id',
@@ -32,14 +31,23 @@ class SimpegDataRiwayatPekerjaan extends Model
 
     protected $casts = [
         'mulai_bekerja' => 'date',
+        'tgl_ditolak' => 'datetime',
         'selesai_bekerja' => 'date',
         'tgl_input' => 'date',
         'area_pekerjaan' => 'boolean'
     ];
 
+
+
     // Relasi ke tabel pegawai
     public function pegawai()
     {
         return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
+    }
+
+    // FIXED: Ubah dari hasMany menjadi morphMany untuk polymorphic relationship
+    public function dataPendukung()
+    {
+        return $this->morphMany(SimpegDataPendukung::class, 'pendukungable');
     }
 }

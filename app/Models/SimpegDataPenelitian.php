@@ -46,7 +46,9 @@ class SimpegDataPenelitian extends Model
         'tanggal_mulai' => 'date',
         'tanggal_akhir' => 'date',
         'tanggal_terbit' => 'date',
+        'tgl_ditolak' => 'datetime',
         'volume' => 'integer',
+        
         'jumlah_halaman' => 'integer'
     ];
 

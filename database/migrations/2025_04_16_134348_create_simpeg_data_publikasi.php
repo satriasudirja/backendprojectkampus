@@ -54,6 +54,9 @@ return new class extends Migration
             $table->date('tgl_input')->nullable();
             $table->string('status_pengajuan', 20)->default('draft'); // draft, submitted, approved, rejected
             
+            $table->timestamp('tgl_diajukan')->nullable();
+            $table->timestamp('tgl_disetujui')->nullable();
+            $table->timestamp('tgl_ditolak')->nullable();
             $table->timestamps();
 
             // // Foreign keys

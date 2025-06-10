@@ -15,11 +15,13 @@ class CreateJenisTesTable extends Migration
             $table->double('nilai_minimal', 10, 5)->nullable(); // Boleh null biar sesuai sama seeder
             $table->double('nilai_maksimal', 10, 5)->nullable(); // Kalau ini juga mau null bisa dikasih nullable()
             $table->timestamps();
+            
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('jenis_tes');
+        Schema::dropIfExists('simpeg_daftar_jenis_test');
+        
     }
 }

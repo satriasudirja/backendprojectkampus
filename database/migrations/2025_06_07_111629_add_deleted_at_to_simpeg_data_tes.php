@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('simpeg_data_jabatan_akademik', function (Blueprint $table) {
+        Schema::table('simpeg_data_tes', function (Blueprint $table) {
             //
-            $table->date('tgl_disetujui')->nullable();
-         $table->date('tgl_ditolak')->nullable();
+            $table->softDeletes();
         });
     }
 
@@ -23,8 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('simpeg_data_jabatan_akademik', function (Blueprint $table) {
+        Schema::table('simpeg_data_tes', function (Blueprint $table) {
             //
+             $table->dropSoftDeletes();
         });
     }
 };

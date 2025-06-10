@@ -15,6 +15,7 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->string('pangkat', 6);
             $table->string('nama_golongan', 30);
+            $table->decimal('tunjangan', 15, 2)->nullable();
             $table->timestamps();
         });
         

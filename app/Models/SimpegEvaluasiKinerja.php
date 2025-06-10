@@ -18,7 +18,6 @@ class SimpegEvaluasiKinerja extends Model
         'pegawai_id',
         'penilai_id',
         'atasan_penilai_id',
-        'jenis_kinerja',
         'periode_tahun',
         'tanggal_penilaian',
         'nilai_kehadiran',

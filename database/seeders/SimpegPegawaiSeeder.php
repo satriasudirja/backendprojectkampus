@@ -14,96 +14,129 @@ use Illuminate\Support\Facades\Hash;
 
 class SimpegPegawaiSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
     public function run()
     {
         $faker = Faker::create('id_ID');
 
-        // Buat pegawai khusus untuk jabatan struktural utama
+        // Ambil data referensi terlebih dahulu
+        $jabatanAkademikIds = SimpegJabatanAkademik::pluck('id');
+        $unitKerjaIds = SimpegUnitKerja::pluck('id');
+        $statusPernikahanIds = SimpegStatusPernikahan::pluck('id');
+        $statusAktifIds = SimpegStatusAktif::pluck('id');
+        $sukuIds = SimpegSuku::pluck('id');
+
+        // Pastikan semua data referensi ada
+        if ($jabatanAkademikIds->isEmpty() || $unitKerjaIds->isEmpty() || $statusPernikahanIds->isEmpty() || $statusAktifIds->isEmpty() || $sukuIds->isEmpty()) {
+            $this->command->error('Required reference data is missing. Make sure to run the prerequisite seeders first.');
+            return;
+        }
+
+        // Dapatkan data referensi khusus
+        $unitKerjaUtama = SimpegUnitKerja::where('kode_unit', '041001')->first();
+        $statusPernikahanFirst = SimpegStatusPernikahan::first();
+        $statusAktifFirst = SimpegStatusAktif::first();
+        $sukuFirst = SimpegSuku::first();
+
+        // STEP 1: Buat pegawai khusus untuk jabatan struktural utama
         $specialPegawai = [
             [
                 'nama' => 'Prof. Dr. Sutrisno, M.Pd.',
                 'nip' => '196501011990031001',
                 'jabatan_akademik' => 'Guru Besar',
                 'email' => 'rektor@uika-bogor.ac.id',
-                'role' => 'Dosen'
+                'role' => 'Dosen',
+                'gelar_depan' => 'Prof. Dr.',
+                'gelar_belakang' => 'M.Pd.'
             ],
             [
                 'nama' => 'Dr. Satria Sudirja, S.Kom., M.T.',
                 'nip' => '198505152010121002',
                 'jabatan_akademik' => 'Lektor Kepala', 
                 'email' => 'dekan@ft.uika-bogor.ac.id',
-                'role' => 'Dosen'
+                'role' => 'Dosen',
+                'gelar_depan' => 'Dr.',
+                'gelar_belakang' => 'S.Kom., M.T.'
             ],
             [
                 'nama' => 'Dr. Siti Nurhasanah, S.E., M.M.',
                 'nip' => '197803102005012001',
                 'jabatan_akademik' => 'Lektor',
                 'email' => 'wakil.dekan1@ft.uika-bogor.ac.id',
-                'role' => 'Dosen'
+                'role' => 'Dosen',
+                'gelar_depan' => 'Dr.',
+                'gelar_belakang' => 'S.E., M.M.'
             ],
             [
                 'nama' => 'Ir. Ahmad Fauzi, M.T.',
                 'nip' => '198201152008011001',
                 'jabatan_akademik' => 'Lektor',
                 'email' => 'wakil.dekan2@ft.uika-bogor.ac.id',
-                'role' => 'Dosen'
+                'role' => 'Dosen',
+                'gelar_depan' => 'Ir.',
+                'gelar_belakang' => 'M.T.'
             ],
             [
                 'nama' => 'Dr. Rina Permatasari, S.Kom., M.Kom.',
                 'nip' => '198907122012012001',
                 'jabatan_akademik' => 'Asisten Ahli',
                 'email' => 'wakil.dekan3@ft.uika-bogor.ac.id',
-                'role' => 'Dosen'
+                'role' => 'Dosen',
+                'gelar_depan' => 'Dr.',
+                'gelar_belakang' => 'S.Kom., M.Kom.'
             ],
             [
                 'nama' => 'Budi Santoso, S.Kom., M.T.',
                 'nip' => '199001011015011001',
                 'jabatan_akademik' => 'Asisten Ahli',
                 'email' => 'kaprodi@ti.uika-bogor.ac.id',
-                'role' => 'Dosen'
+                'role' => 'Dosen',
+                'gelar_depan' => '',
+                'gelar_belakang' => 'S.Kom., M.T.'
             ],
             [
                 'nama' => 'Ani Suryani, S.Kom.',
                 'nip' => '199205102017012001',
                 'jabatan_akademik' => 'Tenaga Pengajar',
                 'email' => 'sekprodi@ti.uika-bogor.ac.id',
-                'role' => 'Dosen'
+                'role' => 'Dosen',
+                'gelar_depan' => '',
+                'gelar_belakang' => 'S.Kom.'
             ],
             [
                 'nama' => 'Hendra Pratama, S.T.',
                 'nip' => '199306152018011001',
                 'jabatan_akademik' => 'Laboran',
                 'email' => 'keplab@ft.uika-bogor.ac.id',
-                'role' => 'Tenaga Kependidikan'
+                'role' => 'Tenaga Kependidikan',
+                'gelar_depan' => '',
+                'gelar_belakang' => 'S.T.'
             ],
             [
                 'nama' => 'Sari Wulandari, S.Pd.',
                 'nip' => '199408202019012001',
                 'jabatan_akademik' => 'Administrasi',
                 'email' => 'bagtu@ft.uika-bogor.ac.id',
-                'role' => 'Tenaga Kependidikan'
+                'role' => 'Tenaga Kependidikan',
+                'gelar_depan' => '',
+                'gelar_belakang' => 'S.Pd.'
             ],
             [
                 'nama' => 'Muhammad Rizki, S.Kom.',
                 'nip' => '199512152020011001',
                 'jabatan_akademik' => 'Administrasi',
                 'email' => 'admin@ft.uika-bogor.ac.id',
-                'role' => 'Tenaga Kependidikan'
+                'role' => 'Tenaga Kependidikan',
+                'gelar_depan' => '',
+                'gelar_belakang' => 'S.Kom.'
             ]
         ];
 
-        // Get reference data - FIXED: Use id instead of kode_unit
-        $unitKerja = SimpegUnitKerja::where('kode_unit', '041001')->first();
-        $statusPernikahan = SimpegStatusPernikahan::first();
-        $statusAktif = SimpegStatusAktif::first();
-        $suku = SimpegSuku::first();
-
-        if (!$unitKerja || !$statusPernikahan || !$statusAktif || !$suku) {
-            $this->command->error('Required reference data is missing. Make sure to run required seeders first.');
-            return;
-        }
-
-        // Create special pegawai
+        // Create special pegawai dengan data lengkap
         foreach ($specialPegawai as $index => $pegawaiData) {
             $jabatanAkademik = SimpegJabatanAkademik::where('jabatan_akademik', $pegawaiData['jabatan_akademik'])->first();
             
@@ -111,24 +144,39 @@ class SimpegPegawaiSeeder extends Seeder
                 $jabatanAkademik = SimpegJabatanAkademik::first();
             }
 
+            $unitKerjaToUse = $unitKerjaUtama ?? SimpegUnitKerja::first();
+
             SimpegPegawai::create([
+                // Kolom Relasi
                 'user_id' => $jabatanAkademik->id,
-                'unit_kerja_id' => $unitKerja->id, // FIXED: Use id instead of kode_unit
-                'kode_status_pernikahan' => $statusPernikahan->id,
-                'status_aktif_id' => $statusAktif->id,
+                'unit_kerja_id' => $unitKerjaToUse->id,
+                'kode_status_pernikahan' => $statusPernikahanFirst->id,
+                'status_aktif_id' => $statusAktifFirst->id,
                 'jabatan_akademik_id' => $jabatanAkademik->id,
-                'suku_id' => $suku->id,
+                'suku_id' => $sukuFirst->id,
+
+                // Data Pribadi
                 'nama' => $pegawaiData['nama'],
                 'nip' => $pegawaiData['nip'],
                 'nuptk' => $pegawaiData['nip'],
                 'password' => Hash::make('password123'),
                 'nidn' => substr($pegawaiData['nip'], 0, 10),
-                'gelar_depan' => '',
-                'gelar_belakang' => '',
+                'gelar_depan' => $pegawaiData['gelar_depan'],
+                'gelar_belakang' => $pegawaiData['gelar_belakang'],
                 'jenis_kelamin' => $faker->randomElement(['L', 'P']),
                 'tempat_lahir' => $faker->city(),
-                'tanggal_lahir' => $faker->date('Y-m-d', '-25 years'),
+                'tanggal_lahir' => $faker->date('Y-m-d', '-35 years'),
                 'nama_ibu_kandung' => $faker->name('female'),
+
+                // Data Kepegawaian
+                'no_sk_capeg' => $faker->bothify('SK/???/####'),
+                'tanggal_sk_capeg' => $faker->date('Y-m-d', '-10 years'),
+                'golongan_capeg' => $faker->randomElement(['III/c', 'III/d', 'IV/a', 'IV/b']),
+                'tmt_capeg' => $faker->date('Y-m-d', '-10 years'),
+                'no_sk_pegawai' => $faker->bothify('SK/???/####'),
+                'tanggal_sk_pegawai' => $faker->date('Y-m-d', '-8 years'),
+
+                // Alamat dan Kontak
                 'alamat_domisili' => $faker->address(),
                 'agama' => 'Islam',
                 'golongan_darah' => $faker->randomElement(['A', 'B', 'AB', 'O']),
@@ -136,10 +184,45 @@ class SimpegPegawaiSeeder extends Seeder
                 'provinsi' => 'Jawa Barat',
                 'kode_pos' => '16610',
                 'no_handphone' => $faker->phoneNumber(),
-                'no_kk' => $faker->numerify('##############'),
+                'no_whatsapp' => $faker->phoneNumber(),
+                'no_kk' => $faker->numerify('################'),
                 'email_pribadi' => $pegawaiData['email'],
+                'email_pegawai' => $pegawaiData['email'],
+
+                // Data Tambahan
                 'no_ktp' => $faker->numerify('################'),
+                'jarak_rumah_domisili' => $faker->randomFloat(2, 5, 25),
+                'npwp' => $faker->numerify('##.###.###.#-###.###'),
+                'file_sertifikasi_dosen' => null,
+                'no_kartu_pensiun' => $faker->bothify('PENS-########'),
                 'status_kerja' => 'Aktif',
+                'kepemilikan_nohp_utama' => 'Pribadi',
+                'alamat_kependudukan' => $faker->address(),
+                'nomor_polisi' => $faker->bothify('F #### ??'),
+                'jenis_kendaraan' => $faker->randomElement(['Motor', 'Mobil']),
+                'merk_kendaraan' => $faker->randomElement(['Honda Vario', 'Toyota Avanza', 'Honda Beat', 'Daihatsu Xenia']),
+
+                // File dan Dokumen
+                'file_ktp' => null,
+                'file_kk' => null,
+                'no_rekening' => $faker->creditCardNumber(),
+                'cabang_bank' => 'Bogor',
+                'nama_bank' => $faker->randomElement(['BCA', 'BNI', 'BRI', 'Mandiri', 'BSI']),
+                'file_rekening' => null,
+                'karpeg' => $faker->bothify('KARPEG-######'),
+                'file_karpeg' => null,
+                'file_npwp' => null,
+                'file_bpjs' => null,
+                'file_bpjs_ketenagakerjaan' => null,
+                'no_bpjs' => $faker->numerify('##############'),
+                'no_bpjs_ketenagakerjaan' => $faker->numerify('##############'),
+
+                // Data Fisik
+                'tinggi_badan' => $faker->numberBetween(155, 180),
+                'berat_badan' => $faker->numberBetween(55, 85),
+                'file_tanda_tangan' => null,
+
+                // Audit Trail
                 'modified_by' => 'system',
                 'modified_dt' => now(),
                 'created_at' => now(),
@@ -147,29 +230,43 @@ class SimpegPegawaiSeeder extends Seeder
             ]);
         }
 
-        // Create additional random pegawai
-        foreach (range(1, 20) as $index) {
-            $jabatanAkademik = SimpegJabatanAkademik::inRandomOrder()->first();
-            $randomUnitKerja = SimpegUnitKerja::inRandomOrder()->first(); // Get random unit for variety
-            
+        $this->command->info('Created ' . count($specialPegawai) . ' special employees');
+
+        // STEP 2: Buat pegawai random dengan data lengkap
+        $randomCount = 70; // Total akan menjadi 80 pegawai (10 khusus + 70 random)
+        
+        foreach (range(1, $randomCount) as $index) {
             SimpegPegawai::create([
-                'user_id' => $jabatanAkademik->id,
-                'unit_kerja_id' => $randomUnitKerja->id, // FIXED: Use id instead of kode_unit
-                'kode_status_pernikahan' => $statusPernikahan->id,
-                'status_aktif_id' => $statusAktif->id,
-                'jabatan_akademik_id' => $jabatanAkademik->id,
-                'suku_id' => $suku->id,
+                // Kolom Relasi
+                'user_id' => $faker->randomElement($jabatanAkademikIds),
+                'unit_kerja_id' => $faker->randomElement($unitKerjaIds),
+                'kode_status_pernikahan' => $faker->randomElement($statusPernikahanIds),
+                'status_aktif_id' => $faker->randomElement($statusAktifIds),
+                'jabatan_akademik_id' => $faker->randomElement($jabatanAkademikIds),
+                'suku_id' => $faker->randomElement($sukuIds),
+
+                // Data Pribadi
                 'nama' => $faker->name(),
-                'nip' => $faker->numerify('##############'),
-                'nuptk' => $faker->numerify('##############'),
+                'nip' => $faker->unique()->numerify('##################'),
+                'nuptk' => $faker->unique()->numerify('################'),
                 'password' => Hash::make('password123'),
-                'nidn' => $faker->numerify('############'),
-                'gelar_depan' => $faker->randomElement(['', 'Dr.', 'Prof.', 'Ir.']),
-                'gelar_belakang' => $faker->randomElement(['S.Kom.', 'M.T.', 'M.Sc.', 'Ph.D.', 'S.T.', 'M.Pd.']),
+                'nidn' => $faker->unique()->numerify('##########'),
+                'gelar_depan' => $faker->randomElement(['Dr.', 'Prof.', 'Ir.', '']),
+                'gelar_belakang' => $faker->randomElement(['M.Sc.', 'Ph.D.', 'S.T.', 'M.Pd.', 'S.H.', 'M.Kom.', 'M.T.']),
                 'jenis_kelamin' => $faker->randomElement(['L', 'P']),
                 'tempat_lahir' => $faker->city(),
-                'tanggal_lahir' => $faker->date('Y-m-d', '-25 years'),
+                'tanggal_lahir' => $faker->date('Y-m-d', '-35 years'),
                 'nama_ibu_kandung' => $faker->name('female'),
+
+                // Data Kepegawaian
+                'no_sk_capeg' => $faker->bothify('SK/???/####'),
+                'tanggal_sk_capeg' => $faker->date('Y-m-d', '-5 years'),
+                'golongan_capeg' => $faker->randomElement(['III/a', 'III/b', 'III/c', 'IV/a']),
+                'tmt_capeg' => $faker->date('Y-m-d', '-5 years'),
+                'no_sk_pegawai' => $faker->bothify('SK/???/####'),
+                'tanggal_sk_pegawai' => $faker->date('Y-m-d', '-4 years'),
+
+                // Alamat dan Kontak
                 'alamat_domisili' => $faker->address(),
                 'agama' => $faker->randomElement(['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha']),
                 'golongan_darah' => $faker->randomElement(['A', 'B', 'AB', 'O']),
@@ -177,15 +274,53 @@ class SimpegPegawaiSeeder extends Seeder
                 'provinsi' => $faker->state(),
                 'kode_pos' => $faker->postcode(),
                 'no_handphone' => $faker->phoneNumber(),
-                'no_kk' => $faker->numerify('##############'),
-                'email_pribadi' => $faker->email(),
+                'no_whatsapp' => $faker->phoneNumber(),
+                'no_kk' => $faker->numerify('################'),
+                'email_pribadi' => $faker->unique()->safeEmail(),
+                'email_pegawai' => $faker->unique()->companyEmail(),
+
+                // Data Tambahan
                 'no_ktp' => $faker->numerify('################'),
-                'status_kerja' => 'Aktif',
+                'jarak_rumah_domisili' => $faker->randomFloat(2, 1, 50),
+                'npwp' => $faker->numerify('##.###.###.#-###.###'),
+                'file_sertifikasi_dosen' => null,
+                'no_kartu_pensiun' => $faker->bothify('PENS-########'),
+                'status_kerja' => $faker->randomElement(['Aktif', 'Tidak Aktif']),
+                'kepemilikan_nohp_utama' => $faker->randomElement(['Pribadi', 'Dinas']),
+                'alamat_kependudukan' => $faker->address(),
+                'nomor_polisi' => $faker->bothify('? #### ??'),
+                'jenis_kendaraan' => $faker->randomElement(['Motor', 'Mobil']),
+                'merk_kendaraan' => $faker->randomElement(['Honda Vario', 'Yamaha NMAX', 'Toyota Avanza', 'Daihatsu Xenia', 'Honda Beat', 'Suzuki Ertiga']),
+
+                // File dan Dokumen
+                'file_ktp' => null,
+                'file_kk' => null,
+                'no_rekening' => $faker->creditCardNumber(),
+                'cabang_bank' => $faker->city(),
+                'nama_bank' => $faker->randomElement(['BCA', 'BNI', 'BRI', 'Mandiri', 'BSI']),
+                'file_rekening' => null,
+                'karpeg' => $faker->bothify('KARPEG-######'),
+                'file_karpeg' => null,
+                'file_npwp' => null,
+                'file_bpjs' => null,
+                'file_bpjs_ketenagakerjaan' => null,
+                'no_bpjs' => $faker->numerify('##############'),
+                'no_bpjs_ketenagakerjaan' => $faker->numerify('##############'),
+
+                // Data Fisik
+                'tinggi_badan' => $faker->numberBetween(150, 190),
+                'berat_badan' => $faker->numberBetween(50, 100),
+                'file_tanda_tangan' => null,
+
+                // Audit Trail
                 'modified_by' => 'system',
                 'modified_dt' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
         }
+
+        $this->command->info('Created ' . $randomCount . ' random employees');
+        $this->command->info('Total employees created: ' . (count($specialPegawai) + $randomCount));
     }
 }

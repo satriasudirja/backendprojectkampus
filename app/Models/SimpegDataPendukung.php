@@ -120,6 +120,8 @@ class SimpegDataPendukung extends Model
                 return 'pegawai/diklat/dokumen';
             case 'App\Models\SimpegDataKeluargaPegawai':
                 return 'pegawai/keluarga/dokumen';
+            case 'App\Models\SimpegDataRiwayatPekerjaan':
+                return 'pegawai/riwayat-pekerjaan';
             default:
                 return 'pegawai/dokumen/lainnya';
         }

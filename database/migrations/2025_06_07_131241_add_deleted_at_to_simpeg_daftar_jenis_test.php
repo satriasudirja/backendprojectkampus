@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::table('simpeg_daftar_jenis_test', function (Blueprint $table) {
             //
             $table->softDeletes();
+             $table->index('kode');
+            $table->index('jenis_tes');
+            $table->index('deleted_at');
         });
     }
 
@@ -24,6 +27,9 @@ return new class extends Migration
     {
         Schema::table('simpeg_daftar_jenis_test', function (Blueprint $table) {
             //
+            $table->dropIndex(['kode']);
+            $table->dropIndex(['jenis_tes']);
+            $table->dropIndex(['deleted_at']);
             $table->dropSoftDeletes();
         });
     }

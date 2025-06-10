@@ -30,6 +30,11 @@ return new class extends Migration
             // Metadata
             $table->date('tgl_input')->nullable();
             
+             $table->string('status_pengajuan', 50)->default('draft')->nullable();
+             $table->timestamp('tgl_diajukan')->nullable();
+             $table->timestamp('tgl_disetujui')->nullable();
+             $table->timestamp('tgl_ditolak')->nullable();
+            
             $table->timestamps();
 
             // Foreign key constraints

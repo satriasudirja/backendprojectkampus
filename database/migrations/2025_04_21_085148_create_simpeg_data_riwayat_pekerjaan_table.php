@@ -30,6 +30,9 @@ return new class extends Migration
             
             // Informasi administrasi
             $table->date('tgl_input');
+            $table->timestamp('tgl_diajukan')->nullable();
+            $table->timestamp('tgl_disetujui')->nullable();
+            $table->timestamp('tgl_ditolak')->nullable();
             
             $table->timestamps();
 
@@ -40,6 +43,6 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('simpeg_data_riwayat_pekerjaan');
-        $table->dropColumn('status_pengajuan');
+        
     }
 };

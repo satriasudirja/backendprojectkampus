@@ -11,17 +11,17 @@ use App\Models\SimpegUnitKerja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use App\Services\ActivityLogger;
 
 class EvaluasiKinerjaController extends Controller
 {
-    // Get pegawai yang bisa dievaluasi berdasarkan hierarki jabatan struktural
+    /**
+     * Get pegawai yang bisa dievaluasi berdasarkan hierarki jabatan struktural
+     */
     public function index(Request $request)
     {
         $perPage = $request->per_page ?? 10;
         $search = $request->search;
         $statusFilter = $request->status_filter; // active, inactive, all
-        $unitKerjaFilter = $request->unit_kerja_filter;
         $user = auth()->user();
 
         // Dapatkan jabatan struktural user yang login
@@ -34,21 +34,18 @@ class EvaluasiKinerjaController extends Controller
             ], 403);
         }
 
-        // Dapatkan pegawai yang bisa dievaluasi berdasarkan parent-child relationship
-        $pegawaiQuery = $this->getPegawaiByParentHierarki($jabatanStruktural);
+        // Dapatkan pegawai yang bisa dievaluasi berdasarkan hierarki
+        $pegawaiQuery = $this->getPegawaiByHierarki($jabatanStruktural);
 
-        // IMPROVED: Better filtering
+        // Filter by search (NIP atau Nama)
         if ($search) {
             $pegawaiQuery->where(function($q) use ($search) {
                 $q->where('nip', 'like', '%'.$search.'%')
-                  ->orWhere('nama', 'like', '%'.$search.'%')
-                  ->orWhereHas('unitKerja', function($subQ) use ($search) {
-                      $subQ->where('nama_unit', 'like', '%'.$search.'%');
-                  });
+                  ->orWhere('nama', 'like', '%'.$search.'%');
             });
         }
 
-        // IMPROVED: Status filtering
+        // Filter by status
         if ($statusFilter && $statusFilter !== 'all') {
             if ($statusFilter === 'active') {
                 $pegawaiQuery->where('status_kerja', 'Aktif');
@@ -57,20 +54,16 @@ class EvaluasiKinerjaController extends Controller
             }
         }
 
-        // IMPROVED: Unit kerja filtering
-        if ($unitKerjaFilter) {
-            $pegawaiQuery->where('unit_kerja_id', $unitKerjaFilter);
-        }
-
+        // Load relasi yang diperlukan
         $pegawai = $pegawaiQuery->with([
             'unitKerja',
-            'jabatanAkademik',
+            'jabatanAkademik', 
             'statusAktif',
             'dataJabatanStruktural' => function($q) {
                 $q->whereNull('tgl_selesai')->with('jabatanStruktural');
             },
             'dataJabatanFungsional' => function($q) {
-                $q->whereNull('tgl_selesai')->with('jabatanFungsional');
+                $q->with('jabatanFungsional')->latest('tmt_jabatan');
             },
             'evaluasiKinerja' => function($q) use ($user) {
                 $q->where('penilai_id', $user->id)
@@ -78,13 +71,13 @@ class EvaluasiKinerjaController extends Controller
             }
         ])->paginate($perPage);
 
-        // IMPROVED: Get available filters
-        $availableUnitKerja = $this->getAvailableUnitKerjaForEvaluator($jabatanStruktural);
-
         return response()->json([
             'success' => true,
-            'data' => $pegawai->map(function ($item) {
-                return $this->formatPegawaiForEvaluasi($item);
+            // Info evaluator (user yang login) - ditampilkan di atas tabel
+            'evaluator' => $this->formatEvaluatorInfo($user, $jabatanStruktural),
+            // Data pegawai untuk tabel
+            'pegawai_list' => $pegawai->map(function ($item) {
+                return $this->formatPegawaiForTable($item);
             }),
             'pagination' => [
                 'current_page' => $pegawai->currentPage(),
@@ -92,36 +85,29 @@ class EvaluasiKinerjaController extends Controller
                 'total' => $pegawai->total(),
                 'last_page' => $pegawai->lastPage()
             ],
-            'jabatan_penilai' => [
-                'kode' => $jabatanStruktural->kode,
-                'nama' => $jabatanStruktural->singkatan ?? $jabatanStruktural->kode,
-                'unit_kerja' => $jabatanStruktural->unitKerja->nama_unit ?? '-',
-                'level' => $this->getJabatanLevel($jabatanStruktural)
-            ],
-            'filters' => [
-                'available_unit_kerja' => $availableUnitKerja,
-                'status_options' => [
-                    ['value' => 'all', 'label' => 'Semua Status'],
-                    ['value' => 'active', 'label' => 'Aktif'],
-                    ['value' => 'inactive', 'label' => 'Tidak Aktif']
-                ]
+            'summary' => [
+                'total_pegawai' => $pegawai->total(),
+                'level_evaluasi' => $this->getEvaluationLevel($jabatanStruktural),
+                'periode_aktif' => date('Y')
             ]
         ]);
     }
 
-    // IMPROVED: Get detail evaluasi kinerja pegawai dengan pendidikan info
+    /**
+     * Get detail pegawai untuk evaluasi
+     */
     public function show($pegawaiId)
     {
         $user = auth()->user();
         $pegawai = SimpegPegawai::with([
             'unitKerja',
-            'jabatanAkademik.role', 
+            'jabatanAkademik.role',
             'statusAktif',
             'dataJabatanStruktural' => function($q) {
                 $q->whereNull('tgl_selesai')->with('jabatanStruktural');
             },
             'dataJabatanFungsional' => function($q) {
-                $q->whereNull('tgl_selesai')->with('jabatanFungsional');
+                $q->with('jabatanFungsional')->latest('tmt_jabatan');
             },
             'evaluasiKinerja' => function($q) use ($user) {
                 $q->where('penilai_id', $user->id)
@@ -148,34 +134,34 @@ class EvaluasiKinerjaController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'pegawai' => $this->formatDetailPegawaiForEvaluasi($pegawai),
+                'pegawai' => $this->formatDetailPegawai($pegawai),
                 'riwayat_evaluasi' => $pegawai->evaluasiKinerja->map(function($eval) {
                     return $this->formatEvaluasiKinerja($eval);
                 }),
-                'evaluation_periods' => $this->getAvailableEvaluationPeriods()
+                'available_actions' => $this->generateActionLinks($pegawai, $pegawai->evaluasiKinerja->first())
             ]
         ]);
     }
 
-    // IMPROVED: Create evaluasi kinerja with better validation
+    /**
+     * Create evaluasi kinerja baru
+     */
     public function store(Request $request)
     {
         $user = auth()->user();
         
         $validator = Validator::make($request->all(), [
             'pegawai_id' => 'required|exists:simpeg_pegawai,id',
-            'jenis_kinerja' => 'required|in:dosen,pegawai',
             'periode_tahun' => 'required|string|max:10',
             'tanggal_penilaian' => 'required|date|before_or_equal:today',
             'nilai_kehadiran' => 'nullable|numeric|min:0|max:100',
             'nilai_pendidikan' => 'nullable|numeric|min:0|max:100',
-            'nilai_penelitian' => 'nullable|numeric|min:0|max:100', 
+            'nilai_penelitian' => 'nullable|numeric|min:0|max:100',
             'nilai_pengabdian' => 'nullable|numeric|min:0|max:100',
             'nilai_penunjang1' => 'required|numeric|min:0|max:100',
             'nilai_penunjang2' => 'required|numeric|min:0|max:100',
             'nilai_penunjang3' => 'required|numeric|min:0|max:100',
             'nilai_penunjang4' => 'required|numeric|min:0|max:100',
-            'catatan' => 'nullable|string|max:1000'
         ]);
 
         if ($validator->fails()) {
@@ -213,8 +199,6 @@ class EvaluasiKinerjaController extends Controller
         try {
             $data = $request->all();
             $data['penilai_id'] = $user->id;
-            
-            // Set atasan penilai berdasarkan hierarki
             $data['atasan_penilai_id'] = $this->getAtasanPenilai($jabatanStruktural);
 
             // Hitung total nilai
@@ -232,8 +216,6 @@ class EvaluasiKinerjaController extends Controller
             $data['tgl_input'] = now()->toDateString();
 
             $evaluasi = SimpegEvaluasiKinerja::create($data);
-
-            ActivityLogger::log('create', $evaluasi, $evaluasi->toArray());
             
             DB::commit();
 
@@ -251,7 +233,9 @@ class EvaluasiKinerjaController extends Controller
         }
     }
 
-    // Update evaluasi kinerja
+    /**
+     * Update evaluasi kinerja
+     */
     public function update(Request $request, $id)
     {
         $user = auth()->user();
@@ -266,7 +250,6 @@ class EvaluasiKinerjaController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'jenis_kinerja' => 'sometimes|in:dosen,pegawai',
             'periode_tahun' => 'sometimes|string|max:10',
             'tanggal_penilaian' => 'sometimes|date|before_or_equal:today',
             'nilai_kehadiran' => 'nullable|numeric|min:0|max:100',
@@ -277,7 +260,6 @@ class EvaluasiKinerjaController extends Controller
             'nilai_penunjang2' => 'sometimes|numeric|min:0|max:100',
             'nilai_penunjang3' => 'sometimes|numeric|min:0|max:100',
             'nilai_penunjang4' => 'sometimes|numeric|min:0|max:100',
-            'catatan' => 'nullable|string|max:1000'
         ]);
 
         if ($validator->fails()) {
@@ -289,11 +271,12 @@ class EvaluasiKinerjaController extends Controller
 
         DB::beginTransaction();
         try {
-            $oldData = $evaluasi->getOriginal();
             $data = $request->all();
 
-            // Hitung ulang total nilai jika ada perubahan pada nilai
-            if ($request->hasAny(['nilai_kehadiran', 'nilai_pendidikan', 'nilai_penelitian', 'nilai_pengabdian', 'nilai_penunjang1', 'nilai_penunjang2', 'nilai_penunjang3', 'nilai_penunjang4'])) {
+            // Hitung ulang total nilai jika ada perubahan nilai
+            $nilaiFields = ['nilai_kehadiran', 'nilai_pendidikan', 'nilai_penelitian', 'nilai_pengabdian', 'nilai_penunjang1', 'nilai_penunjang2', 'nilai_penunjang3', 'nilai_penunjang4'];
+            
+            if ($request->hasAny($nilaiFields)) {
                 $totalNilai = ($data['nilai_kehadiran'] ?? $evaluasi->nilai_kehadiran ?? 0) + 
                              ($data['nilai_pendidikan'] ?? $evaluasi->nilai_pendidikan ?? 0) + 
                              ($data['nilai_penelitian'] ?? $evaluasi->nilai_penelitian ?? 0) + 
@@ -308,8 +291,6 @@ class EvaluasiKinerjaController extends Controller
             }
 
             $evaluasi->update($data);
-
-            ActivityLogger::log('update', $evaluasi, $oldData);
             
             DB::commit();
 
@@ -327,7 +308,9 @@ class EvaluasiKinerjaController extends Controller
         }
     }
 
-    // Delete evaluasi kinerja
+    /**
+     * Delete evaluasi kinerja
+     */
     public function destroy($id)
     {
         $user = auth()->user();
@@ -343,10 +326,7 @@ class EvaluasiKinerjaController extends Controller
 
         DB::beginTransaction();
         try {
-            $oldData = $evaluasi->toArray();
             $evaluasi->delete();
-
-            ActivityLogger::log('delete', $evaluasi, $oldData);
             
             DB::commit();
 
@@ -363,7 +343,125 @@ class EvaluasiKinerjaController extends Controller
         }
     }
 
-    // Helper Methods
+    /**
+     * Get evaluasi kinerja yang sudah ada untuk periode tertentu
+     */
+    public function getEvaluasiByPeriode(Request $request)
+    {
+        $user = auth()->user();
+        $periode = $request->periode ?? date('Y');
+        
+        $evaluasiList = SimpegEvaluasiKinerja::where('penilai_id', $user->id)
+            ->where('periode_tahun', $periode)
+            ->with(['pegawai.unitKerja', 'pegawai.jabatanAkademik'])
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'periode' => $periode,
+            'total_evaluasi' => $evaluasiList->count(),
+            'data' => $evaluasiList->map(function($eval) {
+                return $this->formatEvaluasiKinerja($eval);
+            })
+        ]);
+    }
+
+    /**
+     * Export data pegawai untuk evaluasi (untuk keperluan laporan)
+     */
+    public function exportPegawaiList(Request $request)
+    {
+        $user = auth()->user();
+        $jabatanStruktural = $this->getUserJabatanStruktural($user->id);
+        
+        if (!$jabatanStruktural) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki jabatan struktural untuk melakukan evaluasi'
+            ], 403);
+        }
+
+        $pegawai = $this->getPegawaiByHierarki($jabatanStruktural)
+            ->with([
+                'unitKerja',
+                'jabatanAkademik',
+                'statusAktif',
+                'dataJabatanStruktural' => function($q) {
+                    $q->whereNull('tgl_selesai')->with('jabatanStruktural');
+                },
+                'dataJabatanFungsional' => function($q) {
+                    $q->with('jabatanFungsional')->latest('tmt_jabatan');
+                },
+                'evaluasiKinerja' => function($q) use ($user) {
+                    $q->where('penilai_id', $user->id)
+                      ->where('periode_tahun', date('Y'));
+                }
+            ])
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'evaluator' => $this->formatEvaluatorInfo($user, $jabatanStruktural),
+            'export_data' => [
+                'periode' => date('Y'),
+                'tanggal_export' => now()->format('Y-m-d H:i:s'),
+                'total_pegawai' => $pegawai->count(),
+                'pegawai_list' => $pegawai->map(function($item) {
+                    return $this->formatPegawaiForTable($item);
+                })
+            ]
+        ]);
+    }
+
+    /**
+     * Debug method untuk melihat hierarki dan testing
+     */
+    public function debugHierarki(Request $request)
+    {
+        $user = auth()->user();
+        $jabatanStruktural = $this->getUserJabatanStruktural($user->id);
+        
+        if (!$jabatanStruktural) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak memiliki jabatan struktural'
+            ]);
+        }
+
+        $pegawai = $this->getPegawaiByHierarki($jabatanStruktural)->get();
+
+        return response()->json([
+            'success' => true,
+            'evaluator_info' => $this->formatEvaluatorInfo($user, $jabatanStruktural),
+            'hierarki_info' => [
+                'kode_jabatan' => $jabatanStruktural->kode,
+                'nama_jabatan' => $jabatanStruktural->singkatan,
+                'level_evaluasi' => $this->getEvaluationLevel($jabatanStruktural),
+                'unit_kerja' => $jabatanStruktural->unitKerja->nama_unit ?? '-'
+            ],
+            'statistik' => [
+                'total_pegawai_dapat_dievaluasi' => $pegawai->count(),
+                'total_dosen' => $pegawai->filter(function($p) {
+                    return in_array($p->jabatanAkademik->jabatan_akademik ?? '', ['Guru Besar', 'Lektor Kepala', 'Lektor', 'Asisten Ahli', 'Tenaga Pengajar']);
+                })->count(),
+                'total_tendik' => $pegawai->filter(function($p) {
+                    return in_array($p->jabatanAkademik->jabatan_akademik ?? '', ['Laboran', 'Administrasi', 'Pustakawan', 'Teknisi']);
+                })->count()
+            ],
+            'sample_pegawai' => $pegawai->take(10)->map(function($item) {
+                $jabatanFungsional = $item->dataJabatanFungsional()->latest('tmt_jabatan')->first();
+                return [
+                    'nip' => $item->nip,
+                    'nama' => $item->nama,
+                    'unit_kerja' => $item->unitKerja->nama_unit ?? '-',
+                    'jabatan_akademik' => $item->jabatanAkademik->jabatan_akademik ?? '-',
+                    'fungsional' => $this->determineFungsional($item, $jabatanFungsional)
+                ];
+            })
+        ]);
+    }
+
+    // ==================== HELPER METHODS ====================
 
     /**
      * Dapatkan jabatan struktural user yang login
@@ -379,54 +477,49 @@ class EvaluasiKinerjaController extends Controller
     }
 
     /**
-     * IMPROVED: Dapatkan pegawai berdasarkan parent-child relationship dengan support untuk multiple levels
+     * Dapatkan pegawai berdasarkan hierarki jabatan struktural
      */
-    private function getPegawaiByParentHierarki($jabatanStruktural)
+    private function getPegawaiByHierarki($jabatanStruktural)
     {
-        // Untuk Rektor - bisa evaluasi semua yang punya jabatan struktural tertentu (level dekan dst)
-        if ($this->isRektorLevel($jabatanStruktural)) {
+        $kodeJabatan = $jabatanStruktural->kode;
+
+        // REKTOR (001) - evaluasi pegawai se universitas yang punya jabatan struktural level Dekan
+        if ($kodeJabatan === '001') {
             return $this->getPegawaiForRektor();
         }
 
-        // Untuk Dekan - bisa evaluasi semua pegawai di fakultasnya
-        if ($this->isDekanLevel($jabatanStruktural)) {
+        // DEKAN (052) - evaluasi semua pegawai di fakultas
+        if ($kodeJabatan === '052') {
             return $this->getPegawaiForDekan($jabatanStruktural);
         }
 
-        // Default: parent-child relationship
-        $childJabatanIds = SimpegJabatanStruktural::where('parent_jabatan', $jabatanStruktural->kode)
-            ->pluck('id')
-            ->toArray();
-
-        if (empty($childJabatanIds)) {
-            // Jika tidak ada child, return query kosong
-            return SimpegPegawai::whereRaw('1 = 0');
+        // KAPRODI (056) - evaluasi pegawai di prodi
+        if ($kodeJabatan === '056') {
+            return $this->getPegawaiForKaprodi($jabatanStruktural);
         }
 
-        // Cari pegawai yang punya jabatan struktural sesuai childJabatanIds
-        $query = SimpegPegawai::whereHas('dataJabatanStruktural', function($q) use ($childJabatanIds) {
-            $q->whereIn('jabatan_struktural_id', $childJabatanIds)
-              ->whereNull('tgl_selesai'); // Jabatan aktif
-        });
-
-        return $query;
+        // Default: parent-child relationship untuk jabatan lainnya
+        return $this->getPegawaiByParentChild($jabatanStruktural);
     }
 
     /**
-     * IMPROVED: Khusus untuk Rektor - evaluasi level Dekan dan sejenisnya
+     * Pegawai yang bisa dievaluasi Rektor - se universitas dengan jabatan struktural level Dekan
      */
     private function getPegawaiForRektor()
     {
-        // Rektor bisa evaluasi Dekan, Direktur Pascasarjana, Kepala Lembaga, dll
-        $targetJabatanKodes = ['052', '070', '029', '034', '040']; // Dekan, Direktur Pascasarjana, dst
+        // Rektor mengevaluasi pegawai se universitas yang punya jabatan struktural level Dekan dan sejenisnya
+        $targetJabatanKodes = [
+            '052', // Dekan
+            '070', // Direktur Pascasarjana  
+            '029', // Kepala Lembaga Penelitian
+            '034', // Kepala UPT Perpustakaan
+            '040', // Ketua Kantor Penjaminan Mutu
+            '053', // Wakil Dekan Bidang Akademik
+            '054', // Wakil Dekan Bidang Pengelolaan Sumberdaya
+            '055', // Wakil Dekan Bidang Kemahasiswaan
+        ];
         
-        $jabatanIds = SimpegJabatanStruktural::whereIn('kode', $targetJabatanKodes)
-            ->pluck('id')
-            ->toArray();
-
-        if (empty($jabatanIds)) {
-            return SimpegPegawai::whereRaw('1 = 0');
-        }
+        $jabatanIds = SimpegJabatanStruktural::whereIn('kode', $targetJabatanKodes)->pluck('id');
 
         return SimpegPegawai::whereHas('dataJabatanStruktural', function($q) use ($jabatanIds) {
             $q->whereIn('jabatan_struktural_id', $jabatanIds)
@@ -435,41 +528,47 @@ class EvaluasiKinerjaController extends Controller
     }
 
     /**
-     * IMPROVED: Khusus untuk Dekan - evaluasi semua pegawai di fakultas
+     * Pegawai yang bisa dievaluasi Dekan - semua pegawai di fakultas
      */
     private function getPegawaiForDekan($jabatanStruktural)
     {
-        // Dekan bisa evaluasi semua pegawai di unit kerja fakultasnya
+        // Dekan mengevaluasi semua pegawai di fakultasnya (termasuk prodi-prodi di bawahnya)
         $unitKerjaId = $jabatanStruktural->unit_kerja_id;
         
-        // Ambil semua unit kerja anak (prodi, dll) di bawah fakultas
-        $childUnitIds = SimpegUnitKerja::where('parent_unit_id', $unitKerjaId)
-            ->pluck('id')
-            ->toArray();
-        
-        $allUnitIds = array_merge([$unitKerjaId], $childUnitIds);
+        // Ambil semua unit kerja anak (prodi) di bawah fakultas
+        $childUnitIds = SimpegUnitKerja::where('parent_unit_id', $unitKerjaId)->pluck('id');
+        $allUnitIds = $childUnitIds->prepend($unitKerjaId); // Gabung dengan fakultas induk
 
         return SimpegPegawai::whereIn('unit_kerja_id', $allUnitIds);
     }
 
     /**
-     * IMPROVED: Helper untuk menentukan level jabatan
+     * Pegawai yang bisa dievaluasi Kaprodi - pegawai di prodi
      */
-    private function isRektorLevel($jabatan)
+    private function getPegawaiForKaprodi($jabatanStruktural)
     {
-        return in_array($jabatan->kode, ['001']); // Rektor
+        // Kaprodi mengevaluasi pegawai di prodinya
+        $unitKerjaId = $jabatanStruktural->unit_kerja_id;
+        
+        return SimpegPegawai::where('unit_kerja_id', $unitKerjaId);
     }
 
-    private function isDekanLevel($jabatan)
+    /**
+     * Default parent-child relationship untuk jabatan lainnya
+     */
+    private function getPegawaiByParentChild($jabatanStruktural)
     {
-        return in_array($jabatan->kode, ['052']); // Dekan
-    }
+        $childJabatanIds = SimpegJabatanStruktural::where('parent_jabatan', $jabatanStruktural->kode)
+            ->pluck('id');
 
-    private function getJabatanLevel($jabatan)
-    {
-        if ($this->isRektorLevel($jabatan)) return 'universitas';
-        if ($this->isDekanLevel($jabatan)) return 'fakultas';
-        return 'unit';
+        if ($childJabatanIds->isEmpty()) {
+            return SimpegPegawai::whereRaw('1 = 0'); // Query kosong
+        }
+
+        return SimpegPegawai::whereHas('dataJabatanStruktural', function($q) use ($childJabatanIds) {
+            $q->whereIn('jabatan_struktural_id', $childJabatanIds)
+              ->whereNull('tgl_selesai');
+        });
     }
 
     /**
@@ -479,7 +578,7 @@ class EvaluasiKinerjaController extends Controller
     {
         if (!$jabatanStruktural) return false;
 
-        $pegawaiQuery = $this->getPegawaiByParentHierarki($jabatanStruktural);
+        $pegawaiQuery = $this->getPegawaiByHierarki($jabatanStruktural);
         return $pegawaiQuery->where('id', $pegawai->id)->exists();
     }
 
@@ -489,14 +588,12 @@ class EvaluasiKinerjaController extends Controller
     private function getAtasanPenilai($jabatanStruktural)
     {
         if (!$jabatanStruktural->parent_jabatan) {
-            return null; // Tidak ada atasan (sudah paling atas)
+            return null; // Tidak ada atasan (Rektor)
         }
 
-        // Cari jabatan parent
         $parentJabatan = SimpegJabatanStruktural::where('kode', $jabatanStruktural->parent_jabatan)->first();
         if (!$parentJabatan) return null;
 
-        // Cari pegawai yang punya jabatan parent dan masih aktif
         $parentData = SimpegDataJabatanStruktural::where('jabatan_struktural_id', $parentJabatan->id)
             ->whereNull('tgl_selesai')
             ->first();
@@ -505,58 +602,240 @@ class EvaluasiKinerjaController extends Controller
     }
 
     /**
-     * IMPROVED: Helper method untuk menentukan sebutan total dengan lebih detail
+     * Tentukan level evaluasi berdasarkan kode jabatan
      */
-    private function getSebutanTotal($totalNilai)
+    private function getEvaluationLevel($jabatan)
     {
-        if ($totalNilai >= 95) {
-            return 'Sangat Baik Sekali';
-        } elseif ($totalNilai >= 90) {
-            return 'Sangat Baik';
-        } elseif ($totalNilai >= 80) {
-            return 'Baik';
-        } elseif ($totalNilai >= 70) {
-            return 'Cukup';
-        } elseif ($totalNilai >= 60) {
-            return 'Kurang';
-        } else {
-            return 'Sangat Kurang';
+        switch ($jabatan->kode) {
+            case '001': return 'Universitas'; // Rektor
+            case '052': return 'Fakultas';    // Dekan
+            case '056': return 'Program Studi'; // Kaprodi
+            default: return 'Unit Kerja';
         }
     }
 
     /**
-     * IMPROVED: Format pegawai untuk evaluasi dengan lebih lengkap
+     * Tentukan sebutan berdasarkan total nilai
      */
-    private function formatPegawaiForEvaluasi($pegawai)
+    private function getSebutanTotal($totalNilai)
+    {
+        if ($totalNilai >= 95) return 'Sangat Baik Sekali';
+        if ($totalNilai >= 90) return 'Sangat Baik';
+        if ($totalNilai >= 80) return 'Baik';
+        if ($totalNilai >= 70) return 'Cukup';
+        if ($totalNilai >= 60) return 'Kurang';
+        return 'Sangat Kurang';
+    }
+
+    /**
+     * Format info evaluator (user yang login) - ditampilkan di bagian atas
+     */
+    private function formatEvaluatorInfo($user, $jabatanStruktural)
+    {
+        $jabatanStrukturalAktif = $user->dataJabatanStruktural()
+            ->whereNull('tgl_selesai')
+            ->with('jabatanStruktural')
+            ->first();
+
+        $jabatanFungsionalAktif = $user->dataJabatanFungsional()
+            ->with('jabatanFungsional')
+            ->latest('tmt_jabatan')
+            ->first();
+
+        return [
+            'nip' => $user->nip,
+            'nama_lengkap' => $user->nama,
+            'unit_kerja' => $user->unitKerja->nama_unit ?? '-',
+            'status' => $user->statusAktif->nama_status_aktif ?? $user->status_kerja,
+            'jabatan_akademik' => $user->jabatanAkademik->jabatan_akademik ?? '-',
+            'jabatan_fungsional' => $jabatanFungsionalAktif ? $jabatanFungsionalAktif->jabatanFungsional->nama_jabatan_fungsional : '-',
+            'jabatan_struktural' => $jabatanStruktural->singkatan ?? '-',
+            'pendidikan' => $this->getPendidikanTerakhir($user),
+            'level_evaluasi' => $this->getEvaluationLevel($jabatanStruktural),
+            'periode_evaluasi' => date('Y')
+        ];
+    }
+
+    /**
+     * Format pegawai untuk tabel (sesuai requirement)
+     */
+    private function formatPegawaiForTable($pegawai)
     {
         $currentEvaluasi = $pegawai->evaluasiKinerja->first();
         $jabatanStruktural = $pegawai->dataJabatanStruktural->first();
         $jabatanFungsional = $pegawai->dataJabatanFungsional->first();
 
+        // Tentukan fungsional berdasarkan jabatan akademik
+        $fungsional = $this->determineFungsional($pegawai, $jabatanFungsional);
+
         return [
             'id' => $pegawai->id,
             'nip' => $pegawai->nip,
-            'nama' => $pegawai->nama,
+            'nama_pegawai' => $pegawai->nama,
             'unit_kerja' => $pegawai->unitKerja->nama_unit ?? '-',
-            'hubungan_kerja' => $pegawai->status_kerja ?? '-',
+            'hubungan_kerja' => $this->getHubunganKerja($pegawai), // Dari status kerja atau data hubungan kerja
+            'fungsional' => $fungsional,
             'jabatan_akademik' => $pegawai->jabatanAkademik->jabatan_akademik ?? '-',
-            'jabatan_fungsional' => $jabatanFungsional ? $jabatanFungsional->jabatanFungsional->nama_jabatan_fungsional : '-',
             'jabatan_struktural' => $jabatanStruktural ? $jabatanStruktural->jabatanStruktural->singkatan : '-',
-            'status_aktif' => $pegawai->statusAktif->nama_status_aktif ?? '-',
+            'status_aktif' => $pegawai->statusAktif->nama_status_aktif ?? $pegawai->status_kerja,
             'has_evaluation' => $currentEvaluasi ? true : false,
-            'current_evaluation' => $currentEvaluasi ? [
-                'id' => $currentEvaluasi->id,
-                'total_nilai' => $currentEvaluasi->total_nilai,
-                'sebutan_total' => $currentEvaluasi->sebutan_total,
-                'periode_tahun' => $currentEvaluasi->periode_tahun
-            ] : null
+            'current_evaluation_id' => $currentEvaluasi->id ?? null,
+            'actions' => $this->generateActionLinks($pegawai, $currentEvaluasi)
         ];
     }
 
     /**
-     * IMPROVED: Format detail pegawai dengan info pendidikan
+     * Generate action links untuk setiap pegawai
      */
-    private function formatDetailPegawaiForEvaluasi($pegawai)
+    private function generateActionLinks($pegawai, $currentEvaluasi = null)
+    {
+        $baseUrl = request()->getSchemeAndHttpHost();
+        $actions = [];
+
+        // Link untuk melihat detail pegawai
+        $actions['detail'] = [
+            'url' => "{$baseUrl}/api/dosen/evaluasi-kinerja/pegawai/{$pegawai->id}",
+            'label' => 'Detail Pegawai',
+            'method' => 'GET',
+            'description' => 'Melihat detail informasi pegawai dan riwayat evaluasi'
+        ];
+
+        // Link untuk menambah evaluasi baru (jika belum ada evaluasi)
+        if (!$currentEvaluasi) {
+            $actions['add_evaluation'] = [
+                'url' => "{$baseUrl}/api/dosen/evaluasi-kinerja",
+                'label' => 'Tambah Evaluasi',
+                'method' => 'POST',
+                'description' => 'Menambahkan evaluasi kinerja baru untuk pegawai ini',
+                'required_data' => [
+                    'pegawai_id' => $pegawai->id,
+                    'periode_tahun' => date('Y'),
+                    'tanggal_penilaian' => date('Y-m-d'),
+                    'nilai_kehadiran' => 'numeric (0-100)',
+                    'nilai_pendidikan' => 'numeric (0-100)',
+                    'nilai_penelitian' => 'numeric (0-100)', 
+                    'nilai_pengabdian' => 'numeric (0-100)',
+                    'nilai_penunjang1' => 'numeric (0-100)',
+                    'nilai_penunjang2' => 'numeric (0-100)',
+                    'nilai_penunjang3' => 'numeric (0-100)',
+                    'nilai_penunjang4' => 'numeric (0-100)'
+                ]
+            ];
+        }
+
+        // Link untuk edit evaluasi (jika sudah ada evaluasi)
+        if ($currentEvaluasi) {
+            $actions['edit_evaluation'] = [
+                'url' => "{$baseUrl}/api/dosen/evaluasi-kinerja/{$currentEvaluasi->id}",
+                'label' => 'Edit Evaluasi',
+                'method' => 'PUT',
+                'description' => 'Mengedit evaluasi kinerja yang sudah ada'
+            ];
+
+            $actions['delete_evaluation'] = [
+                'url' => "{$baseUrl}/api/dosen/evaluasi-kinerja/{$currentEvaluasi->id}",
+                'label' => 'Hapus Evaluasi',
+                'method' => 'DELETE',
+                'description' => 'Menghapus evaluasi kinerja'
+            ];
+        }
+
+        return $actions;
+    }
+
+    /**
+     * Tentukan fungsional berdasarkan jabatan akademik dan jabatan fungsional
+     */
+    private function determineFungsional($pegawai, $jabatanFungsional)
+    {
+        // Jika ada jabatan fungsional, gunakan itu
+        if ($jabatanFungsional) {
+            return $jabatanFungsional->jabatanFungsional->nama_jabatan_fungsional;
+        }
+
+        // Jika tidak ada, gunakan jabatan akademik sebagai basis
+        $jabatanAkademik = $pegawai->jabatanAkademik->jabatan_akademik ?? '';
+
+        // Mapping jabatan akademik ke fungsional yang sesuai
+        switch ($jabatanAkademik) {
+            case 'Guru Besar':
+            case 'Lektor Kepala':
+            case 'Lektor':
+            case 'Asisten Ahli':
+            case 'Tenaga Pengajar':
+                return 'Dosen';
+            
+            case 'Laboran':
+                return 'Laboran';
+            
+            case 'Administrasi':
+                return 'Staff';
+            
+            case 'Pustakawan':
+                return 'Pustakawan';
+            
+            case 'Teknisi':
+                return 'Teknisi';
+            
+            default:
+                return 'Staff';
+        }
+    }
+
+    /**
+     * Dapatkan hubungan kerja pegawai
+     */
+    private function getHubunganKerja($pegawai)
+    {
+        // Cek apakah ada data hubungan kerja (ambil yang terbaru berdasarkan created_at)
+        $hubunganKerjaAktif = $pegawai->dataHubunganKerja()
+            ->with('hubunganKerja')
+            ->latest('created_at')
+            ->first();
+
+        if ($hubunganKerjaAktif) {
+            return $hubunganKerjaAktif->hubunganKerja->nama_hub_kerja;
+        }
+
+        // Jika tidak ada, gunakan default berdasarkan status
+        if ($pegawai->status_kerja === 'Aktif') {
+            // Asumsi default untuk pegawai aktif
+            return 'Tetap Yayasan Karyawan';
+        }
+
+        return $pegawai->status_kerja ?? 'Tidak Diketahui';
+    }
+
+    /**
+     * Dapatkan pendidikan terakhir pegawai
+     */
+    private function getPendidikanTerakhir($pegawai)
+    {
+        // Cek apakah ada data pendidikan formal
+        $pendidikanTerakhir = $pegawai->dataPendidikanFormal()
+            ->orderBy('tahun_lulus', 'desc')
+            ->first();
+
+        if ($pendidikanTerakhir) {
+            return $pendidikanTerakhir->jenjang . ' ' . $pendidikanTerakhir->program_studi;
+        }
+
+        // Jika tidak ada, coba dari gelar
+        $gelar = [];
+        if ($pegawai->gelar_depan) $gelar[] = $pegawai->gelar_depan;
+        if ($pegawai->gelar_belakang) $gelar[] = $pegawai->gelar_belakang;
+
+        if (!empty($gelar)) {
+            return implode(' ', $gelar);
+        }
+
+        return 'Tidak Diketahui';
+    }
+
+    /**
+     * Format detail pegawai
+     */
+    private function formatDetailPegawai($pegawai)
     {
         $jabatanStruktural = $pegawai->dataJabatanStruktural->first();
         $jabatanFungsional = $pegawai->dataJabatanFungsional->first();
@@ -568,31 +847,23 @@ class EvaluasiKinerjaController extends Controller
             'gelar_depan' => $pegawai->gelar_depan,
             'gelar_belakang' => $pegawai->gelar_belakang,
             'unit_kerja' => [
-                'id' => $pegawai->unitKerja->id ?? null,
                 'nama' => $pegawai->unitKerja->nama_unit ?? '-',
                 'kode' => $pegawai->unitKerja->kode_unit ?? '-'
             ],
             'hubungan_kerja' => $pegawai->status_kerja,
             'jabatan_akademik' => [
-                'id' => $pegawai->jabatanAkademik->id ?? null,
                 'nama' => $pegawai->jabatanAkademik->jabatan_akademik ?? '-',
                 'role' => $pegawai->jabatanAkademik->role->nama ?? '-'
             ],
             'jabatan_fungsional' => $jabatanFungsional ? [
-                'id' => $jabatanFungsional->jabatanFungsional->id,
                 'nama' => $jabatanFungsional->jabatanFungsional->nama_jabatan_fungsional,
-                'pangkat' => $jabatanFungsional->jabatanFungsional->pangkat
+                'pangkat' => $jabatanFungsional->jabatanFungsional->pangkat ?? '-'
             ] : null,
             'jabatan_struktural' => $jabatanStruktural ? [
-                'id' => $jabatanStruktural->jabatanStruktural->id,
                 'kode' => $jabatanStruktural->jabatanStruktural->kode,
                 'nama' => $jabatanStruktural->jabatanStruktural->singkatan
             ] : null,
-            'status' => [
-                'kerja' => $pegawai->status_kerja,
-                'aktif' => $pegawai->statusAktif->nama_status_aktif ?? '-'
-            ],
-            'personal' => [
+            'pendidikan' => [
                 'tempat_lahir' => $pegawai->tempat_lahir,
                 'tanggal_lahir' => $pegawai->tanggal_lahir,
                 'jenis_kelamin' => $pegawai->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan',
@@ -610,23 +881,8 @@ class EvaluasiKinerjaController extends Controller
         return [
             'id' => $evaluasi->id,
             'pegawai_id' => $evaluasi->pegawai_id,
-            'pegawai' => [
-                'nip' => $evaluasi->pegawai->nip ?? null,
-                'nama' => $evaluasi->pegawai->nama ?? null,
-                'unit_kerja' => $evaluasi->pegawai->unitKerja->nama_unit ?? null,
-                'jabatan_akademik' => $evaluasi->pegawai->jabatanAkademik->jabatan_akademik ?? null
-            ],
             'penilai_id' => $evaluasi->penilai_id,
-            'penilai' => [
-                'nip' => $evaluasi->penilai->nip ?? null,
-                'nama' => $evaluasi->penilai->nama ?? null
-            ],
             'atasan_penilai_id' => $evaluasi->atasan_penilai_id,
-            'atasan_penilai' => [
-                'nip' => $evaluasi->atasanPenilai->nip ?? null,
-                'nama' => $evaluasi->atasanPenilai->nama ?? null
-            ],
-            'jenis_kinerja' => $evaluasi->jenis_kinerja,
             'periode_tahun' => $evaluasi->periode_tahun,
             'tanggal_penilaian' => $evaluasi->tanggal_penilaian,
             'nilai' => [
@@ -641,102 +897,9 @@ class EvaluasiKinerjaController extends Controller
             ],
             'total_nilai' => $evaluasi->total_nilai,
             'sebutan_total' => $evaluasi->sebutan_total,
-            'catatan' => $evaluasi->catatan ?? null,
             'tgl_input' => $evaluasi->tgl_input,
             'created_at' => $evaluasi->created_at,
             'updated_at' => $evaluasi->updated_at
         ];
-    }
-
-    /**
-     * IMPROVED: Get available unit kerja for evaluator
-     */
-    private function getAvailableUnitKerjaForEvaluator($jabatanStruktural)
-    {
-        $pegawaiQuery = $this->getPegawaiByParentHierarki($jabatanStruktural);
-        
-        return $pegawaiQuery->with('unitKerja')
-            ->get()
-            ->pluck('unitKerja')
-            ->unique('id')
-            ->map(function($unit) {
-                return [
-                    'id' => $unit->id,
-                    'nama' => $unit->nama_unit,
-                    'kode' => $unit->kode_unit
-                ];
-            })
-            ->values();
-    }
-
-    /**
-     * IMPROVED: Get available evaluation periods
-     */
-    private function getAvailableEvaluationPeriods()
-    {
-        $currentYear = date('Y');
-        $periods = [];
-        
-        for ($i = 0; $i < 5; $i++) {
-            $year = $currentYear - $i;
-            $periods[] = [
-                'value' => (string)$year,
-                'label' => 'Periode ' . $year
-            ];
-        }
-        
-        return $periods;
-    }
-
-    /**
-     * Method untuk debugging - melihat hierarki jabatan struktural
-     */
-    public function debugHierarki(Request $request)
-    {
-        $user = auth()->user();
-        $jabatanStruktural = $this->getUserJabatanStruktural($user->id);
-        
-        if (!$jabatanStruktural) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak memiliki jabatan struktural'
-            ]);
-        }
-
-        // Dapatkan child jabatan
-        $childJabatan = SimpegJabatanStruktural::where('parent_jabatan', $jabatanStruktural->kode)
-            ->with('unitKerja')
-            ->get();
-
-        // Dapatkan pegawai yang bisa dievaluasi
-        $pegawai = $this->getPegawaiByParentHierarki($jabatanStruktural)
-            ->with(['dataJabatanStruktural.jabatanStruktural'])
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'jabatan_penilai' => [
-                'kode' => $jabatanStruktural->kode,
-                'singkatan' => $jabatanStruktural->singkatan,
-                'parent_jabatan' => $jabatanStruktural->parent_jabatan,
-                'level' => $this->getJabatanLevel($jabatanStruktural)
-            ],
-            'child_jabatan' => $childJabatan->map(function($item) {
-                return [
-                    'kode' => $item->kode,
-                    'singkatan' => $item->singkatan,
-                    'unit_kerja' => $item->unitKerja->nama_unit ?? '-'
-                ];
-            }),
-            'pegawai_dapat_dievaluasi' => $pegawai->map(function($item) {
-                $jabatan = $item->dataJabatanStruktural->first();
-                return [
-                    'nip' => $item->nip,
-                    'nama' => $item->nama,
-                    'jabatan_struktural' => $jabatan ? $jabatan->jabatanStruktural->singkatan : '-',
-                    'unit_kerja' => $item->unitKerja->nama_unit ?? '-'
-                ];
-            })
-        ]);
     }
 }

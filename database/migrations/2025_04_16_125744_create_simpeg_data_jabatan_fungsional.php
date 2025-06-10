@@ -11,44 +11,35 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Perintah untuk MEMBUAT tabel baru
         Schema::create('simpeg_data_jabatan_fungsional', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->id();
             
-            // Relasi ke tabel referensi
-            $table->integer('jabatan_fungsional_id');
-            $table->integer('pegawai_id');
-            
-            // Data penetapan jabatan
+            // Kolom untuk foreign key (relasi akan dibuat di file migrasi terpisah)
+            $table->unsignedBigInteger('jabatan_fungsional_id');
+            $table->unsignedBigInteger('pegawai_id');
+
+            // Kolom utama sesuai model
             $table->date('tmt_jabatan');
             $table->string('pejabat_penetap', 100);
-            $table->string('no_sk', 50);
+            $table->string('no_sk', 100);
             $table->date('tanggal_sk');
-            
-            // Dokumen pendukung
-            $table->string('file_sk_jabatan', 255)->nullable();
-            
-            // Metadata
+            $table->string('file_sk_jabatan')->nullable();
             $table->date('tgl_input')->nullable();
-            $table->string('status_pengajuan', 20)->default('draft'); // draft, diajukan, disetujui, ditolak
             
+            // Kolom status dan tanggal-tanggal terkait
+            $table->string('status_pengajuan', 50)->default('draft');
+            $table->timestamp('tgl_diajukan')->nullable();
+            $table->timestamp('tgl_disetujui')->nullable();
+            $table->timestamp('tgl_ditolak')->nullable();
+            
+            // Timestamps standar (created_at, updated_at) dan soft deletes
             $table->timestamps();
+            $table->softDeletes();
 
-            // // Foreign keys
-            // $table->foreign('jabatan_fungsional_id')
-            //       ->references('id')
-            //       ->on('simpeg_ref_jabatan_fungsional')
-            //       ->onDelete('restrict');
-
-            // $table->foreign('pegawai_id')
-            //       ->references('id')
-            //       ->on('simpeg_pegawai')
-            //       ->onDelete('cascade');
-
-            // Indexes
+            // Index untuk optimasi query
             $table->index('pegawai_id');
             $table->index('jabatan_fungsional_id');
-            $table->index('no_sk');
-            $table->index('tmt_jabatan');
         });
     }
 

@@ -29,6 +29,9 @@ class SimpegJabatanStruktural extends Model
     protected $casts = [
         'is_pimpinan' => 'boolean',
         'aktif' => 'boolean',
+        'tgl_ditolak' => 'datetime',
+        'tgl_diajukan' => 'datetime',
+        'tgl_disetujui' => 'datetime',
     ];
 
     /**

@@ -5,12 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SimpegPegawai;
-
-
-
-// Dengan:
 use App\Models\SimpegDataJabatanAkademik;  
-
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegStatusAktif;
 use App\Models\HubunganKerja;
@@ -20,7 +15,7 @@ use Illuminate\Support\Facades\Validator;
 
 class PegawaiController extends Controller
 {
-       public function index(Request $request)
+    public function index(Request $request)
     {
         $query = SimpegPegawai::with([
             'unitKerja',
@@ -158,8 +153,6 @@ class PegawaiController extends Controller
         ]);
     }
 
-
-
     public function show(Request $request, $id)
     {
         $pegawai = SimpegPegawai::with([
@@ -189,9 +182,9 @@ class PegawaiController extends Controller
         ]);
     }
 
-   public function store(Request $request)
-{
-    $request->validate([
+    public function store(Request $request)
+    {
+        $request->validate([
             'nip' => 'required|string|max:50|unique:simpeg_pegawai,nip',
             'nidn' => 'nullable|string|max:50',
             'nuptk' => 'nullable|string|max:50',
@@ -201,17 +194,22 @@ class PegawaiController extends Controller
             'jenis_kelamin' => 'required|string|max:30',
             'tempat_lahir' => 'required|string|max:30',
             'tanggal_lahir' => 'required|date',
-            'nama_ibu_kandung' => 'nullable|string|max:50',
+            'nama_ibu_kandung' => 'nullable|string|max:50', // Updated to nullable
             'alamat_domisili' => 'required|string|max:255',
             'agama' => 'required|string|max:20',
             'kota' => 'required|string|max:30',
             'provinsi' => 'required|string|max:30',
             'kode_pos' => 'required|string|max:5',
             'no_handphone' => 'required|string|max:20',
+            'no_whatsapp' => 'nullable|string|max:20',        // Added
             'no_kk' => 'required|string|max:16',
             'email_pribadi' => 'required|email|max:50',
+            'email_pegawai' => 'nullable|email|max:50',       // Added
             'no_ktp' => 'required|string|max:30',
             'status_kerja' => 'required|string|max:50',
+            'nomor_polisi' => 'nullable|string|max:20',       // Added
+            'jenis_kendaraan' => 'nullable|string|max:50',    // Added
+            'merk_kendaraan' => 'nullable|string|max:50',     // Added
             'hubungan_kerja_id' => 'nullable|exists:hubungan_kerja,id',
             'jabatan_fungsional_id' => 'nullable|exists:simpeg_jabatan_fungsional,id',
             'password' => 'sometimes|required|min:6',
@@ -222,324 +220,338 @@ class PegawaiController extends Controller
             'suku_id' => 'nullable|exists:simpeg_suku,id',
         ]);
 
-    DB::beginTransaction();
-    try {
-        // Create pegawai with more fields from migration
-      $pegawai = SimpegPegawai::create([
-            'nip' => $request->nip,
-            'nidn' => $request->nidn,
-            'nuptk' => $request->nuptk,
-            'nama' => $request->nama,
-            'unit_kerja_id' => $request->unit_kerja_id,
-            'status_aktif_id' => $request->status_aktif_id,
-            'jenis_kelamin' => $request->jenis_kelamin,
-            'tempat_lahir' => $request->tempat_lahir,
-            'tanggal_lahir' => $request->tanggal_lahir,
-            'nama_ibu_kandung' => $request->nama_ibu_kandung,
-            'alamat_domisili' => $request->alamat_domisili,
-            'agama' => $request->agama,
-            'kota' => $request->kota,
-            'provinsi' => $request->provinsi,
-            'kode_pos' => $request->kode_pos,
-            'no_handphone' => $request->no_handphone,
-            'no_kk' => $request->no_kk,
-            'email_pribadi' => $request->email_pribadi,
-            'no_ktp' => $request->no_ktp,
-            'status_kerja' => $request->status_kerja,
-            'password' => $request->has('password') 
-                ? bcrypt($request->password) 
-                : bcrypt(date('dmY', strtotime($request->tanggal_lahir))),
-            'gelar_depan' => $request->gelar_depan,
-            'gelar_belakang' => $request->gelar_belakang,
-            'golongan_darah' => $request->golongan_darah,
-            'no_telepon_domisili_kontak' => $request->no_telepon_domisili_kontak,
-            'no_telephone_kantor' => $request->no_telephone_kantor,
-            'jarak_rumah_domisili' => $request->jarak_rumah_domisili,
-            'npwp' => $request->npwp,
-            'no_kartu_bpjs' => $request->no_kartu_bpjs,
-            'no_kartu_pensiun' => $request->no_kartu_pensiun,
-            'kepemilikan_nohp_utama' => $request->kepemilikan_nohp_utama,
-            'alamat_kependudukan' => $request->alamat_kependudukan,
-            'no_rekening' => $request->no_rekening,
-            'cabang_bank' => $request->cabang_bank,
-            'nama_bank' => $request->nama_bank,
-            'karpeg' => $request->karpeg,
-            'no_bpjs' => $request->no_bpjs,
-            'no_bpjs_ketenagakerjaan' => $request->no_bpjs_ketenagakerjaan,
-            'no_bpjs_pensiun' => $request->no_bpjs_pensiun,
-            'tinggi_badan' => $request->tinggi_badan,
-            'berat_badan' => $request->berat_badan,
-            'modified_by' => auth()->id(),
-            'modified_dt' => now(),
-            // Tambahkan field yang sering NULL
-            'user_id' => $request->user_id,
-            'kode_status_pernikahan' => $request->kode_status_pernikahan,
-            'jabatan_akademik_id' => $request->jabatan_akademik_id,
-            'suku_id' => $request->suku_id,
-        ]);
-
-        // File uploads
-        $this->handleFileUploads($request, $pegawai);
-
-        // If hubungan_kerja_id is provided, create relation
-        if ($request->has('hubungan_kerja_id') && !empty($request->hubungan_kerja_id)) {
-            $pegawai->dataHubunganKerja()->create([
-                'hubungan_kerja_id' => $request->hubungan_kerja_id,
-                'tanggal_mulai' => now(),
-                'keterangan' => $request->hubungan_kerja_keterangan ?? 'Initial entry',
-                'created_by' => auth()->id(),
+        DB::beginTransaction();
+        try {
+            // Create pegawai with updated fields
+            $pegawai = SimpegPegawai::create([
+                'nip' => $request->nip,
+                'nidn' => $request->nidn,
+                'nuptk' => $request->nuptk,
+                'nama' => $request->nama,
+                'unit_kerja_id' => $request->unit_kerja_id,
+                'status_aktif_id' => $request->status_aktif_id,
+                'jenis_kelamin' => $request->jenis_kelamin,
+                'tempat_lahir' => $request->tempat_lahir,
+                'tanggal_lahir' => $request->tanggal_lahir,
+                'nama_ibu_kandung' => $request->nama_ibu_kandung,
+                'alamat_domisili' => $request->alamat_domisili,
+                'agama' => $request->agama,
+                'kota' => $request->kota,
+                'provinsi' => $request->provinsi,
+                'kode_pos' => $request->kode_pos,
+                'no_handphone' => $request->no_handphone,
+                'no_whatsapp' => $request->no_whatsapp,               // Added
+                'no_kk' => $request->no_kk,
+                'email_pribadi' => $request->email_pribadi,
+                'email_pegawai' => $request->email_pegawai,           // Added
+                'no_ktp' => $request->no_ktp,
+                'status_kerja' => $request->status_kerja,
+                'nomor_polisi' => $request->nomor_polisi,             // Added
+                'jenis_kendaraan' => $request->jenis_kendaraan,       // Added
+                'merk_kendaraan' => $request->merk_kendaraan,         // Added
+                'password' => $request->has('password') 
+                    ? bcrypt($request->password) 
+                    : bcrypt(date('dmY', strtotime($request->tanggal_lahir))),
+                'gelar_depan' => $request->gelar_depan,
+                'gelar_belakang' => $request->gelar_belakang,
+                'golongan_darah' => $request->golongan_darah,
+                'jarak_rumah_domisili' => $request->jarak_rumah_domisili,
+                'npwp' => $request->npwp,
+                'no_kartu_pensiun' => $request->no_kartu_pensiun,
+                'kepemilikan_nohp_utama' => $request->kepemilikan_nohp_utama,
+                'alamat_kependudukan' => $request->alamat_kependudukan,
+                'no_rekening' => $request->no_rekening,
+                'cabang_bank' => $request->cabang_bank,
+                'nama_bank' => $request->nama_bank,
+                'karpeg' => $request->karpeg,
+                'no_bpjs' => $request->no_bpjs,
+                'no_bpjs_ketenagakerjaan' => $request->no_bpjs_ketenagakerjaan,
+                'tinggi_badan' => $request->tinggi_badan,
+                'berat_badan' => $request->berat_badan,
+                'modified_by' => auth()->id(),
+                'modified_dt' => now(),
+                // Tambahkan field yang sering NULL
+                'user_id' => $request->user_id,
+                'kode_status_pernikahan' => $request->kode_status_pernikahan,
+                'jabatan_akademik_id' => $request->jabatan_akademik_id,
+                'suku_id' => $request->suku_id,
+                
+                // Removed fields (commented out):
+                // 'no_kartu_bpjs' => $request->no_kartu_bpjs,
+                // 'no_bpjs_pensiun' => $request->no_bpjs_pensiun,
+                // 'no_telepon_domisili_kontak' => $request->no_telepon_domisili_kontak,
+                // 'no_telephone_kantor' => $request->no_telephone_kantor,
             ]);
+
+            // File uploads
+            $this->handleFileUploads($request, $pegawai);
+
+            // If hubungan_kerja_id is provided, create relation
+            if ($request->has('hubungan_kerja_id') && !empty($request->hubungan_kerja_id)) {
+                $pegawai->dataHubunganKerja()->create([
+                    'hubungan_kerja_id' => $request->hubungan_kerja_id,
+                    'tanggal_mulai' => now(),
+                    'keterangan' => $request->hubungan_kerja_keterangan ?? 'Initial entry',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            // If jabatan_fungsional_id is provided
+            if ($request->has('jabatan_fungsional_id') && !empty($request->jabatan_fungsional_id)) {
+                $pegawai->dataJabatanFungsional()->create([
+                    'jabatan_fungsional_id' => $request->jabatan_fungsional_id,
+                    'tanggal_mulai' => now(),
+                    'keterangan' => $request->jabatan_fungsional_keterangan ?? 'Initial entry',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            ActivityLogger::log('create', $pegawai, $pegawai->toArray());
+            
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => $pegawai,
+                'message' => 'Pegawai berhasil ditambahkan'
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan pegawai: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $pegawai = SimpegPegawai::find($id);
+
+        if (!$pegawai) {
+            return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan'], 404);
         }
 
-        // If jabatan_fungsional_id is provided
-        if ($request->has('jabatan_fungsional_id') && !empty($request->jabatan_fungsional_id)) {
-            $pegawai->dataJabatanFungsional()->create([
-                'jabatan_fungsional_id' => $request->jabatan_fungsional_id,
-                'tanggal_mulai' => now(),
-                'keterangan' => $request->jabatan_fungsional_keterangan ?? 'Initial entry',
-                'created_by' => auth()->id(),
-            ]);
-        }
+        // Ambil data pegawai saat ini untuk digunakan sebagai nilai default
+        $currentData = $pegawai->toArray();
 
-        ActivityLogger::log('create', $pegawai, $pegawai->toArray());
+        // Validasi dinamis berdasarkan field yang dikirim
+        $validationRules = [];
         
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'data' => $pegawai,
-            'message' => 'Pegawai berhasil ditambahkan'
-        ], 201);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menambahkan pegawai: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-
-
-public function update(Request $request, $id)
-{
-    $pegawai = SimpegPegawai::find($id);
-
-    if (!$pegawai) {
-        return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan'], 404);
-    }
-
-    // Ambil data pegawai saat ini untuk digunakan sebagai nilai default
-    $currentData = $pegawai->toArray();
-
-    // Validasi dinamis berdasarkan field yang dikirim
-    $validationRules = [];
-    
-    // Field yang wajib divalidasi jika dikirim
-    $requiredFields = [
-        'nip' => 'string|max:50|unique:simpeg_pegawai,nip,'.$id,
-        'nama' => 'string|max:255',
-        'unit_kerja_id' => 'exists:simpeg_unit_kerja,id',
-        'status_aktif_id' => 'exists:simpeg_status_aktif,id'
-    ];
-    
-    // Field yang boleh kosong (nullable)
-    $nullableFields = [
-        'nidn' => 'string|max:50',
-        'nuptk' => 'string|max:50',
-        'jenis_kelamin' => 'string|max:30',
-        'tempat_lahir' => 'string|max:30',
-        'tanggal_lahir' => 'date',
-        'nama_ibu_kandung' => 'string|max:50',
-        'alamat_domisili' => 'string|max:255',
-        'agama' => 'string|max:20',
-        'kota' => 'string|max:30',
-        'provinsi' => 'string|max:30',
-        'kode_pos' => 'string|max:5',
-        'no_handphone' => 'string|max:20',
-        'no_kk' => 'string|max:16',
-        'email_pribadi' => 'email|max:50',
-        'no_ktp' => 'string|max:30',
-        'status_kerja' => 'string|max:50',
-        'hubungan_kerja_id' => 'exists:hubungan_kerja,id',
-        'jabatan_fungsional_id' => 'exists:simpeg_jabatan_fungsional,id',
-        'user_id' => 'exists:simpeg_jabatan_akademik,id',
-        'kode_status_pernikahan' => 'exists:simpeg_status_pernikahan,id',
-        'jabatan_akademik_id' => 'exists:simpeg_jabatan_akademik,id',
-        'suku_id' => 'exists:simpeg_suku,id',
-        'password' => 'min:6'
-    ];
-    
-    // Tambahkan rule untuk field yang ada di request
-    foreach ($requiredFields as $field => $rule) {
-        if ($request->has($field)) {
-            $validationRules[$field] = $rule;
-        }
-    }
-    
-    foreach ($nullableFields as $field => $rule) {
-        if ($request->has($field)) {
-            $validationRules[$field] = 'nullable|'.$rule;
-        }
-    }
-    
-    // Validasi request
-    $validatedData = $request->validate($validationRules);
-    
-    $old = $pegawai->getOriginal();
-
-    DB::beginTransaction();
-    try {
-        // Siapkan data untuk update
-        $updateData = [
-            'modified_by' => auth()->id() ?? 1,
-            'modified_dt' => now(),
+        // Field yang wajib divalidasi jika dikirim
+        $requiredFields = [
+            'nip' => 'string|max:50|unique:simpeg_pegawai,nip,'.$id,
+            'nama' => 'string|max:255',
+            'unit_kerja_id' => 'exists:simpeg_unit_kerja,id',
+            'status_aktif_id' => 'exists:simpeg_status_aktif,id'
         ];
         
-        // Daftar semua field yang mungkin diupdate
-        $allFields = [
-            'nip', 'nidn', 'nuptk', 'nama', 'unit_kerja_id', 'status_aktif_id',
-            'user_id', 'kode_status_pernikahan', 'jabatan_akademik_id', 'suku_id',
-            'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'nama_ibu_kandung',
-            'no_sk_capeg', 'tanggal_sk_capeg', 'golongan_capeg', 'tmt_capeg',
-            'no_sk_pegawai', 'tanggal_sk_pegawai', 'alamat_domisili', 'agama',
-            'golongan_darah', 'kota', 'provinsi', 'kode_pos',
-            'no_telepon_domisili_kontak', 'no_handphone', 'no_telephone_kantor',
-            'no_kk', 'email_pribadi', 'no_ktp', 'jarak_rumah_domisili',
-            'npwp', 'no_kartu_bpjs', 'file_sertifikasi_dosen', 'no_kartu_pensiun',
-            'status_kerja', 'kepemilikan_nohp_utama', 'alamat_kependudukan',
-            'no_rekening', 'cabang_bank', 'nama_bank', 'karpeg',
-            'no_bpjs', 'no_bpjs_ketenagakerjaan', 'no_bpjs_pensiun',
-            'tinggi_badan', 'berat_badan', 'gelar_depan', 'gelar_belakang'
+        // Field yang boleh kosong (nullable) - Updated
+        $nullableFields = [
+            'nidn' => 'string|max:50',
+            'nuptk' => 'string|max:50',
+            'jenis_kelamin' => 'string|max:30',
+            'tempat_lahir' => 'string|max:30',
+            'tanggal_lahir' => 'date',
+            'nama_ibu_kandung' => 'string|max:50',
+            'alamat_domisili' => 'string|max:255',
+            'agama' => 'string|max:20',
+            'kota' => 'string|max:30',
+            'provinsi' => 'string|max:30',
+            'kode_pos' => 'string|max:5',
+            'no_handphone' => 'string|max:20',
+            'no_whatsapp' => 'string|max:20',               // Added
+            'no_kk' => 'string|max:16',
+            'email_pribadi' => 'email|max:50',
+            'email_pegawai' => 'email|max:50',              // Added
+            'no_ktp' => 'string|max:30',
+            'status_kerja' => 'string|max:50',
+            'nomor_polisi' => 'string|max:20',              // Added
+            'jenis_kendaraan' => 'string|max:50',           // Added
+            'merk_kendaraan' => 'string|max:50',            // Added
+            'hubungan_kerja_id' => 'exists:hubungan_kerja,id',
+            'jabatan_fungsional_id' => 'exists:simpeg_jabatan_fungsional,id',
+            'user_id' => 'exists:simpeg_jabatan_akademik,id',
+            'kode_status_pernikahan' => 'exists:simpeg_status_pernikahan,id',
+            'jabatan_akademik_id' => 'exists:simpeg_jabatan_akademik,id',
+            'suku_id' => 'exists:simpeg_suku,id',
+            'password' => 'min:6'
         ];
         
-        // Tambahkan ke updateData semua field yang ada di request
-        foreach ($allFields as $field) {
+        // Tambahkan rule untuk field yang ada di request
+        foreach ($requiredFields as $field => $rule) {
             if ($request->has($field)) {
-                $updateData[$field] = $request->$field;
+                $validationRules[$field] = $rule;
             }
         }
         
-        // Tangani password secara khusus
-        if ($request->has('password') && !empty($request->password)) {
-            $updateData['password'] = bcrypt($request->password);
+        foreach ($nullableFields as $field => $rule) {
+            if ($request->has($field)) {
+                $validationRules[$field] = 'nullable|'.$rule;
+            }
         }
         
-        // Update pegawai
-        $pegawai->update($updateData);
-
-        // Handle file uploads
-        $this->handleFileUploads($request, $pegawai);
-
-        // Update relations if needed
-        if ($request->has('hubungan_kerja_id') && !empty($request->hubungan_kerja_id)) {
-            // End current relationship
-            $pegawai->dataHubunganKerja()
-                ->whereNull('tanggal_selesai')
-                ->update([
-                    'tanggal_selesai' => now(),
-                    'updated_by' => auth()->id() ?? 1
-                ]);
-            
-            // Create new relationship
-            $pegawai->dataHubunganKerja()->create([
-                'hubungan_kerja_id' => $request->hubungan_kerja_id,
-                'tanggal_mulai' => now(),
-                'keterangan' => $request->hubungan_kerja_keterangan ?? 'Updated via API',
-                'created_by' => auth()->id() ?? 1,
-            ]);
-        }
-
-        // Similar pattern for jabatan_fungsional
-        if ($request->has('jabatan_fungsional_id') && !empty($request->jabatan_fungsional_id)) {
-            $pegawai->dataJabatanFungsional()
-                ->whereNull('tanggal_selesai')
-                ->update([
-                    'tanggal_selesai' => now(),
-                    'updated_by' => auth()->id() ?? 1
-                ]);
-            
-            $pegawai->dataJabatanFungsional()->create([
-                'jabatan_fungsional_id' => $request->jabatan_fungsional_id,
-                'tanggal_mulai' => now(),
-                'keterangan' => $request->jabatan_fungsional_keterangan ?? 'Updated via API',
-                'created_by' => auth()->id() ?? 1,
-            ]);
-        }
-
-        // Check if unit_kerja_id has changed
-        if ($request->has('unit_kerja_id') && $old['unit_kerja_id'] != $request->unit_kerja_id) {
-            // End current unit kerja history
-            $pegawai->riwayatUnitKerja()
-                ->whereNull('tanggal_selesai')
-                ->update([
-                    'tanggal_selesai' => now(),
-                    'updated_by' => auth()->id() ?? 1
-                ]);
-            
-            // Create new unit kerja history
-            $pegawai->riwayatUnitKerja()->create([
-                'unit_kerja_id' => $request->unit_kerja_id,
-                'tanggal_mulai' => now(),
-                'keterangan' => $request->unit_kerja_keterangan ?? 'Updated via API',
-                'created_by' => auth()->id() ?? 1,
-            ]);
-        }
-
-        // Jika ada perubahan jabatan_akademik_id
-        if ($request->has('jabatan_akademik_id') && $old['jabatan_akademik_id'] != $request->jabatan_akademik_id) {
-            // Akhiri riwayat jabatan akademik saat ini
-            $pegawai->dataJabatanAkademik()
-                ->whereNull('tanggal_selesai')
-                ->update([
-                    'tanggal_selesai' => now(),
-                    'updated_by' => auth()->id() ?? 1
-                ]);
-            
-            // Buat riwayat jabatan akademik baru
-            $pegawai->dataJabatanAkademik()->create([
-                'jabatan_akademik_id' => $request->jabatan_akademik_id,
-                'tanggal_mulai' => now(),
-                'keterangan' => $request->jabatan_akademik_keterangan ?? 'Updated via API',
-                'created_by' => auth()->id() ?? 1,
-            ]);
-        }
-
-        $changes = array_diff_assoc($pegawai->toArray(), $old);
-        ActivityLogger::log('update', $pegawai, $changes);
+        // Validasi request
+        $validatedData = $request->validate($validationRules);
         
-        DB::commit();
+        $old = $pegawai->getOriginal();
 
-        return response()->json([
-            'success' => true,
-            'data' => $pegawai,
-            'message' => 'Pegawai berhasil diperbarui'
-        ]);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal memperbarui pegawai: ' . $e->getMessage()
-        ], 500);
-    }
-}
-private function handleFileUploads(Request $request, SimpegPegawai $pegawai)
-{
-    $fileFields = [
-        'file_ktp', 'file_kk', 'file_rekening', 'file_karpeg', 'file_npwp',
-        'file_bpjs', 'file_bpjs_ketenagakerjaan', 'file_bpjs_pensiun',
-        'file_tanda_tangan', 'file_sertifikasi_dosen'
-    ];
-    
-    foreach ($fileFields as $field) {
-        if ($request->hasFile($field)) {
-            $file = $request->file($field);
-            $fileName = $pegawai->nip . '_' . $field . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('pegawai', $fileName, 'public');
-            $pegawai->update([$field => $fileName]);
+        DB::beginTransaction();
+        try {
+            // Siapkan data untuk update
+            $updateData = [
+                'modified_by' => auth()->id() ?? 1,
+                'modified_dt' => now(),
+            ];
+            
+            // Daftar semua field yang mungkin diupdate - Updated
+            $allFields = [
+                'nip', 'nidn', 'nuptk', 'nama', 'unit_kerja_id', 'status_aktif_id',
+                'user_id', 'kode_status_pernikahan', 'jabatan_akademik_id', 'suku_id',
+                'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'nama_ibu_kandung',
+                'no_sk_capeg', 'tanggal_sk_capeg', 'golongan_capeg', 'tmt_capeg',
+                'no_sk_pegawai', 'tanggal_sk_pegawai', 'alamat_domisili', 'agama',
+                'golongan_darah', 'kota', 'provinsi', 'kode_pos',
+                'no_handphone', 'no_whatsapp', 'no_kk', 'email_pribadi', 'email_pegawai',
+                'no_ktp', 'jarak_rumah_domisili', 'npwp', 'file_sertifikasi_dosen', 
+                'no_kartu_pensiun', 'status_kerja', 'kepemilikan_nohp_utama', 
+                'alamat_kependudukan', 'no_rekening', 'cabang_bank', 'nama_bank', 'karpeg',
+                'no_bpjs', 'no_bpjs_ketenagakerjaan', 'tinggi_badan', 'berat_badan', 
+                'gelar_depan', 'gelar_belakang', 'nomor_polisi', 'jenis_kendaraan', 'merk_kendaraan'
+                
+                // Removed fields (commented out):
+                // 'no_kartu_bpjs', 'no_bpjs_pensiun', 'no_telepon_domisili_kontak', 'no_telephone_kantor'
+            ];
+            
+            // Tambahkan ke updateData semua field yang ada di request
+            foreach ($allFields as $field) {
+                if ($request->has($field)) {
+                    $updateData[$field] = $request->$field;
+                }
+            }
+            
+            // Tangani password secara khusus
+            if ($request->has('password') && !empty($request->password)) {
+                $updateData['password'] = bcrypt($request->password);
+            }
+            
+            // Update pegawai
+            $pegawai->update($updateData);
+
+            // Handle file uploads
+            $this->handleFileUploads($request, $pegawai);
+
+            // Update relations if needed
+            if ($request->has('hubungan_kerja_id') && !empty($request->hubungan_kerja_id)) {
+                // End current relationship
+                $pegawai->dataHubunganKerja()
+                    ->whereNull('tanggal_selesai')
+                    ->update([
+                        'tanggal_selesai' => now(),
+                        'updated_by' => auth()->id() ?? 1
+                    ]);
+                
+                // Create new relationship
+                $pegawai->dataHubunganKerja()->create([
+                    'hubungan_kerja_id' => $request->hubungan_kerja_id,
+                    'tanggal_mulai' => now(),
+                    'keterangan' => $request->hubungan_kerja_keterangan ?? 'Updated via API',
+                    'created_by' => auth()->id() ?? 1,
+                ]);
+            }
+
+            // Similar pattern for jabatan_fungsional
+            if ($request->has('jabatan_fungsional_id') && !empty($request->jabatan_fungsional_id)) {
+                $pegawai->dataJabatanFungsional()
+                    ->whereNull('tanggal_selesai')
+                    ->update([
+                        'tanggal_selesai' => now(),
+                        'updated_by' => auth()->id() ?? 1
+                    ]);
+                
+                $pegawai->dataJabatanFungsional()->create([
+                    'jabatan_fungsional_id' => $request->jabatan_fungsional_id,
+                    'tanggal_mulai' => now(),
+                    'keterangan' => $request->jabatan_fungsional_keterangan ?? 'Updated via API',
+                    'created_by' => auth()->id() ?? 1,
+                ]);
+            }
+
+            // Check if unit_kerja_id has changed
+            if ($request->has('unit_kerja_id') && $old['unit_kerja_id'] != $request->unit_kerja_id) {
+                // End current unit kerja history
+                $pegawai->riwayatUnitKerja()
+                    ->whereNull('tanggal_selesai')
+                    ->update([
+                        'tanggal_selesai' => now(),
+                        'updated_by' => auth()->id() ?? 1
+                    ]);
+                
+                // Create new unit kerja history
+                $pegawai->riwayatUnitKerja()->create([
+                    'unit_kerja_id' => $request->unit_kerja_id,
+                    'tanggal_mulai' => now(),
+                    'keterangan' => $request->unit_kerja_keterangan ?? 'Updated via API',
+                    'created_by' => auth()->id() ?? 1,
+                ]);
+            }
+
+            // Jika ada perubahan jabatan_akademik_id
+            if ($request->has('jabatan_akademik_id') && $old['jabatan_akademik_id'] != $request->jabatan_akademik_id) {
+                // Akhiri riwayat jabatan akademik saat ini
+                $pegawai->dataJabatanAkademik()
+                    ->whereNull('tanggal_selesai')
+                    ->update([
+                        'tanggal_selesai' => now(),
+                        'updated_by' => auth()->id() ?? 1
+                    ]);
+                
+                // Buat riwayat jabatan akademik baru
+                $pegawai->dataJabatanAkademik()->create([
+                    'jabatan_akademik_id' => $request->jabatan_akademik_id,
+                    'tanggal_mulai' => now(),
+                    'keterangan' => $request->jabatan_akademik_keterangan ?? 'Updated via API',
+                    'created_by' => auth()->id() ?? 1,
+                ]);
+            }
+
+            $changes = array_diff_assoc($pegawai->toArray(), $old);
+            ActivityLogger::log('update', $pegawai, $changes);
+            
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => $pegawai,
+                'message' => 'Pegawai berhasil diperbarui'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui pegawai: ' . $e->getMessage()
+            ], 500);
         }
     }
-}
+
+    private function handleFileUploads(Request $request, SimpegPegawai $pegawai)
+    {
+        $fileFields = [
+            'file_ktp', 'file_kk', 'file_rekening', 'file_karpeg', 'file_npwp',
+            'file_bpjs', 'file_bpjs_ketenagakerjaan', 'file_tanda_tangan', 'file_sertifikasi_dosen'
+            // Removed: 'file_bpjs_pensiun'
+        ];
+        
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                $file = $request->file($field);
+                $fileName = $pegawai->nip . '_' . $field . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('pegawai', $fileName, 'public');
+                $pegawai->update([$field => $fileName]);
+            }
+        }
+    }
+
     public function updateStatus(Request $request)
     {
         $request->validate([
@@ -579,83 +591,84 @@ private function handleFileUploads(Request $request, SimpegPegawai $pegawai)
         }
     }
 
-public function destroy(Request $request)
-{
-    // Validasi input - menerima pegawai_id (single) atau pegawai_ids (array)
-    $validator = Validator::make($request->all(), [
-        'pegawai_id' => 'nullable|exists:simpeg_pegawai,id',
-        'pegawai_ids' => 'nullable|array',
-        'pegawai_ids.*' => 'exists:simpeg_pegawai,id',
-    ]);
+    public function destroy(Request $request)
+    {
+        // Validasi input - menerima pegawai_id (single) atau pegawai_ids (array)
+        $validator = Validator::make($request->all(), [
+            'pegawai_id' => 'nullable|exists:simpeg_pegawai,id',
+            'pegawai_ids' => 'nullable|array',
+            'pegawai_ids.*' => 'exists:simpeg_pegawai,id',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validasi gagal',
-            'errors' => $validator->errors()
-        ], 422);
-    }
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-    // Inisialisasi array untuk menyimpan ID yang akan dihapus
-    $pegawaiIds = [];
-    
-    // Cek apakah ada pegawai_id tunggal
-    if ($request->has('pegawai_id')) {
-        $pegawaiIds[] = $request->pegawai_id;
-    }
-    
-    // Cek apakah ada pegawai_ids array
-    if ($request->has('pegawai_ids')) {
-        $pegawaiIds = array_merge($pegawaiIds, $request->pegawai_ids);
-    }
-    
-    // Jika tidak ada ID yang valid
-    if (empty($pegawaiIds)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Tidak ada ID pegawai valid yang diberikan. Gunakan pegawai_id (single) atau pegawai_ids (array).'
-        ], 400);
-    }
-    
-    DB::beginTransaction();
-    try {
-        $deletedCount = 0;
+        // Inisialisasi array untuk menyimpan ID yang akan dihapus
+        $pegawaiIds = [];
         
-        foreach ($pegawaiIds as $pegawaiId) {
-            $pegawai = SimpegPegawai::find($pegawaiId);
-            if (!$pegawai) continue;
-            
-            $pegawaiData = $pegawai->toArray();
-            
-            $pegawai->delete(); // Using SoftDeletes
-            
-            ActivityLogger::log('delete', $pegawai, $pegawaiData);
-            
-            $deletedCount++;
+        // Cek apakah ada pegawai_id tunggal
+        if ($request->has('pegawai_id')) {
+            $pegawaiIds[] = $request->pegawai_id;
         }
         
-        DB::commit();
-        
-        // Berikan respons yang sesuai dengan konteks
-        if ($deletedCount === 1) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Pegawai berhasil dihapus'
-            ]);
-        } else {
-            return response()->json([
-                'success' => true,
-                'message' => $deletedCount . ' pegawai berhasil dihapus'
-            ]);
+        // Cek apakah ada pegawai_ids array
+        if ($request->has('pegawai_ids')) {
+            $pegawaiIds = array_merge($pegawaiIds, $request->pegawai_ids);
         }
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menghapus pegawai: ' . $e->getMessage()
-        ], 500);
+        
+        // Jika tidak ada ID yang valid
+        if (empty($pegawaiIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada ID pegawai valid yang diberikan. Gunakan pegawai_id (single) atau pegawai_ids (array).'
+            ], 400);
+        }
+        
+        DB::beginTransaction();
+        try {
+            $deletedCount = 0;
+            
+            foreach ($pegawaiIds as $pegawaiId) {
+                $pegawai = SimpegPegawai::find($pegawaiId);
+                if (!$pegawai) continue;
+                
+                $pegawaiData = $pegawai->toArray();
+                
+                $pegawai->delete(); // Using SoftDeletes
+                
+                ActivityLogger::log('delete', $pegawai, $pegawaiData);
+                
+                $deletedCount++;
+            }
+            
+            DB::commit();
+            
+            // Berikan respons yang sesuai dengan konteks
+            if ($deletedCount === 1) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pegawai berhasil dihapus'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => true,
+                    'message' => $deletedCount . ' pegawai berhasil dihapus'
+                ]);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus pegawai: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
+
     public function riwayatUnitKerja($id)
     {
         $pegawai = SimpegPegawai::find($id);
@@ -694,108 +707,89 @@ public function destroy(Request $request)
         ]);
     }
 
-    // public function riwayatPangkat($id)
-    // {
-    //     $pegawai = SimpegPegawai::find($id);
+    public function riwayatPangkat($id)
+    {
+        $pegawai = SimpegPegawai::find($id);
 
-    //     if (!$pegawai) {
-    //         return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan'], 404);
-    //     }
+        if (!$pegawai) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pegawai tidak ditemukan'
+            ], 404);
+        }
 
-    //     $riwayat = $pegawai->dataPangkat()->orderBy('tanggal_mulai', 'desc')->get();
+        $riwayat = $pegawai->dataPangkat()
+            ->with([
+                'pangkat',
+                'jenisKenaikanPangkat',
+                'jenisSk',
+                'jabatanStruktural' => function($query) {
+                    $query->with('pangkat');
+                }
+            ])
+            ->orderBy('tmt_pangkat', 'desc')
+            ->get();
 
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => [
-    //             'pegawai' => $pegawai->only(['id', 'nip', 'nama']),
-    //             'riwayat' => $riwayat
-    //         ]
-    //     ]);
-    // }
-
-    
-public function riwayatPangkat($id)
-{
-    $pegawai = SimpegPegawai::find($id);
-
-    if (!$pegawai) {
         return response()->json([
-            'success' => false,
-            'message' => 'Pegawai tidak ditemukan'
-        ], 404);
+            'success' => true,
+            'data' => [
+                'pegawai' => [
+                    'id' => $pegawai->id,
+                    'nip' => $pegawai->nip,
+                    'nama' => $pegawai->nama,
+                    'unit_kerja' => $pegawai->unitKerja ? $pegawai->unitKerja->nama_unit : null,
+                    'pangkat_terakhir' => $pegawai->dataPangkat()
+                        ->where('is_aktif', true)
+                        ->with('pangkat')
+                        ->first()
+                ],
+                'riwayat' => $riwayat->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'pangkat' => $item->pangkat ? [
+                            'id' => $item->pangkat->id,
+                            'nama' => $item->pangkat->nama_golongan,
+                            'golongan' => $item->pangkat->pangkat
+                        ] : null,
+                        'jenis_kenaikan' => $item->jenisKenaikanPangkat ? [
+                            'id' => $item->jenisKenaikanPangkat->id,
+                            'nama' => $item->jenisKenaikanPangkat->nama_jenis_kenaikan_pangkat
+                        ] : null,
+                        'jenis_sk' => $item->jenisSk ? [
+                            'id' => $item->jenisSk->id,
+                            'nama' => $item->jenisSk->nama_jenis_sk
+                        ] : null,
+                        'tmt_pangkat' => $item->tmt_pangkat,
+                        'no_sk' => $item->no_sk,
+                        'tgl_sk' => $item->tgl_sk,
+                        'pejabat_penetap' => $item->pejabat_penetap,
+                        'masa_kerja' => [
+                            'tahun' => $item->masa_kerja_tahun,
+                            'bulan' => $item->masa_kerja_bulan
+                        ],
+                        'jabatan_struktural' => $item->jabatanStruktural ? [
+                            'id' => $item->jabatanStruktural->id,
+                            'nama' => $item->jabatanStruktural->singkatan,
+                            'pangkat_minimal' => $item->jabatanStruktural->pangkat ? [
+                                'id' => $item->jabatanStruktural->pangkat->id,
+                                'nama' => $item->jabatanStruktural->pangkat->nama_golongan
+                            ] : null
+                        ] : null,
+                        'status' => [
+                            'is_aktif' => $item->is_aktif,
+                            'pengajuan' => $item->status_pengajuan
+                        ],
+                        'dokumen' => $item->file_pangkat ? [
+                            'nama_file' => $item->file_pangkat,
+                            'url' => url('storage/pegawai/' . $item->file_pangkat)
+                        ] : null,
+                        'tanggal_input' => $item->tgl_input
+                    ];
+                })
+            ]
+        ]);
     }
 
-    $riwayat = $pegawai->dataPangkat()
-        ->with([
-            'pangkat',
-            'jenisKenaikanPangkat',
-            'jenisSk',
-            'jabatanStruktural' => function($query) {
-                $query->with('pangkat');
-            }
-        ])
-        ->orderBy('tmt_pangkat', 'desc')
-        ->get();
-
-    return response()->json([
-        'success' => true,
-        'data' => [
-            'pegawai' => [
-                'id' => $pegawai->id,
-                'nip' => $pegawai->nip,
-                'nama' => $pegawai->nama,
-                'unit_kerja' => $pegawai->unitKerja ? $pegawai->unitKerja->nama_unit : null,
-                'pangkat_terakhir' => $pegawai->dataPangkat()
-                    ->where('is_aktif', true)
-                    ->with('pangkat')
-                    ->first()
-            ],
-            'riwayat' => $riwayat->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'pangkat' => $item->pangkat ? [
-                        'id' => $item->pangkat->id,
-                        'nama' => $item->pangkat->nama_golongan,
-                        'golongan' => $item->pangkat->pangkat
-                    ] : null,
-                    'jenis_kenaikan' => $item->jenisKenaikanPangkat ? [
-                        'id' => $item->jenisKenaikanPangkat->id,
-                        'nama' => $item->jenisKenaikanPangkat->nama_jenis_kenaikan_pangkat
-                    ] : null,
-                    'jenis_sk' => $item->jenisSk ? [
-                        'id' => $item->jenisSk->id,
-                        'nama' => $item->jenisSk->nama_jenis_sk
-                    ] : null,
-                    'tmt_pangkat' => $item->tmt_pangkat,
-                    'no_sk' => $item->no_sk,
-                    'tgl_sk' => $item->tgl_sk,
-                    'pejabat_penetap' => $item->pejabat_penetap,
-                    'masa_kerja' => [
-                        'tahun' => $item->masa_kerja_tahun,
-                        'bulan' => $item->masa_kerja_bulan
-                    ],
-                    'jabatan_struktural' => $item->jabatanStruktural ? [
-                        'id' => $item->jabatanStruktural->id,
-                        'nama' => $item->jabatanStruktural->singkatan,
-                        'pangkat_minimal' => $item->jabatanStruktural->pangkat ? [
-                            'id' => $item->jabatanStruktural->pangkat->id,
-                            'nama' => $item->jabatanStruktural->pangkat->nama_golongan
-                        ] : null
-                    ] : null,
-                    'status' => [
-                        'is_aktif' => $item->is_aktif,
-                        'pengajuan' => $item->status_pengajuan
-                    ],
-                    'dokumen' => $item->file_pangkat ? [
-                        'nama_file' => $item->file_pangkat,
-                        'url' => url('storage/pegawai/' . $item->file_pangkat)
-                    ] : null,
-                    'tanggal_input' => $item->tgl_input
-                ];
-            })
-        ]
-    ]);
-}
     public function riwayatFungsional($id)
     {
         $pegawai = SimpegPegawai::find($id);

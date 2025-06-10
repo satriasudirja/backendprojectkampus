@@ -90,6 +90,12 @@ use App\Http\Controllers\Api\EvaluasiKinerjaController;
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
+use App\Http\Controllers\Api\SimpegRumpunBidangIlmuController;
+
+use App\Http\Controllers\Api\SimpegDataRiwayatTesController;
+use App\Http\Controllers\Api\SimpegDataSertifikasidosenController;
+
+
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::get('captcha', [AuthController::class, 'generateCaptcha']);
@@ -110,21 +116,12 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
-         Route::prefix('evaluasi-kinerja')->group(function () {
-          Route::get('/pegawai', [EvaluasiKinerjaController::class, 'index']);
-    
-    // Get detail pegawai dan riwayat evaluasinya
-    Route::get('/pegawai/{pegawaiId}', [EvaluasiKinerjaController::class, 'show']);
-    
-    // CRUD evaluasi kinerja
-    Route::post('/', [EvaluasiKinerjaController::class, 'store']);
-    Route::put('/{id}', [EvaluasiKinerjaController::class, 'update']);
-    Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy']);
-    
-    // Debug endpoint untuk melihat hierarki (optional, bisa dihapus di production)
-    Route::get('/debug-hierarki', [EvaluasiKinerjaController::class, 'debugHierarki']);
-    });
-
+   Route::group(['prefix' => 'evaluasi-kinerja'], function() {
+    Route::get('/pegawai/{id}', [EvaluasiKinerjaController::class, 'show'])->name('evaluasi-kinerja.show');
+    Route::get('/create', [EvaluasiKinerjaController::class, 'create'])->name('evaluasi-kinerja.create');
+    Route::get('/{id}/edit', [EvaluasiKinerjaController::class, 'edit'])->name('evaluasi-kinerja.edit');
+    Route::get('/evaluation/{id}', [EvaluasiKinerjaController::class, 'showEvaluation'])->name('evaluasi-kinerja.evaluation.show');
+});
 
 
         Route::prefix('pegawai/riwayat-diklat')->group(function () {
@@ -475,6 +472,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('gaji-periode', SimpegGajiPeriodeController::class);
         Route::apiResource('jenis-hari', SimpegJenisHariController::class);
         Route::apiResource('jenis-kehadiran', SimpegJenisKehadiranController::class);
+        Route::apiResource('rumpun-bidang-ilmu', SimpegJenisKehadiranController::class);
 
         Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
         Route::get('/unit-kerja/dropdown', [UnitKerjaController::class, 'getUnitsDropdown']);
@@ -493,19 +491,82 @@ Route::middleware('auth:api')->group(function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
 
-         Route::prefix('evaluasi-kinerja')->group(function () {
-          Route::get('/pegawai', [EvaluasiKinerjaController::class, 'index']);
-    
-    // Get detail pegawai dan riwayat evaluasinya
-    Route::get('/pegawai/{pegawaiId}', [EvaluasiKinerjaController::class, 'show']);
-    
-    // CRUD evaluasi kinerja
-    Route::post('/', [EvaluasiKinerjaController::class, 'store']);
-    Route::put('/{id}', [EvaluasiKinerjaController::class, 'update']);
-    Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy']);
-    
-    // Debug endpoint untuk melihat hierarki (optional, bisa dihapus di production)
-    Route::get('/debug-hierarki', [EvaluasiKinerjaController::class, 'debugHierarki']);
+Route::group(['prefix' => 'evaluasi-kinerja'], function() {
+        
+        // GET /api/dosen/evaluasi-kinerja
+        // Mendapatkan daftar pegawai yang bisa dievaluasi (INDEX)
+        Route::get('/', [EvaluasiKinerjaController::class, 'index'])
+            ->name('evaluasi-kinerja.index');
+        
+        // GET /api/dosen/evaluasi-kinerja/pegawai/{id}
+        // Mendapatkan detail pegawai untuk evaluasi (SHOW PEGAWAI)
+        Route::get('/pegawai/{id}', [EvaluasiKinerjaController::class, 'show'])
+            ->name('evaluasi-kinerja.show')
+            ->where('id', '[0-9]+');
+        
+        // GET /api/dosen/evaluasi-kinerja/create
+        // Form data untuk create evaluasi baru (akan redirect ke index dengan parameter)
+        Route::get('/create', function(Request $request) {
+            return redirect()->route('evaluasi-kinerja.index', $request->all());
+        })->name('evaluasi-kinerja.create');
+        
+        // GET /api/dosen/evaluasi-kinerja/{id}/edit
+        // Form data untuk edit evaluasi (akan redirect ke show evaluation)
+        Route::get('/{id}/edit', function($id) {
+            return redirect()->route('evaluasi-kinerja.evaluation.show', $id);
+        })->name('evaluasi-kinerja.edit')->where('id', '[0-9]+');
+        
+        // GET /api/dosen/evaluasi-kinerja/evaluation/{id}
+        // Mendapatkan detail evaluasi kinerja (alias untuk show dengan evaluation)
+        Route::get('/evaluation/{id}', function($id) {
+            $controller = new EvaluasiKinerjaController();
+            // Untuk sementara redirect ke show pegawai, atau bisa dibuat method baru jika diperlukan
+            return response()->json([
+                'success' => true,
+                'message' => 'Untuk detail evaluasi, gunakan endpoint show pegawai atau implementasikan method showEvaluation',
+                'redirect_to' => url("/api/dosen/evaluasi-kinerja/periode?evaluation_id={$id}")
+            ]);
+        })->name('evaluasi-kinerja.evaluation.show')->where('id', '[0-9]+');
+        
+        // POST /api/dosen/evaluasi-kinerja
+        // Menambahkan evaluasi kinerja baru (STORE)
+        Route::post('/', [EvaluasiKinerjaController::class, 'store'])
+            ->name('evaluasi-kinerja.store');
+        
+        // PUT /api/dosen/evaluasi-kinerja/{id}
+        // Mengupdate evaluasi kinerja (UPDATE)
+        Route::put('/{id}', [EvaluasiKinerjaController::class, 'update'])
+            ->name('evaluasi-kinerja.update')
+            ->where('id', '[0-9]+');
+        
+        // PATCH /api/dosen/evaluasi-kinerja/{id}
+        // Mengupdate evaluasi kinerja secara partial (PATCH)
+        Route::patch('/{id}', [EvaluasiKinerjaController::class, 'update'])
+            ->name('evaluasi-kinerja.patch')
+            ->where('id', '[0-9]+');
+        
+        // DELETE /api/dosen/evaluasi-kinerja/{id}
+        // Menghapus evaluasi kinerja (DESTROY)
+        Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy'])
+            ->name('evaluasi-kinerja.destroy')
+            ->where('id', '[0-9]+');
+        
+        // ==================== ADDITIONAL UTILITY ROUTES ====================
+        
+        // GET /api/dosen/evaluasi-kinerja/debug
+        // Debug hierarki dan statistik (untuk testing)
+        Route::get('/debug', [EvaluasiKinerjaController::class, 'debugHierarki'])
+            ->name('evaluasi-kinerja.debug');
+        
+        // GET /api/dosen/evaluasi-kinerja/periode
+        // Mendapatkan evaluasi berdasarkan periode
+        Route::get('/periode', [EvaluasiKinerjaController::class, 'getEvaluasiByPeriode'])
+            ->name('evaluasi-kinerja.periode');
+        
+        // GET /api/dosen/evaluasi-kinerja/export
+        // Export data pegawai untuk laporan
+        Route::get('/export', [EvaluasiKinerjaController::class, 'exportPegawaiList'])
+            ->name('evaluasi-kinerja.export');
     });
         Route::prefix('absensi')->group(function () {
 
@@ -588,6 +649,84 @@ Route::middleware('auth:api')->group(function () {
             Route::get('/filter-options', [SimpegDataAnakController::class, 'getFilterOptions']);
             Route::get('/available-actions', [SimpegDataAnakController::class, 'getAvailableActions']);
         });
+
+        // Data Riwayat Tes Routes
+        Route::prefix('datariwayattes')->group(function () {
+            // ========================================
+            // STATIC ROUTES (HARUS DI ATAS!)
+            // ========================================
+            
+            // Configuration & Statistics Routes
+            Route::get('/config/system', [SimpegDataRiwayatTesController::class, 'getSystemConfig']);
+            Route::get('/statistics/status', [SimpegDataRiwayatTesController::class, 'getStatusStatistics']);
+            Route::get('/filter-options', [SimpegDataRiwayatTesController::class, 'getFilterOptions']);
+            Route::get('/available-actions', [SimpegDataRiwayatTesController::class, 'getAvailableActions']);
+            
+            // Utility Routes
+            Route::get('/jenis-tes/list', [SimpegDataRiwayatTesController::class, 'getJenisTes']);
+            Route::patch('/fix-existing-data', [SimpegDataRiwayatTesController::class, 'fixExistingData']);
+            Route::patch('/bulk-fix-existing-data', [SimpegDataRiwayatTesController::class, 'bulkFixExistingData']);
+            
+            // ========================================
+            // BATCH OPERATIONS ROUTES (HARUS SEBELUM {id} ROUTES!)
+            // ========================================
+            Route::delete('/batch/delete', [SimpegDataRiwayatTesController::class, 'batchDelete']);
+            Route::patch('/batch/submit', [SimpegDataRiwayatTesController::class, 'batchSubmitDrafts']);
+            Route::patch('/batch/status', [SimpegDataRiwayatTesController::class, 'batchUpdateStatus']);
+            
+            // ========================================
+            // CRUD OPERATIONS (PARAMETER ROUTES DI BAWAH!)
+            // ========================================
+            Route::get('/', [SimpegDataRiwayatTesController::class, 'index']);
+            Route::post('/', [SimpegDataRiwayatTesController::class, 'store']);
+            Route::get('/{id}', [SimpegDataRiwayatTesController::class, 'show']);
+            Route::put('/{id}', [SimpegDataRiwayatTesController::class, 'update']);
+            Route::delete('/{id}', [SimpegDataRiwayatTesController::class, 'destroy']);
+            
+            // ========================================
+            // STATUS PENGAJUAN ROUTES (DENGAN {id} DI BAWAH!)
+            // ========================================
+            Route::patch('/{id}/submit', [SimpegDataRiwayatTesController::class, 'submitDraft']);
+        });
+
+
+        // Data Sertifikasi Dosen Routes
+        Route::prefix('datasertifikasidosen')->group(function () {
+            // ======================================
+            // BATCH OPERATIONS ROUTES (HARUS DI ATAS!)
+            // ======================================
+            Route::delete('/batch/delete', [SimpegDataSertifikasidosenController::class, 'batchDelete']);
+            Route::patch('/batch/submit', [SimpegDataSertifikasidosenController::class, 'batchSubmitDrafts']);
+            Route::patch('/batch/status', [SimpegDataSertifikasidosenController::class, 'batchUpdateStatus']);
+            
+            // ======================================
+            // CONFIGURATION & STATISTICS ROUTES
+            // ======================================
+            Route::get('/config/system', [SimpegDataSertifikasidosenController::class, 'getSystemConfig']);
+            Route::get('/statistics/status', [SimpegDataSertifikasidosenController::class, 'getStatusStatistics']);
+            Route::get('/filter-options', [SimpegDataSertifikasidosenController::class, 'getFilterOptions']);
+            Route::get('/available-actions', [SimpegDataSertifikasidosenController::class, 'getAvailableActions']);
+            
+            // ======================================
+            // DATA FIX ROUTES
+            // ======================================
+            Route::patch('/fix/existing-data', [SimpegDataSertifikasidosenController::class, 'fixExistingData']);
+            
+            // ======================================
+            // CRUD ROUTES (HARUS DI BAWAH SEMUA ROUTE STATIS!)
+            // ======================================
+            Route::get('/', [SimpegDataSertifikasidosenController::class, 'index']);
+            Route::post('/', [SimpegDataSertifikasidosenController::class, 'store']);
+            Route::get('/{id}', [SimpegDataSertifikasidosenController::class, 'show']);
+            Route::put('/{id}', [SimpegDataSertifikasidosenController::class, 'update']);
+            Route::delete('/{id}', [SimpegDataSertifikasidosenController::class, 'destroy']);
+            
+            // ======================================
+            // STATUS PENGAJUAN ROUTES
+            // ======================================
+            Route::patch('/{id}/submit', [SimpegDataSertifikasidosenController::class, 'submitDraft']);
+        });
+
 
         // Data Organisasi Routes
         Route::prefix('dataorganisasi')->group(function () {
@@ -1254,6 +1393,7 @@ Route::middleware('auth:api')->group(function () {
 
             // DELETE /api/dosen/hubungankerja/batch/delete - Batch delete data hubungan kerja
             Route::delete('/batch/delete', [SimpegDataHubunganKerjaController::class, 'batchDelete']);
+            Route::patch('/batch/status', [SimpegDataHubunganKerjaController::class, 'batchUpdateStatus']);
 
             // ========================================
             // CONFIGURATION & STATISTICS ROUTES

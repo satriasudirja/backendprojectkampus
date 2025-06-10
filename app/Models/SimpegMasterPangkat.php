@@ -13,10 +13,18 @@ class SimpegMasterPangkat extends Model
     protected $table = 'simpeg_master_pangkat';
     protected $primaryKey = 'id';
  
-
     protected $fillable = [
         'id',
         'pangkat',
-        'nama_golongan'
+        'nama_golongan',
+        'tunjangan'
     ];
+
+    /**
+     * Accessor untuk format tunjangan
+     */
+    public function getFormattedTunjanganAttribute()
+    {
+        return 'Rp. ' . number_format($this->tunjangan, 0, ',', '.');
+    }
 }

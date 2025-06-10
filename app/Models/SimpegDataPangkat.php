@@ -35,12 +35,19 @@ class SimpegDataPangkat extends Model
         'tmt_pangkat' => 'date',
         'tgl_sk' => 'date',
         'tgl_input' => 'date',
+        'tgl_ditolak' => 'datetime',
         'acuan_masa_kerja' => 'boolean',
         'is_aktif' => 'boolean',
         'masa_kerja_tahun' => 'integer',
         'masa_kerja_bulan' => 'integer'
     ];
 
+    // Konstanta untuk status pengajuan
+    const STATUS_DRAFT = 'draft';
+    const STATUS_DIAJUKAN = 'diajukan';
+    const STATUS_DISETUJUI = 'disetujui';
+    const STATUS_DITOLAK = 'ditolak';
+    
     // Relasi ke tabel pegawai
     public function pegawai()
     {

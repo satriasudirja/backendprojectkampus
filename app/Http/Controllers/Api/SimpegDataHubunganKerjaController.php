@@ -448,6 +448,60 @@ class SimpegDataHubunganKerjaController extends Controller
         ]);
     }
 
+        public function batchUpdateStatus(Request $request)
+    {
+        // 1. Validasi Input
+        $validator = Validator::make($request->all(), [
+            'ids' => 'required|array', // Memastikan 'ids' ada dan berupa array
+            'status_pengajuan' => 'required|in:draft,diajukan,disetujui,ditolak' // Memastikan status yang dikirim valid
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // 2. Cek Pengguna yang Login
+        $pegawai = Auth::user();
+
+        if (!$pegawai) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pegawai tidak ditemukan'
+            ], 404);
+        }
+
+        // 3. Siapkan Data untuk Diupdate
+        $updateData = ['status_pengajuan' => $request->status_pengajuan];
+
+        // Secara dinamis menambahkan timestamp berdasarkan status baru
+        switch ($request->status_pengajuan) {
+            case 'diajukan':
+                $updateData['tgl_diajukan'] = now();
+                break;
+            case 'disetujui':
+                $updateData['tgl_disetujui'] = now();
+                break;
+            case 'ditolak':
+                $updateData['tgl_ditolak'] = now();
+                break;
+        }
+
+        // 4. Jalankan Query Update Massal
+        $updatedCount = SimpegDataHubunganKerja::where('pegawai_id', $pegawai->id) // Hanya update data milik user ini (Penting untuk keamanan)
+            ->whereIn('id', $request->ids) // Hanya untuk ID yang dipilih
+            ->update($updateData); // Lakukan update
+
+        // 5. Kirim Respons Sukses
+        return response()->json([
+            'success' => true,
+            'message' => 'Status pengajuan berhasil diperbarui',
+            'updated_count' => $updatedCount
+        ]);
+    }
+
     // Batch delete data hubungan kerja
     public function batchDelete(Request $request)
     {

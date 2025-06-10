@@ -21,7 +21,12 @@ return new class extends Migration {
             $table->string('penyelenggara', 100);
             $table->string('tempat', 100);
             $table->string('lingkup', 20);
+             $table->string('keterangan')->nullable();
             $table->date('tgl_input');
+             $table->string('status_pengajuan', 20)->default('draft');
+             $table->timestamp('tgl_diajukan')->nullable();
+            $table->timestamp('tgl_disetujui')->nullable();
+            $table->timestamp('tgl_ditolak')->nullable();
             $table->timestamps();
         });
         

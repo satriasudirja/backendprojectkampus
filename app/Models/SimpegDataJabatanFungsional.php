@@ -24,13 +24,19 @@ class SimpegDataJabatanFungsional extends Model
         'tanggal_sk',
         'file_sk_jabatan',
         'tgl_input',
-        'status_pengajuan'
+        'status_pengajuan',
+        'tgl_diajukan',      // Ditambahkan
+        'tgl_disetujui',     // Ditambahkan
+        'tgl_ditolak'        // Ditambahkan
     ];
 
     protected $casts = [
         'tmt_jabatan' => 'date',
         'tanggal_sk' => 'date',
-        'tgl_input' => 'date'
+        'tgl_input' => 'date',
+        'tgl_diajukan' => 'datetime',  // Ditambahkan
+        'tgl_disetujui' => 'datetime', // Ditambahkan
+        'tgl_ditolak' => 'datetime'   // Ditambahkan
     ];
 
     // Relationship to Pegawai

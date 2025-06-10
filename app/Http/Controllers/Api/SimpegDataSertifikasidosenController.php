@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\SimpegDataRiwayatPekerjaan;
+use App\Models\SimpegDataSertifikasi;
 use App\Models\SimpegDataPendukung;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegPegawai;
+use App\Models\SimpegMasterJenisSertifikasi;
+use App\Models\RumpunBidangIlmu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -14,9 +16,9 @@ use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-class SimpegDataRiwayatPekerjaanDosenController extends Controller
+class SimpegDataSertifikasidosenController extends Controller
 {
-    // Get all data riwayat pekerjaan for logged in dosen
+    // Get all data sertifikasi for logged in pegawai
     public function index(Request $request) 
     {
         // Pastikan user sudah login
@@ -61,15 +63,24 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         $statusPengajuan = $request->status_pengajuan;
 
         // Query HANYA untuk pegawai yang sedang login
-        $query = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id);
+        $query = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
+            ->with(['jenisSertifikasi', 'bidangIlmu']);
 
         // Filter by search
         if ($search) {
             $query->where(function($q) use ($search) {
-                $q->where('bidang_usaha', 'like', '%'.$search.'%')
-                  ->orWhere('jenis_pekerjaan', 'like', '%'.$search.'%')
-                  ->orWhere('jabatan', 'like', '%'.$search.'%')
-                  ->orWhere('instansi', 'like', '%'.$search.'%');
+                $q->where('no_sertifikasi', 'like', '%'.$search.'%')
+                  ->orWhere('no_registrasi', 'like', '%'.$search.'%')
+                  ->orWhere('no_peserta', 'like', '%'.$search.'%')
+                  ->orWhere('peran', 'like', '%'.$search.'%')
+                  ->orWhere('penyelenggara', 'like', '%'.$search.'%')
+                  ->orWhere('tempat', 'like', '%'.$search.'%')
+                  ->orWhereHas('jenisSertifikasi', function($q) use ($search) {
+                      $q->where('nama_jenis_sertifikasi', 'like', '%'.$search.'%');
+                  })
+                  ->orWhereHas('bidangIlmu', function($q) use ($search) {
+                      $q->where('nama_bidang_ilmu', 'like', '%'.$search.'%');
+                  });
             });
         }
 
@@ -79,34 +90,34 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
 
         // Additional filters
-        if ($request->filled('bidang_usaha')) {
-            $query->where('bidang_usaha', 'like', '%'.$request->bidang_usaha.'%');
+        if ($request->filled('jenis_sertifikasi_id')) {
+            $query->where('jenis_sertifikasi_id', $request->jenis_sertifikasi_id);
         }
-        if ($request->filled('jenis_pekerjaan')) {
-            $query->where('jenis_pekerjaan', 'like', '%'.$request->jenis_pekerjaan.'%');
+        if ($request->filled('bidang_ilmu_id')) {
+            $query->where('bidang_ilmu_id', $request->bidang_ilmu_id);
         }
-        if ($request->filled('instansi')) {
-            $query->where('instansi', 'like', '%'.$request->instansi.'%');
+        if ($request->filled('tgl_sertifikasi')) {
+            $query->whereDate('tgl_sertifikasi', $request->tgl_sertifikasi);
         }
-        if ($request->filled('mulai_bekerja')) {
-            $query->whereDate('mulai_bekerja', $request->mulai_bekerja);
+        if ($request->filled('lingkup')) {
+            $query->where('lingkup', $request->lingkup);
         }
-        if ($request->filled('area_pekerjaan')) {
-            $query->where('area_pekerjaan', $request->area_pekerjaan);
+        if ($request->filled('penyelenggara')) {
+            $query->where('penyelenggara', 'like', '%'.$request->penyelenggara.'%');
         }
 
         // Execute query dengan pagination
-        $dataPekerjaan = $query->orderBy('mulai_bekerja', 'desc')->paginate($perPage);
+        $dataSertifikasi = $query->orderBy('tgl_sertifikasi', 'desc')->paginate($perPage);
 
         // Transform the collection to include formatted data with action URLs
-        $dataPekerjaan->getCollection()->transform(function ($item) {
-            return $this->formatDataPekerjaan($item, true);
+        $dataSertifikasi->getCollection()->transform(function ($item) {
+            return $this->formatDataSertifikasi($item, true);
         });
 
         return response()->json([
             'success' => true,
-            'data' => $dataPekerjaan,
-            'empty_data' => $dataPekerjaan->isEmpty(),
+            'data' => $dataSertifikasi,
+            'empty_data' => $dataSertifikasi->isEmpty(),
             'pegawai_info' => $this->formatPegawaiInfo($pegawai),
             'filters' => [
                 'status_pengajuan' => [
@@ -115,23 +126,29 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     ['id' => 'diajukan', 'nama' => 'Diajukan'],
                     ['id' => 'disetujui', 'nama' => 'Disetujui'],
                     ['id' => 'ditolak', 'nama' => 'Ditolak']
+                ],
+                'lingkup' => [
+                    ['id' => 'semua', 'nama' => 'Semua'],
+                    ['id' => 'Nasional', 'nama' => 'Nasional'],
+                    ['id' => 'Internasional', 'nama' => 'Internasional'],
+                    ['id' => 'Lokal', 'nama' => 'Lokal']
                 ]
             ],
             'table_columns' => [
-                ['field' => 'bidang_usaha', 'label' => 'Bidang Usaha', 'sortable' => true, 'sortable_field' => 'bidang_usaha'],
-                ['field' => 'jenis_pekerjaan', 'label' => 'Jenis Pekerjaan', 'sortable' => true, 'sortable_field' => 'jenis_pekerjaan'],
-                ['field' => 'jabatan', 'label' => 'Jabatan', 'sortable' => true, 'sortable_field' => 'jabatan'],
-                ['field' => 'instansi', 'label' => 'Instansi', 'sortable' => true, 'sortable_field' => 'instansi'],
-                ['field' => 'mulai_bekerja', 'label' => 'Mulai Bekerja', 'sortable' => true, 'sortable_field' => 'mulai_bekerja'],
-                ['field' => 'selesai_bekerja', 'label' => 'Selesai Bekerja', 'sortable' => true, 'sortable_field' => 'selesai_bekerja'],
+                ['field' => 'jenis_sertifikasi', 'label' => 'Jenis Sertifikasi', 'sortable' => true, 'sortable_field' => 'jenis_sertifikasi_id'],
+                ['field' => 'no_sertifikasi', 'label' => 'Nomor Sertifikasi', 'sortable' => true, 'sortable_field' => 'no_sertifikasi'],
+                ['field' => 'bidang_ilmu', 'label' => 'Bidang Ilmu', 'sortable' => true, 'sortable_field' => 'bidang_ilmu_id'],
+                ['field' => 'tgl_sertifikasi', 'label' => 'Tanggal Sertifikasi', 'sortable' => true, 'sortable_field' => 'tgl_sertifikasi'],
+                ['field' => 'penyelenggara', 'label' => 'Penyelenggara', 'sortable' => true, 'sortable_field' => 'penyelenggara'],
+                ['field' => 'lingkup', 'label' => 'Lingkup', 'sortable' => true, 'sortable_field' => 'lingkup'],
                 ['field' => 'status_pengajuan', 'label' => 'Status Pengajuan', 'sortable' => true, 'sortable_field' => 'status_pengajuan'],
                 ['field' => 'aksi', 'label' => 'Aksi', 'sortable' => false]
             ],
             'table_rows_options' => [10, 25, 50, 100],
-            'tambah_data_url' => url("/api/dosen/data-riwayat-pekerjaan-dosen"),
+            'tambah_data_sertifikasi_url' => url("/api/dosen/datasertifikasidosen"),
             'batch_actions' => [
                 'delete' => [
-                    'url' => url("/api/dosen/data-riwayat-pekerjaan-dosen/batch/delete"),
+                    'url' => url("/api/dosen/datasertifikasidosen/batch/delete"),
                     'method' => 'DELETE',
                     'label' => 'Hapus Terpilih',
                     'icon' => 'trash',
@@ -139,7 +156,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     'confirm' => true
                 ],
                 'submit' => [
-                    'url' => url("/api/dosen/data-riwayat-pekerjaan-dosen/batch/submit"),
+                    'url' => url("/api/dosen/datasertifikasidosen/batch/submit"),
                     'method' => 'PATCH',
                     'label' => 'Ajukan Terpilih',
                     'icon' => 'paper-plane',
@@ -147,7 +164,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     'confirm' => true
                 ],
                 'update_status' => [
-                    'url' => url("/api/dosen/data-riwayat-pekerjaan-dosen/batch/status"),
+                    'url' => url("/api/dosen/datasertifikasidosen/batch/status"),
                     'method' => 'PATCH',
                     'label' => 'Update Status Terpilih',
                     'icon' => 'check-circle',
@@ -155,12 +172,12 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                 ]
             ],
             'pagination' => [
-                'current_page' => $dataPekerjaan->currentPage(),
-                'per_page' => $dataPekerjaan->perPage(),
-                'total' => $dataPekerjaan->total(),
-                'last_page' => $dataPekerjaan->lastPage(),
-                'from' => $dataPekerjaan->firstItem(),
-                'to' => $dataPekerjaan->lastItem()
+                'current_page' => $dataSertifikasi->currentPage(),
+                'per_page' => $dataSertifikasi->perPage(),
+                'total' => $dataSertifikasi->total(),
+                'last_page' => $dataSertifikasi->lastPage(),
+                'from' => $dataSertifikasi->firstItem(),
+                'to' => $dataSertifikasi->lastItem()
             ]
         ]);
     }
@@ -178,7 +195,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
 
         // Update data yang status_pengajuan-nya null menjadi draft
-        $updatedCount = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $updatedCount = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
             ->whereNull('status_pengajuan')
             ->update([
                 'status_pengajuan' => 'draft',
@@ -187,12 +204,12 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Berhasil memperbaiki {$updatedCount} data riwayat pekerjaan",
+            'message' => "Berhasil memperbaiki {$updatedCount} data sertifikasi",
             'updated_count' => $updatedCount
         ]);
     }
 
-    // Get detail data riwayat pekerjaan
+    // Get detail data sertifikasi
     public function show($id)
     {
         $pegawai = Auth::user();
@@ -204,16 +221,21 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->with('dataPendukung')
+        $dataSertifikasi = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
+            ->with(['jenisSertifikasi', 'bidangIlmu'])
             ->find($id);
 
-        if (!$dataPekerjaan) {
+        if (!$dataSertifikasi) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan tidak ditemukan'
+                'message' => 'Data sertifikasi tidak ditemukan'
             ], 404);
         }
+
+        // Load dokumen pendukung
+        $dokumenPendukung = SimpegDataPendukung::where('pendukungable_type', 'App\Models\SimpegDataSertifikasi')
+            ->where('pendukungable_id', $id)
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -223,11 +245,24 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                 'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
                 'dataPendidikanFormal.jenjangPendidikan'
             ])),
-            'data' => $this->formatDataPekerjaan($dataPekerjaan)
+            'data' => $this->formatDataSertifikasi($dataSertifikasi),
+            'dokumen_pendukung' => $dokumenPendukung->map(function($dok) {
+                return [
+                    'id' => $dok->id,
+                    'tipe_dokumen' => $dok->tipe_dokumen,
+                    'nama_dokumen' => $dok->nama_dokumen,
+                    'jenis_dokumen_id' => $dok->jenis_dokumen_id,
+                    'keterangan' => $dok->keterangan,
+                    'file_url' => $dok->file_url,
+                    'file_exists' => $dok->file_exists,
+                    'file_size_formatted' => $dok->file_size_formatted,
+                    'file_extension' => $dok->file_extension
+                ];
+            })
         ]);
     }
 
-    // Store new data riwayat pekerjaan dengan draft/submit mode
+    // Store new data sertifikasi dengan draft/submit mode
     public function store(Request $request)
     {
         $pegawai = Auth::user();
@@ -240,23 +275,25 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'bidang_usaha' => 'required|string|max:200',
-            'jenis_pekerjaan' => 'required|string|max:50',
-            'jabatan' => 'required|string|max:50',
-            'instansi' => 'required|string|max:100',
-            'divisi' => 'nullable|string|max:100',
-            'deskripsi' => 'nullable|string',
-            'mulai_bekerja' => 'required|date',
-            'selesai_bekerja' => 'nullable|date|after_or_equal:mulai_bekerja',
-            'area_pekerjaan' => 'required|boolean',
+            'jenis_sertifikasi_id' => 'required|integer|exists:simpeg_master_jenis_sertifikasi,id',
+            'bidang_ilmu_id' => 'required|integer|exists:simpeg_rumpun_bidang_ilmu,id',
+            'no_sertifikasi' => 'required|string|max:50',
+            'tgl_sertifikasi' => 'required|date|before_or_equal:today',
+            'no_registrasi' => 'required|string|max:20',
+            'no_peserta' => 'required|string|max:50',
+            'peran' => 'required|string|max:100',
+            'penyelenggara' => 'required|string|max:100',
+            'tempat' => 'required|string|max:100',
+            'lingkup' => 'required|in:Nasional,Internasional,Lokal',
+            'submit_type' => 'sometimes|in:draft,submit',
+            'keterangan' => 'nullable|string',
+            // Dokumen pendukung
             'dokumen_pendukung' => 'nullable|array',
-            'dokumen_pendukung.*.tipe_dokumen' => 'required|string|in:file',
-            'dokumen_pendukung.*.file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'dokumen_pendukung.*.nama_dokumen' => 'required|string|max:100',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|string',
+            'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string',
+            'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string',
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer',
             'dokumen_pendukung.*.keterangan' => 'nullable|string',
-            'submit_type' => 'sometimes|in:draft,submit', // Optional, default to draft
-            'keterangan' => 'nullable|string'
+            'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120'
         ]);
 
         if ($validator->fails()) {
@@ -266,45 +303,54 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 422);
         }
 
-        // Start database transaction
+        // Check if no_sertifikasi already exists
+        $existingSertifikasi = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
+            ->where('no_sertifikasi', $request->no_sertifikasi)
+            ->first();
+
+        if ($existingSertifikasi) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nomor sertifikasi "'.$request->no_sertifikasi.'" sudah ada untuk pegawai ini'
+            ], 422);
+        }
+
+        $data = $request->except(['submit_type', 'dokumen_pendukung']);
+        $data['pegawai_id'] = $pegawai->id;
+        $data['tgl_input'] = now()->toDateString();
+
+        // Set status berdasarkan submit_type (default: draft)
+        $submitType = $request->input('submit_type', 'draft');
+        if ($submitType === 'submit') {
+            $data['status_pengajuan'] = 'diajukan';
+            $data['tgl_diajukan'] = now();
+            $message = 'Data sertifikasi berhasil diajukan untuk persetujuan';
+        } else {
+            $data['status_pengajuan'] = 'draft';
+            $message = 'Data sertifikasi berhasil disimpan sebagai draft';
+        }
+
         DB::beginTransaction();
-
         try {
-            $data = $request->except(['dokumen_pendukung', 'submit_type']);
-            $data['pegawai_id'] = $pegawai->id;
-            $data['tgl_input'] = now()->toDateString();
-
-            // Set status berdasarkan submit_type (default: draft)
-            $submitType = $request->input('submit_type', 'draft');
-            if ($submitType === 'submit') {
-                $data['status_pengajuan'] = 'diajukan';
-                $data['tgl_diajukan'] = now();
-                $message = 'Data riwayat pekerjaan berhasil diajukan untuk persetujuan';
-            } else {
-                $data['status_pengajuan'] = 'draft';
-                $message = 'Data riwayat pekerjaan berhasil disimpan sebagai draft';
-            }
-
-            $dataPekerjaan = SimpegDataRiwayatPekerjaan::create($data);
+            $dataSertifikasi = SimpegDataSertifikasi::create($data);
 
             // Handle dokumen pendukung
-            if ($request->hasFile('dokumen_pendukung')) {
-                $this->saveDokumenPendukung($request->file('dokumen_pendukung'), $request->dokumen_pendukung, $dataPekerjaan);
+            if ($request->has('dokumen_pendukung') && is_array($request->dokumen_pendukung)) {
+                $this->storeDokumenPendukung($request->dokumen_pendukung, $dataSertifikasi);
             }
 
+            ActivityLogger::log('create', $dataSertifikasi, $dataSertifikasi->toArray());
+
             DB::commit();
-            
-            ActivityLogger::log('create', $dataPekerjaan, $dataPekerjaan->toArray());
 
             return response()->json([
                 'success' => true,
-                'data' => $this->formatDataPekerjaan($dataPekerjaan->fresh(['dataPendukung'])),
+                'data' => $this->formatDataSertifikasi($dataSertifikasi->load(['jenisSertifikasi', 'bidangIlmu'])),
                 'message' => $message
             ], 201);
-            
+
         } catch (\Exception $e) {
-            DB::rollBack();
-            
+            DB::rollback();
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage()
@@ -312,7 +358,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
     }
 
-    // Update data riwayat pekerjaan dengan validasi status
+    // Update data sertifikasi dengan validasi status
     public function update(Request $request, $id)
     {
         $pegawai = Auth::user();
@@ -324,20 +370,18 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->with('dataPendukung')
-            ->find($id);
+        $dataSertifikasi = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)->find($id);
 
-        if (!$dataPekerjaan) {
+        if (!$dataSertifikasi) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan tidak ditemukan'
+                'message' => 'Data sertifikasi tidak ditemukan'
             ], 404);
         }
 
         // Validasi apakah bisa diedit berdasarkan status
         $editableStatuses = ['draft', 'ditolak'];
-        if (!in_array($dataPekerjaan->status_pengajuan, $editableStatuses)) {
+        if (!in_array($dataSertifikasi->status_pengajuan, $editableStatuses)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tidak dapat diedit karena sudah diajukan atau disetujui'
@@ -345,25 +389,19 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'bidang_usaha' => 'sometimes|string|max:200',
-            'jenis_pekerjaan' => 'sometimes|string|max:50',
-            'jabatan' => 'sometimes|string|max:50',
-            'instansi' => 'sometimes|string|max:100',
-            'divisi' => 'nullable|string|max:100',
-            'deskripsi' => 'nullable|string',
-            'mulai_bekerja' => 'sometimes|date',
-            'selesai_bekerja' => 'nullable|date|after_or_equal:mulai_bekerja',
-            'area_pekerjaan' => 'sometimes|boolean',
-            'dokumen_pendukung' => 'nullable|array',
-            'dokumen_pendukung.*.tipe_dokumen' => 'required|string|in:file',
-            'dokumen_pendukung.*.file' => 'sometimes|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'dokumen_pendukung.*.nama_dokumen' => 'required|string|max:100',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|string',
-            'dokumen_pendukung.*.keterangan' => 'nullable|string',
+            'jenis_sertifikasi_id' => 'sometimes|integer|exists:simpeg_master_jenis_sertifikasi,id',
+            'bidang_ilmu_id' => 'sometimes|integer|exists:simpeg_rumpun_bidang_ilmu,id',
+            'no_sertifikasi' => 'sometimes|string|max:50',
+            'tgl_sertifikasi' => 'sometimes|date|before_or_equal:today',
+            'no_registrasi' => 'sometimes|string|max:20',
+            'no_peserta' => 'sometimes|string|max:50',
+            'peran' => 'sometimes|string|max:100',
+            'penyelenggara' => 'sometimes|string|max:100',
+            'tempat' => 'sometimes|string|max:100',
+            'lingkup' => 'sometimes|in:Nasional,Internasional,Lokal',
             'submit_type' => 'sometimes|in:draft,submit',
             'keterangan' => 'nullable|string',
-            'dokumen_to_delete' => 'nullable|array',
-            'dokumen_to_delete.*' => 'integer|exists:simpeg_data_pendukung,id'
+            'dokumen_pendukung' => 'nullable|array'
         ]);
 
         if ($validator->fails()) {
@@ -373,15 +411,28 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 422);
         }
 
-        // Start database transaction
-        DB::beginTransaction();
+        // Check no_sertifikasi uniqueness
+        if ($request->has('no_sertifikasi')) {
+            $existingSertifikasi = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
+                ->where('no_sertifikasi', $request->no_sertifikasi)
+                ->where('id', '!=', $id)
+                ->first();
 
+            if ($existingSertifikasi) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomor sertifikasi "'.$request->no_sertifikasi.'" sudah ada untuk pegawai ini'
+                ], 422);
+            }
+        }
+
+        DB::beginTransaction();
         try {
-            $oldData = $dataPekerjaan->getOriginal();
-            $data = $request->except(['dokumen_pendukung', 'submit_type', 'dokumen_to_delete']);
+            $oldData = $dataSertifikasi->getOriginal();
+            $data = $request->except(['submit_type', 'dokumen_pendukung']);
 
             // Reset status jika dari ditolak
-            if ($dataPekerjaan->status_pengajuan === 'ditolak') {
+            if ($dataSertifikasi->status_pengajuan === 'ditolak') {
                 $data['status_pengajuan'] = 'draft';
                 $data['tgl_ditolak'] = null;
                 $data['keterangan'] = $request->keterangan ?? null;
@@ -391,49 +442,30 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             if ($request->submit_type === 'submit') {
                 $data['status_pengajuan'] = 'diajukan';
                 $data['tgl_diajukan'] = now();
-                $message = 'Data riwayat pekerjaan berhasil diperbarui dan diajukan untuk persetujuan';
+                $message = 'Data sertifikasi berhasil diperbarui dan diajukan untuk persetujuan';
             } else {
-                $message = 'Data riwayat pekerjaan berhasil diperbarui';
+                $message = 'Data sertifikasi berhasil diperbarui';
             }
 
-            $dataPekerjaan->update($data);
+            $dataSertifikasi->update($data);
 
-            // Handle dokumen yang akan dihapus
-            if ($request->has('dokumen_to_delete') && is_array($request->dokumen_to_delete)) {
-                foreach ($request->dokumen_to_delete as $dokumenId) {
-                    $dokumen = SimpegDataPendukung::where('id', $dokumenId)
-                        ->where('pendukungable_type', 'App\Models\SimpegDataRiwayatPekerjaan')
-                        ->where('pendukungable_id', $dataPekerjaan->id)
-                        ->first();
-                    
-                    if ($dokumen) {
-                        // Hapus file dari storage
-                        if ($dokumen->file_path) {
-                            Storage::delete('public/pegawai/riwayat-pekerjaan/' . $dokumen->file_path);
-                        }
-                        $dokumen->delete();
-                    }
-                }
+            // Handle dokumen pendukung update
+            if ($request->has('dokumen_pendukung') && is_array($request->dokumen_pendukung)) {
+                $this->updateDokumenPendukung($request->dokumen_pendukung, $dataSertifikasi);
             }
 
-            // Handle dokumen pendukung baru
-            if ($request->hasFile('dokumen_pendukung')) {
-                $this->saveDokumenPendukung($request->file('dokumen_pendukung'), $request->dokumen_pendukung, $dataPekerjaan);
-            }
+            ActivityLogger::log('update', $dataSertifikasi, $oldData);
 
             DB::commit();
-            
-            ActivityLogger::log('update', $dataPekerjaan, $oldData);
 
             return response()->json([
                 'success' => true,
-                'data' => $this->formatDataPekerjaan($dataPekerjaan->fresh(['dataPendukung'])),
+                'data' => $this->formatDataSertifikasi($dataSertifikasi->load(['jenisSertifikasi', 'bidangIlmu'])),
                 'message' => $message
             ]);
-            
+
         } catch (\Exception $e) {
-            DB::rollBack();
-            
+            DB::rollback();
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()
@@ -441,7 +473,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
     }
 
-    // Delete data riwayat pekerjaan
+    // Delete data sertifikasi
     public function destroy($id)
     {
         $pegawai = Auth::user();
@@ -453,44 +485,41 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->with('dataPendukung')
-            ->find($id);
+        $dataSertifikasi = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)->find($id);
 
-        if (!$dataPekerjaan) {
+        if (!$dataSertifikasi) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan tidak ditemukan'
+                'message' => 'Data sertifikasi tidak ditemukan'
             ], 404);
         }
 
-        // Start database transaction
         DB::beginTransaction();
-
         try {
-            // Delete all dokumen pendukung
-            foreach ($dataPekerjaan->dataPendukung as $dokumen) {
-                if ($dokumen->file_path) {
-                    Storage::delete('public/pegawai/riwayat-pekerjaan/' . $dokumen->file_path);
-                }
+            // Delete dokumen pendukung
+            $dokumenPendukung = SimpegDataPendukung::where('pendukungable_type', 'App\Models\SimpegDataSertifikasi')
+                ->where('pendukungable_id', $id)
+                ->get();
+
+            foreach ($dokumenPendukung as $dokumen) {
+                $dokumen->deleteFile();
                 $dokumen->delete();
             }
 
-            $oldData = $dataPekerjaan->toArray();
-            $dataPekerjaan->delete();
+            $oldData = $dataSertifikasi->toArray();
+            $dataSertifikasi->delete();
+
+            ActivityLogger::log('delete', $dataSertifikasi, $oldData);
 
             DB::commit();
-            
-            ActivityLogger::log('delete', $dataPekerjaan, $oldData);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Data riwayat pekerjaan berhasil dihapus'
+                'message' => 'Data sertifikasi berhasil dihapus'
             ]);
-            
+
         } catch (\Exception $e) {
-            DB::rollBack();
-            
+            DB::rollback();
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
@@ -510,38 +539,38 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $dataSertifikasi = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
             ->where('status_pengajuan', 'draft')
             ->find($id);
 
-        if (!$dataPekerjaan) {
+        if (!$dataSertifikasi) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan draft tidak ditemukan atau sudah diajukan'
+                'message' => 'Data sertifikasi draft tidak ditemukan atau sudah diajukan'
             ], 404);
         }
 
-        $oldData = $dataPekerjaan->getOriginal();
+        $oldData = $dataSertifikasi->getOriginal();
         
-        $dataPekerjaan->update([
+        $dataSertifikasi->update([
             'status_pengajuan' => 'diajukan',
             'tgl_diajukan' => now()
         ]);
 
-        ActivityLogger::log('update', $dataPekerjaan, $oldData);
+        ActivityLogger::log('update', $dataSertifikasi, $oldData);
 
         return response()->json([
             'success' => true,
-            'message' => 'Data riwayat pekerjaan berhasil diajukan untuk persetujuan'
+            'message' => 'Data sertifikasi berhasil diajukan untuk persetujuan'
         ]);
     }
 
-    // Batch delete data riwayat pekerjaan
+    // Batch delete data sertifikasi
     public function batchDelete(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_riwayat_pekerjaan,id'
+            'ids.*' => 'required|integer|exists:simpeg_data_sertifikasi,id'
         ]);
 
         if ($validator->fails()) {
@@ -560,15 +589,14 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $dataList = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $dataSertifikasiList = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
             ->whereIn('id', $request->ids)
-            ->with('dataPendukung')
             ->get();
 
-        if ($dataList->isEmpty()) {
+        if ($dataSertifikasiList->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data riwayat pekerjaan tidak ditemukan atau tidak memiliki akses'
+                'message' => 'Data sertifikasi tidak ditemukan atau tidak memiliki akses'
             ], 404);
         }
 
@@ -576,28 +604,29 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         $errors = [];
 
         DB::beginTransaction();
-
         try {
-            foreach ($dataList as $dataPekerjaan) {
+            foreach ($dataSertifikasiList as $dataSertifikasi) {
                 try {
-                    // Delete all dokumen pendukung
-                    foreach ($dataPekerjaan->dataPendukung as $dokumen) {
-                        if ($dokumen->file_path) {
-                            Storage::delete('public/pegawai/riwayat-pekerjaan/' . $dokumen->file_path);
-                        }
+                    // Delete dokumen pendukung
+                    $dokumenPendukung = SimpegDataPendukung::where('pendukungable_type', 'App\Models\SimpegDataSertifikasi')
+                        ->where('pendukungable_id', $dataSertifikasi->id)
+                        ->get();
+
+                    foreach ($dokumenPendukung as $dokumen) {
+                        $dokumen->deleteFile();
                         $dokumen->delete();
                     }
 
-                    $oldData = $dataPekerjaan->toArray();
-                    $dataPekerjaan->delete();
+                    $oldData = $dataSertifikasi->toArray();
+                    $dataSertifikasi->delete();
                     
-                    ActivityLogger::log('delete', $dataPekerjaan, $oldData);
+                    ActivityLogger::log('delete', $dataSertifikasi, $oldData);
                     $deletedCount++;
                     
                 } catch (\Exception $e) {
                     $errors[] = [
-                        'id' => $dataPekerjaan->id,
-                        'instansi' => $dataPekerjaan->instansi,
+                        'id' => $dataSertifikasi->id,
+                        'no_sertifikasi' => $dataSertifikasi->no_sertifikasi,
                         'error' => 'Gagal menghapus: ' . $e->getMessage()
                     ];
                 }
@@ -605,28 +634,27 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
 
             DB::commit();
 
-            if ($deletedCount == count($request->ids)) {
-                return response()->json([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} data riwayat pekerjaan",
-                    'deleted_count' => $deletedCount
-                ]);
-            } else {
-                return response()->json([
-                    'success' => $deletedCount > 0,
-                    'message' => "Berhasil menghapus {$deletedCount} dari " . count($request->ids) . " data riwayat pekerjaan",
-                    'deleted_count' => $deletedCount,
-                    'errors' => $errors
-                ], $deletedCount > 0 ? 207 : 422);
-            }
-            
         } catch (\Exception $e) {
-            DB::rollBack();
-            
+            DB::rollback();
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
             ], 500);
+        }
+
+        if ($deletedCount == count($request->ids)) {
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil menghapus {$deletedCount} data sertifikasi",
+                'deleted_count' => $deletedCount
+            ]);
+        } else {
+            return response()->json([
+                'success' => $deletedCount > 0,
+                'message' => "Berhasil menghapus {$deletedCount} dari " . count($request->ids) . " data sertifikasi",
+                'deleted_count' => $deletedCount,
+                'errors' => $errors
+            ], $deletedCount > 0 ? 207 : 422);
         }
     }
 
@@ -654,7 +682,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $updatedCount = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $updatedCount = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
             ->where('status_pengajuan', 'draft')
             ->whereIn('id', $request->ids)
             ->update([
@@ -664,7 +692,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Berhasil mengajukan {$updatedCount} data riwayat pekerjaan untuk persetujuan",
+            'message' => "Berhasil mengajukan {$updatedCount} data sertifikasi untuk persetujuan",
             'updated_count' => $updatedCount
         ]);
     }
@@ -708,7 +736,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                 break;
         }
 
-        $updatedCount = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $updatedCount = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
             ->whereIn('id', $request->ids)
             ->update($updateData);
 
@@ -731,7 +759,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $statistics = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $statistics = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
             ->selectRaw('status_pengajuan, COUNT(*) as total')
             ->groupBy('status_pengajuan')
             ->get()
@@ -817,37 +845,38 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 404);
         }
 
-        $bidangUsaha = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->distinct()
-            ->pluck('bidang_usaha')
-            ->filter()
-            ->values();
+        $jenisSertifikasi = SimpegMasterJenisSertifikasi::orderBy('simpeg_master_jenis_sertifikasi')->get();
+        $bidangIlmu = RumpunBidangIlmu::orderBy('simpeg_rumpun_bidang_ilmu')->get();
 
-        $jenisPekerjaan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
+        $penyelenggara = SimpegDataSertifikasi::where('pegawai_id', $pegawai->id)
             ->distinct()
-            ->pluck('jenis_pekerjaan')
-            ->filter()
-            ->values();
-
-        $instansi = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->distinct()
-            ->pluck('instansi')
-            ->filter()
-            ->values();
-
-        $jabatan = SimpegDataRiwayatPekerjaan::where('pegawai_id', $pegawai->id)
-            ->distinct()
-            ->pluck('jabatan')
+            ->pluck('penyelenggara')
             ->filter()
             ->values();
 
         return response()->json([
             'success' => true,
             'filter_options' => [
-                'bidang_usaha' => $bidangUsaha,
-                'jenis_pekerjaan' => $jenisPekerjaan,
-                'instansi' => $instansi,
-                'jabatan' => $jabatan,
+                'jenis_sertifikasi' => $jenisSertifikasi->map(function($item) {
+                    return [
+                        'id' => $item->id,
+                        'nama' => $item->nama_jenis_sertifikasi
+                    ];
+                }),
+                'bidang_ilmu' => $bidangIlmu->map(function($item) {
+                    return [
+                        'id' => $item->id,
+                        'nama' => $item->nama_bidang_ilmu,
+                        'kode' => $item->kode_bidang_ilmu ?? null
+                    ];
+                }),
+                'penyelenggara' => $penyelenggara,
+                'lingkup' => [
+                    ['id' => 'semua', 'nama' => 'Semua'],
+                    ['id' => 'Nasional', 'nama' => 'Nasional'],
+                    ['id' => 'Internasional', 'nama' => 'Internasional'],
+                    ['id' => 'Lokal', 'nama' => 'Lokal']
+                ],
                 'status_pengajuan' => [
                     ['id' => 'semua', 'nama' => 'Semua'],
                     ['id' => 'draft', 'nama' => 'Draft'],
@@ -885,7 +914,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                         'icon' => 'trash',
                         'color' => 'danger',
                         'confirm' => true,
-                        'confirm_message' => 'Apakah Anda yakin ingin menghapus data riwayat pekerjaan ini?',
+                        'confirm_message' => 'Apakah Anda yakin ingin menghapus data sertifikasi ini?',
                         'condition' => 'can_delete'
                     ],
                     [
@@ -903,7 +932,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                         'icon' => 'trash',
                         'color' => 'danger',
                         'confirm' => true,
-                        'confirm_message' => 'Apakah Anda yakin ingin menghapus semua data riwayat pekerjaan yang dipilih?'
+                        'confirm_message' => 'Apakah Anda yakin ingin menghapus semua data sertifikasi yang dipilih?'
                     ],
                     [
                         'key' => 'batch_submit',
@@ -928,26 +957,50 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         ]);
     }
 
-    // Helper: Menyimpan dokumen pendukung
-    private function saveDokumenPendukung($files, $dokumenData, $dataPekerjaan)
+    // Store dokumen pendukung
+    private function storeDokumenPendukung($dokumenArray, $sertifikasi)
     {
-        foreach ($files as $index => $file) {
-            if (!$file) continue;
-            
-            $fileName = 'riwayat_pekerjaan_' . time() . '_' . $index . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/pegawai/riwayat-pekerjaan', $fileName);
-            
-            // FIXED: Gunakan polymorphic relationship yang benar
-            SimpegDataPendukung::create([
-                'tipe_dokumen' => $dokumenData[$index]['tipe_dokumen'] ?? 'file',
-                'file_path' => $fileName,
-                'nama_dokumen' => $dokumenData[$index]['nama_dokumen'] ?? 'Dokumen Riwayat Pekerjaan',
-                'jenis_dokumen_id' => $dokumenData[$index]['jenis_dokumen_id'] ?? null,
-                'keterangan' => $dokumenData[$index]['keterangan'] ?? null,
-                // FIXED: Gunakan polymorphic columns yang benar
-                'pendukungable_type' => 'App\Models\SimpegDataRiwayatPekerjaan',
-                'pendukungable_id' => $dataPekerjaan->id
-            ]);
+        foreach ($dokumenArray as $index => $dokumen) {
+            $dokumenData = [
+                'tipe_dokumen' => $dokumen['tipe_dokumen'],
+                'nama_dokumen' => $dokumen['nama_dokumen'],
+                'jenis_dokumen_id' => $dokumen['jenis_dokumen_id'] ?? null,
+                'keterangan' => $dokumen['keterangan'] ?? null,
+                'pendukungable_type' => 'App\Models\SimpegDataSertifikasi',
+                'pendukungable_id' => $sertifikasi->id
+            ];
+
+            if (isset($dokumen['file']) && $dokumen['file']) {
+                $file = $dokumen['file'];
+                $fileName = 'sertifikasi_'.$sertifikasi->id.'_'.time().'_'.$index.'.'.$file->getClientOriginalExtension();
+                $file->storeAs('public/pegawai/sertifikasi/dokumen', $fileName);
+                $dokumenData['file_path'] = $fileName;
+            }
+
+            SimpegDataPendukung::create($dokumenData);
+        }
+    }
+
+    // Update dokumen pendukung
+    private function updateDokumenPendukung($dokumenArray, $sertifikasi)
+    {
+        // Hapus dokumen lama jika ada flag untuk menghapus
+        if (isset($dokumenArray['delete_ids'])) {
+            $deleteIds = $dokumenArray['delete_ids'];
+            $oldDokumen = SimpegDataPendukung::where('pendukungable_type', 'App\Models\SimpegDataSertifikasi')
+                ->where('pendukungable_id', $sertifikasi->id)
+                ->whereIn('id', $deleteIds)
+                ->get();
+
+            foreach ($oldDokumen as $dok) {
+                $dok->deleteFile();
+                $dok->delete();
+            }
+        }
+
+        // Tambah dokumen baru
+        if (isset($dokumenArray['new'])) {
+            $this->storeDokumenPendukung($dokumenArray['new'], $sertifikasi);
         }
     }
 
@@ -977,15 +1030,6 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             
             if ($jabatanStruktural->jabatanStruktural && $jabatanStruktural->jabatanStruktural->jenisJabatanStruktural) {
                 $jabatanStrukturalNama = $jabatanStruktural->jabatanStruktural->jenisJabatanStruktural->jenis_jabatan_struktural;
-            }
-            elseif (isset($jabatanStruktural->jabatanStruktural->nama_jabatan)) {
-                $jabatanStrukturalNama = $jabatanStruktural->jabatanStruktural->nama_jabatan;
-            }
-            elseif (isset($jabatanStruktural->jabatanStruktural->singkatan)) {
-                $jabatanStrukturalNama = $jabatanStruktural->jabatanStruktural->singkatan;
-            }
-            elseif (isset($jabatanStruktural->nama_jabatan)) {
-                $jabatanStrukturalNama = $jabatanStruktural->nama_jabatan;
             }
         }
 
@@ -1018,11 +1062,11 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         ];
     }
 
-    // Helper: Format data pekerjaan response
-    protected function formatDataPekerjaan($dataPekerjaan, $includeActions = true)
+    // Helper: Format data sertifikasi response
+    protected function formatDataSertifikasi($dataSertifikasi, $includeActions = true)
     {
         // Handle null status_pengajuan - set default to draft
-        $status = $dataPekerjaan->status_pengajuan ?? 'draft';
+        $status = $dataSertifikasi->status_pengajuan ?? 'draft';
         $statusInfo = $this->getStatusInfo($status);
         
         $canEdit = in_array($status, ['draft', 'ditolak']);
@@ -1030,61 +1074,41 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         $canDelete = in_array($status, ['draft', 'ditolak']);
         
         $data = [
-            'id' => $dataPekerjaan->id,
-            'bidang_usaha' => $dataPekerjaan->bidang_usaha,
-            'jenis_pekerjaan' => $dataPekerjaan->jenis_pekerjaan,
-            'jabatan' => $dataPekerjaan->jabatan,
-            'instansi' => $dataPekerjaan->instansi,
-            'divisi' => $dataPekerjaan->divisi,
-            'deskripsi' => $dataPekerjaan->deskripsi,
-            'mulai_bekerja' => $dataPekerjaan->mulai_bekerja,
-            'selesai_bekerja' => $dataPekerjaan->selesai_bekerja,
-            'area_pekerjaan' => $dataPekerjaan->area_pekerjaan,
-            'area_pekerjaan_text' => $dataPekerjaan->area_pekerjaan ? 'Dalam Negeri' : 'Luar Negeri',
+            'id' => $dataSertifikasi->id,
+            'jenis_sertifikasi' => $dataSertifikasi->jenisSertifikasi ? $dataSertifikasi->jenisSertifikasi->nama_jenis_sertifikasi : '-',
+            'jenis_sertifikasi_id' => $dataSertifikasi->jenis_sertifikasi_id,
+            'bidang_ilmu' => $dataSertifikasi->bidangIlmu ? $dataSertifikasi->bidangIlmu->nama_bidang_ilmu : '-',
+            'bidang_ilmu_id' => $dataSertifikasi->bidang_ilmu_id,
+            'no_sertifikasi' => $dataSertifikasi->no_sertifikasi,
+            'tgl_sertifikasi' => $dataSertifikasi->tgl_sertifikasi,
+            'no_registrasi' => $dataSertifikasi->no_registrasi,
+            'no_peserta' => $dataSertifikasi->no_peserta,
+            'peran' => $dataSertifikasi->peran,
+            'penyelenggara' => $dataSertifikasi->penyelenggara,
+            'tempat' => $dataSertifikasi->tempat,
+            'lingkup' => $dataSertifikasi->lingkup,
             'status_pengajuan' => $status,
             'status_info' => $statusInfo,
-            'keterangan' => $dataPekerjaan->keterangan,
             'can_edit' => $canEdit,
             'can_submit' => $canSubmit,
             'can_delete' => $canDelete,
             'timestamps' => [
-                'tgl_input' => $dataPekerjaan->tgl_input,
-                'tgl_diajukan' => $dataPekerjaan->tgl_diajukan,
-                'tgl_disetujui' => $dataPekerjaan->tgl_disetujui,
-                'tgl_ditolak' => $dataPekerjaan->tgl_ditolak
+                'tgl_input' => $dataSertifikasi->tgl_input,
+                'tgl_diajukan' => $dataSertifikasi->tgl_diajukan ?? null,
+                'tgl_disetujui' => $dataSertifikasi->tgl_disetujui ?? null,
+                'tgl_ditolak' => $dataSertifikasi->tgl_ditolak ?? null
             ],
-            'created_at' => $dataPekerjaan->created_at,
-            'updated_at' => $dataPekerjaan->updated_at
+            'created_at' => $dataSertifikasi->created_at,
+            'updated_at' => $dataSertifikasi->updated_at
         ];
-
-        // Add dokumen pendukung if available
-        if ($dataPekerjaan->relationLoaded('dataPendukung')) {
-            $data['dokumen_pendukung'] = $dataPekerjaan->dataPendukung->map(function($dokumen) {
-                return [
-                    'id' => $dokumen->id,
-                    'tipe_dokumen' => $dokumen->tipe_dokumen,
-                    'nama_dokumen' => $dokumen->nama_dokumen,
-                    'jenis_dokumen_id' => $dokumen->jenis_dokumen_id,
-                    'keterangan' => $dokumen->keterangan,
-                    'file' => [
-                        'nama_file' => $dokumen->file_path,
-                        'url' => url('storage/pegawai/riwayat-pekerjaan/'.$dokumen->file_path)
-                    ]
-                ];
-            });
-        }
 
         // Add action URLs if requested
         if ($includeActions) {
-            // Get URL prefix from request
-            $request = request();
-            $prefix = $request->segment(2) ?? 'dosen'; // fallback to 'dosen'
-            
             $data['aksi'] = [
-                'detail_url' => url("/api/{$prefix}/data-riwayat-pekerjaan-dosen/{$dataPekerjaan->id}"),
-                'update_url' => url("/api/{$prefix}/data-riwayat-pekerjaan-dosen/{$dataPekerjaan->id}"),
-                'delete_url' => url("/api/{$prefix}/data-riwayat-pekerjaan-dosen/{$dataPekerjaan->id}"),
-                'submit_url' => url("/api/{$prefix}/data-riwayat-pekerjaan-dosen/{$dataPekerjaan->id}/submit"),
+                'detail_url' => url("/api/dosen/datasertifikasidosen/{$dataSertifikasi->id}"),
+                'update_url' => url("/api/dosen/datasertifikasidosen/{$dataSertifikasi->id}"),
+                'delete_url' => url("/api/dosen/datasertifikasidosen/{$dataSertifikasi->id}"),
+                'submit_url' => url("/api/dosen/datasertifikasidosen/{$dataSertifikasi->id}/submit"),
             ];
 
             // Conditional action URLs based on permissions
@@ -1108,7 +1132,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     'icon' => 'trash',
                     'color' => 'danger',
                     'confirm' => true,
-                    'confirm_message' => 'Apakah Anda yakin ingin menghapus data riwayat pekerjaan di "' . $dataPekerjaan->instansi . '"?'
+                    'confirm_message' => 'Apakah Anda yakin ingin menghapus data sertifikasi "' . $dataSertifikasi->no_sertifikasi . '"?'
                 ];
             }
             
@@ -1120,7 +1144,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
                     'icon' => 'paper-plane',
                     'color' => 'primary',
                     'confirm' => true,
-                    'confirm_message' => 'Apakah Anda yakin ingin mengajukan data riwayat pekerjaan di "' . $dataPekerjaan->instansi . '" untuk persetujuan?'
+                    'confirm_message' => 'Apakah Anda yakin ingin mengajukan data sertifikasi "' . $dataSertifikasi->no_sertifikasi . '" untuk persetujuan?'
                 ];
             }
             

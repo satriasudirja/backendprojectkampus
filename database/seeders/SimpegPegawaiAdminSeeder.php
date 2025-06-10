@@ -24,12 +24,14 @@ class SimpegPegawaiAdminSeeder extends Seeder
         if (!$jabatanAkademik) {
             $jabatanAkademik = SimpegJabatanAkademik::first();
         }
-          $pp = SimpegJabatanAkademik::where('role_id', 2)->first();
+        
+        $pp = SimpegJabatanAkademik::where('role_id', 2)->first();
         
         // Jika tidak ada, ambil yang ada
         if (!$pp) {
             $pp = SimpegJabatanAkademik::first();
         }
+        
         // Ambil data lain yang diperlukan
         $unitKerja = SimpegUnitKerja::first();
         $statusPernikahan = SimpegStatusPernikahan::first();
@@ -42,7 +44,7 @@ class SimpegPegawaiAdminSeeder extends Seeder
             return;
         }
         
-        // Buat pegawai admin dengan data tetap (fixed)
+        // Buat pegawai admin dengan data tetap (fixed) - Updated
         SimpegPegawai::create([
             'user_id'               => $jabatanAkademik->id,
             'unit_kerja_id'         => $unitKerja->id,
@@ -60,7 +62,7 @@ class SimpegPegawaiAdminSeeder extends Seeder
             'jenis_kelamin'         => 'L',
             'tempat_lahir'          => 'Jakarta',
             'tanggal_lahir'         => '1990-01-01',
-            'nama_ibu_kandung'      => 'Ibu Administrator',
+            'nama_ibu_kandung'      => 'Ibu Administrator',  // Now nullable
             'alamat_domisili'       => 'Jl. Admin No. 1, Jakarta',
             'agama'                 => 'Islam',
             'golongan_darah'        => 'O',
@@ -68,15 +70,26 @@ class SimpegPegawaiAdminSeeder extends Seeder
             'provinsi'              => 'DKI Jakarta',
             'kode_pos'              => '12345',
             'no_handphone'          => '081234567890',
+            'no_whatsapp'           => '081234567890',        // Added
             'no_kk'                 => '1234567890123456',
             'email_pribadi'         => 'admin@example.com',
+            'email_pegawai'         => 'admin.sistem@company.com', // Added
             'no_ktp'                => '1234567890123456',
             'status_kerja'          => 'Aktif',
+            'nomor_polisi'          => 'B 1234 ABC',          // Added
+            'jenis_kendaraan'       => 'Motor',               // Added
+            'merk_kendaraan'        => 'Honda Vario',         // Added
             'modified_by'           => 'system',
             'modified_dt'           => now(),
+            
+            // Removed fields (commented out):
+            // 'no_kartu_bpjs'         => '1234567890',
+            // 'no_bpjs_pensiun'       => '1234567890',
+            // 'no_telepon_domisili_kontak' => '0212345678',
+            // 'no_telephone_kantor'   => '0212345679',
         ]);
         
-        // Tambahkan Super Admin kedua jika diperlukan
+        // Tambahkan Super Admin kedua jika diperlukan - Updated
         SimpegPegawai::create([
             'user_id'               => $jabatanAkademik->id,
             'unit_kerja_id'         => $unitKerja->id,
@@ -102,14 +115,21 @@ class SimpegPegawaiAdminSeeder extends Seeder
             'provinsi'              => 'Jawa Barat',
             'kode_pos'              => '40123',
             'no_handphone'          => '081234567891',
+            'no_whatsapp'           => '081234567891',        // Added
             'no_kk'                 => '1234567890123457',
             'email_pribadi'         => 'superadmin@example.com',
+            'email_pegawai'         => 'superadmin@company.com', // Added
             'no_ktp'                => '1234567890123457',
             'status_kerja'          => 'Aktif',
+            'nomor_polisi'          => 'D 5678 XYZ',          // Added
+            'jenis_kendaraan'       => 'Mobil',               // Added
+            'merk_kendaraan'        => 'Toyota Avanza',       // Added
             'modified_by'           => 'system',
             'modified_dt'           => now(),
         ]);
-         SimpegPegawai::create([
+        
+        // Tambahkan Dosen - Updated
+        SimpegPegawai::create([
             'user_id'               => $jabatanAkademik->id,
             'unit_kerja_id'         => $unitKerja->id,
             'kode_status_pernikahan'=> $statusPernikahan->id,
@@ -126,21 +146,25 @@ class SimpegPegawaiAdminSeeder extends Seeder
             'jenis_kelamin'         => 'L',
             'tempat_lahir'          => 'Jakarta',
             'tanggal_lahir'         => '1990-01-01',
-            'nama_ibu_kandung'      => 'Ibu Administrator',
-            'alamat_domisili'       => 'Jl. Admin No. 1, Jakarta',
+            'nama_ibu_kandung'      => 'Ibu Satria',          // Can be null now
+            'alamat_domisili'       => 'Jl. Dosen No. 1, Jakarta',
             'agama'                 => 'Islam',
             'golongan_darah'        => 'O',
             'kota'                  => 'Jakarta',
             'provinsi'              => 'DKI Jakarta',
             'kode_pos'              => '12345',
-            'no_handphone'          => '081234567890',
-            'no_kk'                 => '1234567890123456',
-            'email_pribadi'         => 'admin@example.com',
-            'no_ktp'                => '1234567890123456',
+            'no_handphone'          => '081234567892',
+            'no_whatsapp'           => '081234567892',        // Added
+            'no_kk'                 => '1234567890123458',
+            'email_pribadi'         => 'satria@example.com',
+            'email_pegawai'         => 'satria.sudirja@company.com', // Added
+            'no_ktp'                => '1234567890123458',
             'status_kerja'          => 'Aktif',
+            'nomor_polisi'          => 'B 9999 DEF',          // Added
+            'jenis_kendaraan'       => 'Motor',               // Added
+            'merk_kendaraan'        => 'Yamaha NMAX',         // Added
             'modified_by'           => 'system',
             'modified_dt'           => now(),
         ]);
-    
     }
 }

@@ -39,6 +39,10 @@ return new class extends Migration
             $table->date('tgl_input')->nullable();
             $table->string('status_pengajuan', 20)->default('draft'); // draft, diajukan, disetujui, ditolak
             $table->boolean('is_aktif')->default(false);
+
+            $table->timestamp('tgl_diajukan')->nullable();
+            $table->timestamp('tgl_disetujui')->nullable();
+            $table->timestamp('tgl_ditolak')->nullable();
             
             $table->timestamps();
 
