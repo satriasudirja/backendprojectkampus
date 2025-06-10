@@ -937,12 +937,14 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             $fileName = 'riwayat_pekerjaan_' . time() . '_' . $index . '.' . $file->getClientOriginalExtension();
             $file->storeAs('public/pegawai/riwayat-pekerjaan', $fileName);
             
+            // FIXED: Gunakan polymorphic relationship yang benar
             SimpegDataPendukung::create([
                 'tipe_dokumen' => $dokumenData[$index]['tipe_dokumen'] ?? 'file',
                 'file_path' => $fileName,
                 'nama_dokumen' => $dokumenData[$index]['nama_dokumen'] ?? 'Dokumen Riwayat Pekerjaan',
                 'jenis_dokumen_id' => $dokumenData[$index]['jenis_dokumen_id'] ?? null,
                 'keterangan' => $dokumenData[$index]['keterangan'] ?? null,
+                // FIXED: Gunakan polymorphic columns yang benar
                 'pendukungable_type' => 'App\Models\SimpegDataRiwayatPekerjaan',
                 'pendukungable_id' => $dataPekerjaan->id
             ]);

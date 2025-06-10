@@ -43,7 +43,10 @@ return new class extends Migration
             $table->string('edisi', 50)->nullable();
             $table->integer('volume')->nullable();
             $table->integer('jumlah_halaman')->nullable();
-            
+
+            $table->timestamp('tgl_diajukan')->nullable();
+            $table->timestamp('tgl_disetujui')->nullable();
+            $table->timestamp('tgl_ditolak')->nullable();
             $table->timestamps();
         });
     }

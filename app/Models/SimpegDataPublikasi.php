@@ -46,6 +46,7 @@ class SimpegDataPublikasi extends Model
 
     protected $casts = [
         'tgl_terbit' => 'date',
+        'tgl_ditolak' => 'datetime',
         'tgl_input' => 'date',
         'volume' => 'integer',
         'nomor' => 'integer',
@@ -53,6 +54,8 @@ class SimpegDataPublikasi extends Model
         'seminar' => 'boolean',
         'prosiding' => 'boolean'
     ];
+
+
 
     // Relasi ke tabel pegawai
     public function pegawai()

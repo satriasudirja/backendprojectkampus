@@ -25,6 +25,7 @@ return new class extends Migration
         Schema::table('simpeg_data_riwayat_pekerjaan', function (Blueprint $table) {
             //
             $table->dropSoftDeletes();
+            $table->dropColumn('status_pengajuan');
         });
     }
 };

@@ -32,6 +32,7 @@ class SimpegDataHubunganKerja extends Model
         'tgl_awal' => 'date',
         'tgl_akhir' => 'date',
         'tgl_input' => 'date',
+        'tgl_ditolak' => 'datetime',
         'is_aktif' => 'boolean'  // ✅ Cast boolean
     ];
 

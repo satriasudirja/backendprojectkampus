@@ -1306,6 +1306,7 @@ Route::middleware('auth:api')->group(function () {
 
             // DELETE /api/dosen/hubungankerja/batch/delete - Batch delete data hubungan kerja
             Route::delete('/batch/delete', [SimpegDataHubunganKerjaController::class, 'batchDelete']);
+            Route::patch('/batch/status', [SimpegDataHubunganKerjaController::class, 'batchUpdateStatus']);
 
             // ========================================
             // CONFIGURATION & STATISTICS ROUTES

@@ -31,6 +31,7 @@ return new class extends Migration
             $table->date('tgl_input')->nullable();
              $table->date('tgl_diajukan')->nullable();
              $table->date('tgl_disetujui')->nullable();
+             $table->timestamp('tgl_ditolak')->nullable();
                 $table->string('keterangan')->nullable();
                 $table->string('dibuat_oleh')->nullable();
             $table->integer('hubungan_kerja_id');
