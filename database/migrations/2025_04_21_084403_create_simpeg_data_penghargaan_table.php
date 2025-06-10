@@ -12,24 +12,32 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_penghargaan', function (Blueprint $table) {
-             $table->bigIncrements('id');
+            $table->bigIncrements('id');
             
             // Foreign key
-            $table->integer('pegawai_id');
+            $table->unsignedBigInteger('pegawai_id');
             
             // Data penghargaan
-        
-
             $table->string('jenis_penghargaan', 100)->nullable();
             $table->string('nama_penghargaan', 255)->nullable();
             $table->string('no_sk', 100)->nullable();
-              $table->date('tanggal_sk')->nullable();
-                $table->string('keterangan', 255)->nullable();
-            $table->date('tanggal_penghargaan')->nullable();  // Diperbaiki dari 'tanggai' ke 'tanggal'
-            $table->date('file_penghargaan')->nullable();  
-       
+            $table->date('tanggal_sk')->nullable();
+            $table->date('tanggal_penghargaan')->nullable();
+            $table->string('file_penghargaan')->nullable(); // Diperbaiki dari date menjadi string
+            $table->string('keterangan', 255)->nullable();
+
+            // --- KOLOM BARU UNTUK SISTEM PENGAJUAN ---
+            $table->string('status_pengajuan', 50)->default('draft');
+            $table->timestamp('tgl_diajukan')->nullable();
+            $table->timestamp('tgl_disetujui')->nullable();
+            $table->timestamp('tgl_ditolak')->nullable();
+            // ------------------------------------------
+            
             $table->timestamps();
             $table->softDeletes();
+
+            // Index
+            $table->index('pegawai_id');
         });
     }
 
