@@ -10,9 +10,7 @@ class SimpegIzinRecord extends Model
     use SoftDeletes;
 
     protected $table = 'simpeg_izin_record';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+  
 
     protected $fillable = [
         'pegawai_id',
@@ -32,7 +30,7 @@ class SimpegIzinRecord extends Model
 
     public function pegawai()
     {
-        return $this->belongsTo(Pegawai::class, 'pegawai_id');
+        return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
     }
 
     public function jenisIzin()

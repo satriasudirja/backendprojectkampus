@@ -10,7 +10,6 @@ class SimpegJenisIzin extends Model
     use SoftDeletes;
 
     protected $table = 'simpeg_jenis_izin';
-    protected $primaryKey = 'id';
 
     protected $fillable = [
         'jenis_kehadiran_id',

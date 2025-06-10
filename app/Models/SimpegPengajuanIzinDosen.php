@@ -10,7 +10,7 @@ class SimpegPengajuanIzinDosen extends Model
 {
     use SoftDeletes;
     
-    protected $table = 'simpeg_pengajuan_izin_dosen';
+    protected $table = 'simpeg_izin_record';
     
     protected $fillable = [
         'pegawai_id',
@@ -41,18 +41,7 @@ class SimpegPengajuanIzinDosen extends Model
     /**
      * Boot the model.
      */
-    protected static function boot()
-    {
-        parent::boot();
-        
-        // Default where clause for only dosen records
-        static::addGlobalScope('dosen', function (Builder $builder) {
-            $builder->whereHas('pegawai', function ($query) {
-                $query->where('jenis_pegawai', 'dosen')
-                    ->orWhere('status_dosen', true);
-            });
-        });
-    }
+  
     
     /**
      * Get the pegawai that owns the izin record.

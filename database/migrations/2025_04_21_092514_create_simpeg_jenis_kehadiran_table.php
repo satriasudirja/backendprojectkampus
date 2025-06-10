@@ -15,7 +15,10 @@ return new class extends Migration
              $table->bigIncrements('id');
             $table->string('kode_jenis', 2);
             $table->string('nama_jenis', 50);
+             $table->string('warna', 50);
+             
             $table->timestamps();
+
         });
     }
 

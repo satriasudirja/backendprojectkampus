@@ -13,10 +13,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-                  SimpegUnitKerjaSeeder::class,
-            //   SimpegJabatanStrukturalSeeder::class,
-            SimpegUserRoleSeeder::class, 
-            SimpegJabatanAkademikSeeder::class,  
+            SimpegUnitKerjaSeeder::class,
+                //   SimpegJabatanStrukturalSeeder::class,
+            SimpegUserRoleSeeder::class,
+            SimpegJabatanAkademikSeeder::class,
             SimpegStatusPernikahanSeeder::class,
             SimpegSukuSeeder::class,
             SimpegStatusAktifSeeder::class,
@@ -46,18 +46,17 @@ class DatabaseSeeder extends Seeder
             SimpegDataSertifikasiSeeder::class,
 
 
-    SimpegJenisPenghargaanSeeder::class,
-    SimpegJenisPelanggaranSeeder::class,
-    SimpegJenisPublikasiSeeder::class,
-    SimpegJenisPublikasiSeeder::class,
-    SimpegJenisKenaikanPangkatSeeder::class,
-    SimpegJenisKehadiranSeeder::class,
-    SimpegGajiDetailSeeder::class,
-    SimpegGajiKomponenSeeder::class,
-    SimpegGajiLemburSeeder::class,
-    SimpegGajiPeriodeSeeder::class,
-    SimpegGajiSlipSeeder::class,
-    SimpegGajiTunjanganKhususSeeder::class,
+            SimpegJenisPenghargaanSeeder::class,
+            SimpegJenisPelanggaranSeeder::class,
+            SimpegJenisPublikasiSeeder::class,
+            SimpegJenisPublikasiSeeder::class,
+            SimpegJenisKenaikanPangkatSeeder::class,
+            SimpegGajiDetailSeeder::class,
+            SimpegGajiKomponenSeeder::class,
+            SimpegGajiLemburSeeder::class,
+            SimpegGajiPeriodeSeeder::class,
+            SimpegGajiSlipSeeder::class,
+            SimpegGajiTunjanganKhususSeeder::class,
 
             SimpegJenisPenghargaanSeeder::class,
             SimpegJenisPelanggaranSeeder::class,
@@ -83,7 +82,7 @@ class DatabaseSeeder extends Seeder
             SimpegUnivLuarSeeder::class,
             SimpegJenjangPendidikanSeeder::class,
             SimpegDataSertifikasiSeeder::class,
-            
+
             SimpegHubunganKerjaSeeder::class,
             SimpegJenisHariSeeder::class,
             SimpegBeritaSeeder::class,
@@ -98,6 +97,8 @@ class DatabaseSeeder extends Seeder
             SimpegDataJabatanStrukturalSeeder::class,
             SimpegPegawaiAdminSeeder::class,
             SimpegMediaPublikasiSeeder::class,
+            SimpegJenisKehadiranSeeder::class,
+            SimpegJenisIzinSeeder::class,
 
 
         ]);
