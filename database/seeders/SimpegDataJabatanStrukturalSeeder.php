@@ -8,62 +8,56 @@ use Carbon\Carbon;
 
 class SimpegDataJabatanStrukturalSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    public function run()
     {
         $now = Carbon::now();
         
-        // Dapatkan ID pegawai yang sudah ada di database
-        $pegawaiIds = DB::table('simpeg_pegawai')->pluck('id')->toArray();
-        
-        // Jika tidak ada pegawai, jangan jalankan seeder
-        if (empty($pegawaiIds)) {
-            $this->command->info('Tidak ada data pegawai di tabel simpeg_pegawai. Seeder tidak dijalankan.');
-            return;
-        }
-        
-        // Dapatkan ID jabatan struktural yang sudah ada
-        $jabatanIds = DB::table('simpeg_jabatan_struktural')->pluck('id')->toArray();
-        
-        // Jika tidak ada jabatan struktural, jangan jalankan seeder
-        if (empty($jabatanIds)) {
-            $this->command->info('Tidak ada data di tabel simpeg_jabatan_struktural. Seeder tidak dijalankan.');
-            return;
-        }
-        
-        // Gunakan pegawai dan jabatan yang ada
+        // Mapping pegawai ke jabatan struktural berdasarkan NIP dan kode jabatan
+        $assignments = [
+            ['nip' => '196501011990031001', 'kode_jabatan' => '001'], // Rektor
+            ['nip' => '198505152010121002', 'kode_jabatan' => '052'], // Dekan  
+            ['nip' => '197803102005012001', 'kode_jabatan' => '053'], // Wakil Dekan Akademik
+            ['nip' => '198201152008011001', 'kode_jabatan' => '054'], // Wakil Dekan Sumberdaya
+            ['nip' => '198907122012012001', 'kode_jabatan' => '055'], // Wakil Dekan Kemahasiswaan
+            ['nip' => '199001011015011001', 'kode_jabatan' => '056'], // Ketua Program Studi
+            ['nip' => '199205102017012001', 'kode_jabatan' => '057'], // Sekretaris Program Studi
+            ['nip' => '199306152018011001', 'kode_jabatan' => '058'], // Kepala Laboratorium
+            ['nip' => '199408202019012001', 'kode_jabatan' => '060'], // Kepala Bagian Tata Usaha
+        ];
+
         $data = [];
-        
-        // Data untuk 4 pegawai (atau kurang jika tidak cukup data)
-        $count = min(count($pegawaiIds), count($jabatanIds), 4);
-        
-        for ($i = 0; $i < $count; $i++) {
-            $pegawaiId = $pegawaiIds[$i];
-            $jabatanId = $jabatanIds[$i];
-            
-            $data[] = [
-                'jabatan_struktural_id' => $jabatanId,
-                'pegawai_id' => $pegawaiId,
-                'tgl_mulai' => '2023-01-01',
-                'tgl_selesai' => '2027-12-31',
-                'no_sk' => 'SK/REKTOR/2023/' . str_pad($i + 1, 3, '0', STR_PAD_LEFT),
-                'tgl_sk' => '2022-12-15',
-                'pejabat_penetap' => 'Rektor',
-                'file_jabatan' => 'sk_jabatan_2023_' . $i . '.pdf',
-                'tgl_input' => $now->format('Y-m-d'),
-                'status_pengajuan' => 'approved',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+        foreach ($assignments as $assignment) {
+            // Get pegawai ID
+            $pegawaiId = DB::table('simpeg_pegawai')
+                ->where('nip', $assignment['nip'])
+                ->value('id');
+                
+            // Get jabatan struktural ID
+            $jabatanId = DB::table('simpeg_jabatan_struktural')
+                ->where('kode', $assignment['kode_jabatan'])
+                ->value('id');
+
+            if ($pegawaiId && $jabatanId) {
+                $data[] = [
+                    'pegawai_id' => $pegawaiId,
+                    'jabatan_struktural_id' => $jabatanId,
+                    'tgl_mulai' => '2023-01-01',
+                    'tgl_selesai' => null, // Jabatan aktif
+                    'no_sk' => 'SK/REKTOR/2023/' . str_pad(count($data) + 1, 3, '0', STR_PAD_LEFT),
+                    'tgl_sk' => '2022-12-15',
+                    'pejabat_penetap' => 'Rektor',
+                    'file_jabatan' => 'sk_jabatan_' . $assignment['kode_jabatan'] . '.pdf',
+                    'tgl_input' => $now->format('Y-m-d'),
+                    'status_pengajuan' => 'disetujui',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
         }
 
         if (!empty($data)) {
             DB::table('simpeg_data_jabatan_struktural')->insert($data);
-            $this->command->info('Berhasil insert ' . count($data) . ' data jabatan struktural.');
-        } else {
-            $this->command->info('Tidak ada data yang diinsert.');
+            $this->command->info('Berhasil assign ' . count($data) . ' pegawai ke jabatan struktural.');
         }
     }
 }

@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('simpeg_data_jabatan_akademik', function (Blueprint $table) {
-            //
-                $table->SoftDeletes();
+            // Check if deleted_at column doesn't exist before adding it
+            if (!Schema::hasColumn('simpeg_data_jabatan_akademik', 'deleted_at')) {
+                $table->softDeletes(); // Note: use lowercase 'softDeletes'
+            }
         });
     }
 
@@ -23,7 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('simpeg_data_jabatan_akademik', function (Blueprint $table) {
-            //
+            $table->dropSoftDeletes();
         });
     }
 };

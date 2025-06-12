@@ -4,23 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegEvaluasiKinerja extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_evaluasi_kinerja';
 
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Untuk UUID
 
     protected $fillable = [
         'id',
         'pegawai_id',
         'penilai_id',
         'atasan_penilai_id',
-        'jenis_kinerja',
         'periode_tahun',
         'tanggal_penilaian',
         'nilai_kehadiran',
@@ -33,7 +30,11 @@ class SimpegEvaluasiKinerja extends Model
         'nilai_penunjang4',
         'total_nilai',
         'sebutan_total',
-        'tgl_input'
+        'tgl_input',
+        'deleted_at',
+        'created_at',
+        'updated_at',
+
     ];
 
     protected $casts = [

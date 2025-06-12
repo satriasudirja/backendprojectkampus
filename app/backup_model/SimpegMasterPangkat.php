@@ -8,9 +8,6 @@ use Illuminate\Support\Str;
 class SimpegMasterPangkat extends Model
 {
     protected $table = 'simpeg_master_pangkat';
-    protected $keyType = 'string';
-    public $incrementing = false;
-
     protected $fillable = [
         'id',
         'pangkat',

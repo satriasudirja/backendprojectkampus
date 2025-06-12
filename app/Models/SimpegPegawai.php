@@ -194,4 +194,24 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(SimpegUnitKerja::class, 'pegawai_id');
     }
+    public function evaluasiKinerja()
+{
+    return $this->hasMany(SimpegEvaluasiKinerja::class, 'pegawai_id');
+}
+
+/**
+ * Relasi ke evaluasi kinerja sebagai penilai
+ */
+public function evaluasiSebagaiPenilai()
+{
+    return $this->hasMany(SimpegEvaluasiKinerja::class, 'penilai_id');
+}
+
+/**
+ * Relasi ke evaluasi kinerja sebagai atasan penilai
+ */
+public function evaluasiSebagaiAtasanPenilai()
+{
+    return $this->hasMany(SimpegEvaluasiKinerja::class, 'atasan_penilai_id');
+}
 }

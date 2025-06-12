@@ -15,14 +15,20 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->integer('pegawai_id');
             $table->integer('jenis_izin_id');
-            $table->string('alasan', 255);
-            $table->date('tgl_mulai');
-            $table->date('tgl_selesai');
-            $table->integer('jumlah_izin');
+            $table->string('alasan_izin', 255)->nullable();
+            $table->date('tgl_mulai')->nullable();
+            $table->date('tgl_selesai')->nullable();
+            $table->integer('jumlah_izin')->nullable();
             $table->string('file_pendukung')->nullable();
             $table->string('status_pengajuan', 20);
+            $table->string('no_izin')->nullable();
+            $table->date('tgl_diajukan')->nullable();
+            $table->date('tgl_disetujui')->nullable();
+            $table->date('tgl_ditolak')->nullable();
+            $table->date('approved_by')->nullable();
+            $table->date('keterangan')->nullable();
             $table->timestamps();
-
+        
             // Foreign key constraints
             // $table->foreign('pegawai_id')
             //       ->references('id')

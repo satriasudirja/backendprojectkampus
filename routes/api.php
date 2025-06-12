@@ -86,6 +86,7 @@ use App\Http\Controllers\Api\SimpegRiwayatHubunganKerjaController;
 use App\Http\Controllers\Api\SimpegRiwayatJabatanStrukturalController;
 use App\Http\Controllers\Api\SimpegSettingKehadiranController;
 use App\Http\Controllers\Api\SimpegRiwayatDiklatController;
+use App\Http\Controllers\Api\EvaluasiKinerjaController;
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
@@ -115,6 +116,14 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+   Route::group(['prefix' => 'evaluasi-kinerja'], function() {
+    Route::get('/pegawai/{id}', [EvaluasiKinerjaController::class, 'show'])->name('evaluasi-kinerja.show');
+    Route::get('/create', [EvaluasiKinerjaController::class, 'create'])->name('evaluasi-kinerja.create');
+    Route::get('/{id}/edit', [EvaluasiKinerjaController::class, 'edit'])->name('evaluasi-kinerja.edit');
+    Route::get('/evaluation/{id}', [EvaluasiKinerjaController::class, 'showEvaluation'])->name('evaluasi-kinerja.evaluation.show');
+});
+
+
         Route::prefix('pegawai/riwayat-diklat')->group(function () {
     
     // GET: Mendapatkan semua riwayat diklat dengan filter dan pagination
@@ -477,10 +486,88 @@ Route::middleware('auth:api')->group(function () {
     });
 
     // Dosen Routes
-    Route::middleware('role:Dosen')->prefix('dosen')->group(function () {
+    Route::middleware('role:Dosen,Tenaga Kependidikan,Dosen Praktisi/Industri')->prefix('dosen')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
+
+Route::group(['prefix' => 'evaluasi-kinerja'], function() {
+        
+        // GET /api/dosen/evaluasi-kinerja
+        // Mendapatkan daftar pegawai yang bisa dievaluasi (INDEX)
+        Route::get('/', [EvaluasiKinerjaController::class, 'index'])
+            ->name('evaluasi-kinerja.index');
+        
+        // GET /api/dosen/evaluasi-kinerja/pegawai/{id}
+        // Mendapatkan detail pegawai untuk evaluasi (SHOW PEGAWAI)
+        Route::get('/pegawai/{id}', [EvaluasiKinerjaController::class, 'show'])
+            ->name('evaluasi-kinerja.show')
+            ->where('id', '[0-9]+');
+        
+        // GET /api/dosen/evaluasi-kinerja/create
+        // Form data untuk create evaluasi baru (akan redirect ke index dengan parameter)
+        Route::get('/create', function(Request $request) {
+            return redirect()->route('evaluasi-kinerja.index', $request->all());
+        })->name('evaluasi-kinerja.create');
+        
+        // GET /api/dosen/evaluasi-kinerja/{id}/edit
+        // Form data untuk edit evaluasi (akan redirect ke show evaluation)
+        Route::get('/{id}/edit', function($id) {
+            return redirect()->route('evaluasi-kinerja.evaluation.show', $id);
+        })->name('evaluasi-kinerja.edit')->where('id', '[0-9]+');
+        
+        // GET /api/dosen/evaluasi-kinerja/evaluation/{id}
+        // Mendapatkan detail evaluasi kinerja (alias untuk show dengan evaluation)
+        Route::get('/evaluation/{id}', function($id) {
+            $controller = new EvaluasiKinerjaController();
+            // Untuk sementara redirect ke show pegawai, atau bisa dibuat method baru jika diperlukan
+            return response()->json([
+                'success' => true,
+                'message' => 'Untuk detail evaluasi, gunakan endpoint show pegawai atau implementasikan method showEvaluation',
+                'redirect_to' => url("/api/dosen/evaluasi-kinerja/periode?evaluation_id={$id}")
+            ]);
+        })->name('evaluasi-kinerja.evaluation.show')->where('id', '[0-9]+');
+        
+        // POST /api/dosen/evaluasi-kinerja
+        // Menambahkan evaluasi kinerja baru (STORE)
+        Route::post('/', [EvaluasiKinerjaController::class, 'store'])
+            ->name('evaluasi-kinerja.store');
+        
+        // PUT /api/dosen/evaluasi-kinerja/{id}
+        // Mengupdate evaluasi kinerja (UPDATE)
+        Route::put('/{id}', [EvaluasiKinerjaController::class, 'update'])
+            ->name('evaluasi-kinerja.update')
+            ->where('id', '[0-9]+');
+        
+        // PATCH /api/dosen/evaluasi-kinerja/{id}
+        // Mengupdate evaluasi kinerja secara partial (PATCH)
+        Route::patch('/{id}', [EvaluasiKinerjaController::class, 'update'])
+            ->name('evaluasi-kinerja.patch')
+            ->where('id', '[0-9]+');
+        
+        // DELETE /api/dosen/evaluasi-kinerja/{id}
+        // Menghapus evaluasi kinerja (DESTROY)
+        Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy'])
+            ->name('evaluasi-kinerja.destroy')
+            ->where('id', '[0-9]+');
+        
+        // ==================== ADDITIONAL UTILITY ROUTES ====================
+        
+        // GET /api/dosen/evaluasi-kinerja/debug
+        // Debug hierarki dan statistik (untuk testing)
+        Route::get('/debug', [EvaluasiKinerjaController::class, 'debugHierarki'])
+            ->name('evaluasi-kinerja.debug');
+        
+        // GET /api/dosen/evaluasi-kinerja/periode
+        // Mendapatkan evaluasi berdasarkan periode
+        Route::get('/periode', [EvaluasiKinerjaController::class, 'getEvaluasiByPeriode'])
+            ->name('evaluasi-kinerja.periode');
+        
+        // GET /api/dosen/evaluasi-kinerja/export
+        // Export data pegawai untuk laporan
+        Route::get('/export', [EvaluasiKinerjaController::class, 'exportPegawaiList'])
+            ->name('evaluasi-kinerja.export');
+    });
         Route::prefix('absensi')->group(function () {
 
             // Get status absensi hari ini

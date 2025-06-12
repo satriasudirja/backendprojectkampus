@@ -36,7 +36,7 @@ class SimpegJabatanFungsional extends Model
 
     public function pangkat()
     {
-        return $this->belongsTo(Pangkat::class, 'pangkat_id');
+        return $this->belongsTo(SimpegMasterPangkat::class, 'pangkat_id');
     }
     
 }

@@ -4,27 +4,36 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes; // Ditambahkan
 
 class SimpegDataPenghargaan extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes; // Ditambahkan
 
     protected $table = 'simpeg_data_penghargaan';
 
     protected $primaryKey = 'id';
     protected $fillable = [
         'pegawai_id',
-    
-         'jenis_penghargaan',
+        'jenis_penghargaan',
         'nama_penghargaan',
         'no_sk',
         'tanggal_sk',
         'tanggal_penghargaan',
-        'keterangan'
+        'file_penghargaan', // Ditambahkan
+        'keterangan',
+        'status_pengajuan', // Ditambahkan
+        'tgl_diajukan',     // Ditambahkan
+        'tgl_disetujui',    // Ditambahkan
+        'tgl_ditolak'       // Ditambahkan
     ];
 
     protected $casts = [
-        'tanggal' => 'date'
+        'tanggal_sk' => 'date',
+        'tanggal_penghargaan' => 'date',
+        'tgl_diajukan' => 'datetime',  // Ditambahkan
+        'tgl_disetujui' => 'datetime', // Ditambahkan
+        'tgl_ditolak' => 'datetime'   // Ditambahkan
     ];
 
     // Relasi ke tabel pegawai
@@ -32,4 +41,6 @@ class SimpegDataPenghargaan extends Model
     {
         return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
     }
+    
+    
 }

@@ -12,7 +12,11 @@ class SimpegJenisKehadiran extends Model
   
     protected $fillable = [
         'kode_jenis',
-        'nama_jenis'
+        'nama_jenis',
+        'warna',
+        'deleted_at',
+        'created_at',
+        'updated_at'
     ];
 
     public function jenisIzin()

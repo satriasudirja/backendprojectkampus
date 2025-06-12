@@ -23,6 +23,18 @@ class SimpegDataJabatanFungsionalSeeder extends Seeder
             return;
         }
 
+        // FIXED: Dapatkan ID pegawai yang valid dari database
+        $validPegawaiIds = DB::table('simpeg_pegawai')
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($validPegawaiIds)) {
+            $this->command->error('Tabel simpeg_pegawai kosong. Jalankan SimpegPegawaiSeeder terlebih dahulu.');
+            return;
+        }
+
+        $this->command->info('Found ' . count($validPegawaiIds) . ' valid pegawai IDs: ' . implode(', ', array_slice($validPegawaiIds, 0, 10)) . (count($validPegawaiIds) > 10 ? '...' : ''));
+
         $pejabatList = [
             'Prof. Dr. Ahmad Rivai, M.Pd.',
             'Dr. Budi Santoso, M.Si.',
@@ -33,11 +45,19 @@ class SimpegDataJabatanFungsionalSeeder extends Seeder
 
         $statusList = ['draft', 'diajukan', 'disetujui', 'ditolak', 'ditangguhkan'];
 
-        // Seed 25 records (jumlah diperkecil untuk mengurangi kemungkinan error)
+        // Seed records - sesuaikan jumlah dengan pegawai yang tersedia
+        $numberOfRecords = min(25, count($validPegawaiIds)); // Tidak lebih dari jumlah pegawai yang ada
         $data = [];
-        for ($i = 1; $i <= 25; $i++) {
-            $pegawaiId = rand(1, 100);
-            // Pastikan hanya menggunakan ID yang valid
+        
+        // Shuffle pegawai IDs untuk variasi
+        $shuffledPegawaiIds = $validPegawaiIds;
+        shuffle($shuffledPegawaiIds);
+
+        for ($i = 0; $i < $numberOfRecords; $i++) {
+            // FIXED: Gunakan hanya pegawai ID yang valid
+            $pegawaiId = $shuffledPegawaiIds[$i % count($validPegawaiIds)];
+            
+            // Pastikan hanya menggunakan jabatan fungsional ID yang valid
             $jabatanFungsionalId = $validJabatanIds[array_rand($validJabatanIds)];
             
             $tmtJabatan = Carbon::now()->subMonths(rand(1, 60))->format('Y-m-d');
@@ -58,9 +78,8 @@ class SimpegDataJabatanFungsionalSeeder extends Seeder
             ];
         }
 
-        // Pastikan data khusus untuk pegawai 20 dan 81 juga menggunakan ID valid
-        if (!empty($validJabatanIds)) {
-            // Tambahkan data khusus untuk pegawai ID 20
+        // FIXED: Tambahkan data khusus hanya jika pegawai ID tersebut benar-benar ada
+        if (in_array(20, $validPegawaiIds)) {
             $data[] = [
                 'jabatan_fungsional_id' => $validJabatanIds[0], // Gunakan ID pertama yang valid
                 'pegawai_id' => 20, // Harsanto Firgantoro
@@ -74,8 +93,11 @@ class SimpegDataJabatanFungsionalSeeder extends Seeder
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ];
+        } else {
+            $this->command->warn('Pegawai ID 20 tidak ditemukan, melewati data khusus untuk Harsanto Firgantoro');
+        }
 
-            // Tambahkan data khusus untuk pegawai ID 81
+        if (in_array(81, $validPegawaiIds)) {
             $data[] = [
                 'jabatan_fungsional_id' => $validJabatanIds[count($validJabatanIds) > 1 ? 1 : 0], // Gunakan ID kedua jika ada
                 'pegawai_id' => 81, // Gabriella Elma Susanti
@@ -89,8 +111,21 @@ class SimpegDataJabatanFungsionalSeeder extends Seeder
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ];
+        } else {
+            $this->command->warn('Pegawai ID 81 tidak ditemukan, melewati data khusus untuk Gabriella Elma Susanti');
         }
 
-        DB::table('simpeg_data_jabatan_fungsional')->insert($data);
+        try {
+            DB::table('simpeg_data_jabatan_fungsional')->insert($data);
+            $this->command->info('Successfully seeded ' . count($data) . ' jabatan fungsional records');
+        } catch (\Exception $e) {
+            $this->command->error('Failed to seed jabatan fungsional data: ' . $e->getMessage());
+            
+            // Debug: Show some sample data
+            $this->command->info('Sample data structure:');
+            if (!empty($data)) {
+                $this->command->line(json_encode($data[0], JSON_PRETTY_PRINT));
+            }
+        }
     }
 }

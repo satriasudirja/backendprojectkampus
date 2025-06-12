@@ -16,9 +16,8 @@ return new class extends Migration
             $table->integer('pegawai_id');
             $table->integer('penilai_id');
             $table->integer('atasan_penilai_id');
-            
-            $table->string('jenis_kinerja'); //(dosen, pegawai)
-
+              $table->string('jenis_kinerja');
+            // $table->string('jenis_kinerja'); //(dosen, pegawai)
             $table->string('periode_tahun', 10);
             $table->date('tanggal_penilaian');
             $table->float('nilai_kehadiran')->nullable();
@@ -33,6 +32,7 @@ return new class extends Migration
             $table->string('sebutan_total', 20);
             $table->date('tgl_input');
             $table->timestamps();
+            $table->softDeletes();
         });
         
     }
