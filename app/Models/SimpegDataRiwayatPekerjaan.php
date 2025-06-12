@@ -33,6 +33,15 @@ class SimpegDataRiwayatPekerjaan extends Model
         'tgl_ditolak',
           'keterangan'
         
+
+
+
+
+
+
+
+
+          
     ];
 
     protected $casts = [
