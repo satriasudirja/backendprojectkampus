@@ -91,6 +91,9 @@ use App\Http\Controllers\Api\MonitoringPresensiController;
 use App\Http\Controllers\Api\MonitoringKegiatanController;
 use App\Http\Controllers\Api\AdminDataKeluargaController;
 use App\Http\Controllers\Api\InputPresensiController;
+use App\http\Controllers\Api\MonitoringHubunganKerjaController;
+use App\http\Controllers\Api\AdminMonitoringValidasiIzinController;
+use App\http\Controllers\Api\AdminMonitoringValidasiCutiController;
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
@@ -121,6 +124,64 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+        Route::prefix('validasi-cuti')->group(function () {
+    // List monitoring pengajuan cuti
+    Route::get('/', [AdminMonitoringValidasiCutiController::class, 'index']);
+    
+    // Detail pengajuan cuti
+    Route::get('/{id}', [AdminMonitoringValidasiCutiController::class, 'show']);
+    
+    // Approve pengajuan
+    Route::patch('/{id}/approve', [AdminMonitoringValidasiCutiController::class, 'approvePengajuan']);
+    
+    // Reject/Batalkan pengajuan
+    Route::patch('/{id}/reject', [AdminMonitoringValidasiCutiController::class, 'rejectPengajuan']);
+    
+    // Batch actions
+    Route::patch('/batch/approve', [AdminMonitoringValidasiCutiController::class, 'batchApprove']);
+    Route::patch('/batch/reject', [AdminMonitoringValidasiCutiController::class, 'batchReject']);
+    
+    // Statistics
+    Route::get('/statistics/dashboard', [AdminMonitoringValidasiCutiController::class, 'getStatistics']);
+});
+ Route::prefix('validasi-izin')->group(function () {
+        // List monitoring pengajuan izin
+        Route::get('/', [AdminMonitoringValidasiIzinController::class, 'index']);
+        
+        // Detail pengajuan izin
+        Route::get('/{id}', [AdminMonitoringValidasiIzinController::class, 'show']);
+        
+        // Approve pengajuan
+        Route::patch('/{id}/approve', [AdminMonitoringValidasiIzinController::class, 'approvePengajuan']);
+        
+        // Reject/Batalkan pengajuan
+        Route::patch('/{id}/reject', [AdminMonitoringValidasiIzinController::class, 'rejectPengajuan']);
+        
+        // Batch actions
+        Route::patch('/batch/approve', [AdminMonitoringValidasiIzinController::class, 'batchApprove']);
+        Route::patch('/batch/reject', [AdminMonitoringValidasiIzinController::class, 'batchReject']);
+        
+        // Statistics
+        Route::get('/statistics/dashboard', [AdminMonitoringValidasiIzinController::class, 'getStatistics']);
+    });
+        // Di routes/api.php
+
+Route::prefix('monitoring')->group(function () {
+    // Monitoring utama
+    Route::get('/hubungan-kerja', [MonitoringHubunganKerjaController::class, 'index']);
+    
+    // Detail hubungan kerja (menampilkan detail + semua riwayat pegawai)
+    Route::get('/hubungan-kerja/{id}', [MonitoringHubunganKerjaController::class, 'show']);
+    
+    // Riwayat hubungan kerja berdasarkan pegawai
+    Route::get('/hubungan-kerja/pegawai/{pegawaiId}', [MonitoringHubunganKerjaController::class, 'getRiwayatByPegawai']);
+    
+    // Download file dokumen
+    Route::get('/hubungan-kerja/{id}/download', [MonitoringHubunganKerjaController::class, 'downloadFile']);
+    
+    // Export (untuk implementasi nanti)
+    Route::get('/hubungan-kerja/export', [MonitoringHubunganKerjaController::class, 'export']);
+});
         Route::controller(InputPresensiController::class)->prefix('input-presensi')->group(function () {
             
             // Main CRUD Operations
@@ -533,7 +594,7 @@ Route::middleware('auth:api')->group(function () {
     });
 
     // Dosen Routes
-    Route::middleware('role:Dosen,Tenaga Kependidikan,Dosen Praktisi/Industri')->prefix('dosen')->group(function () {
+    Route::middleware('role:Dosen,Tenaga Kependidikan,Dosen Praktisi/Industri,Admin')->prefix('dosen')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });

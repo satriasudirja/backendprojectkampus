@@ -4,17 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegCutiRecord extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_cuti_record';
 
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string'; // Karena menggunakan UUID
-
     protected $fillable = [
         'id',
         'pegawai_id',
@@ -27,13 +25,23 @@ class SimpegCutiRecord extends Model
         'alamat',
         'no_telp',
         'file_cuti',
-        'status_pengajuan'
+        'status_pengajuan',
+        'created_at',
+        'updated_at',
+        'tgl_diajukan',
+        'tgl_disetujui',
+        'tgl_ditolak',
+        'deleted_at',
+
     ];
 
     protected $casts = [
         'tgl_mulai' => 'date',
         'tgl_sclesai' => 'date',
         'jumlah_cuti' => 'integer',
+         'tgl_diajukan' => 'date',
+        'tgl_disetujui' => 'date',
+        'tgl_ditolak'=> 'date',
     ];
 
     public function pegawai()
