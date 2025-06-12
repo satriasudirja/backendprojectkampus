@@ -87,6 +87,10 @@ use App\Http\Controllers\Api\SimpegRiwayatJabatanStrukturalController;
 use App\Http\Controllers\Api\SimpegSettingKehadiranController;
 use App\Http\Controllers\Api\SimpegRiwayatDiklatController;
 use App\Http\Controllers\Api\EvaluasiKinerjaController;
+use App\Http\Controllers\Api\MonitoringPresensiController;
+use App\Http\Controllers\Api\MonitoringKegiatanController;
+use App\Http\Controllers\Api\AdminDataKeluargaController;
+use App\Http\Controllers\Api\InputPresensiController;
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
@@ -116,6 +120,46 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+        Route::controller(InputPresensiController::class)->prefix('input-presensi')->group(function () {
+            
+            // Main CRUD Operations
+            Route::get('/', 'index');                          // GET /api/admin/input-presensi
+            Route::post('/', 'store');                         // POST /api/admin/input-presensi
+            Route::get('/{id}', 'show');                       // GET /api/admin/input-presensi/{id}
+            Route::put('/{id}', 'update');                     // PUT /api/admin/input-presensi/{id}
+            Route::delete('/{id}', 'destroy');                 // DELETE /api/admin/input-presensi/{id}
+            
+            // Batch Operations
+            Route::delete('/batch/delete', 'batchDestroy');    // DELETE /api/admin/input-presensi/batch/delete
+            
+            // Import/Export Operations
+            Route::post('/import', 'import');                  // POST /api/admin/input-presensi/import
+            
+            // Utility Endpoints
+            Route::get('/utils/pegawai-list', 'getPegawaiList'); // GET /api/admin/input-presensi/utils/pegawai-list
+            Route::get('/utils/jenis-kehadiran-list', 'getJenisKehadiranList'); // GET /api/admin/input-presensi/utils/jenis-kehadiran-list
+            
+        });
+
+         Route::controller(AdminDataKeluargaController::class)->prefix('data-keluarga')->group(function () {
+            Route::get('/', 'index');                          // GET /api/admin/data-keluarga
+            Route::get('/{id}', 'show');                       // GET /api/admin/data-keluarga/{id}
+            Route::patch('/{id}/approve', 'approve');          // PATCH /api/admin/data-keluarga/{id}/approve
+            Route::patch('/{id}/reject', 'reject');            // PATCH /api/admin/data-keluarga/{id}/reject
+            Route::post('/batch-approve', 'batchApprove');     // POST /api/admin/data-keluarga/batch-approve
+            Route::post('/batch-reject', 'batchReject');       // POST /api/admin/data-keluarga/batch-reject
+        });
+         Route::prefix('monitoring-kegiatan')->group(function () {
+        
+        // List kegiatan dengan filter dan search
+        Route::get('/', [MonitoringKegiatanController::class, 'index']);
+        
+        // Detail kegiatan specific
+        Route::get('/{id}', [MonitoringKegiatanController::class, 'show']);
+        
+    });
+
+          Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index']);
    Route::group(['prefix' => 'evaluasi-kinerja'], function() {
     Route::get('/pegawai/{id}', [EvaluasiKinerjaController::class, 'show'])->name('evaluasi-kinerja.show');
     Route::get('/create', [EvaluasiKinerjaController::class, 'create'])->name('evaluasi-kinerja.create');
