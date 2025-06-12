@@ -91,9 +91,10 @@ use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
 use App\Http\Controllers\Api\SimpegRumpunBidangIlmuController;
-
+use App\Http\Controllers\Api\SimpegGolonganDarahController;
 use App\Http\Controllers\Api\SimpegDataRiwayatTesController;
 use App\Http\Controllers\Api\SimpegDataSertifikasidosenController;
+use App\Http\Controllers\Api\SimpegAgamaController;
 
 
 Route::prefix('auth')->group(function () {
@@ -472,7 +473,9 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('gaji-periode', SimpegGajiPeriodeController::class);
         Route::apiResource('jenis-hari', SimpegJenisHariController::class);
         Route::apiResource('jenis-kehadiran', SimpegJenisKehadiranController::class);
-        Route::apiResource('rumpun-bidang-ilmu', SimpegJenisKehadiranController::class);
+        Route::apiResource('rumpun-bidang-ilmu', SimpegRumpunBidangIlmuController::class);
+        Route::apiResource('agama', SimpegAgamaController::class);
+        Route::apiResource('golongan-darah', SimpegGolonganDarahController::class);
 
         Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
         Route::get('/unit-kerja/dropdown', [UnitKerjaController::class, 'getUnitsDropdown']);

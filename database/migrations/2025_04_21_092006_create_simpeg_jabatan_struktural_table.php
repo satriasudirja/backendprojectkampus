@@ -18,19 +18,18 @@ return new class extends Migration
             $table->integer('pangkat_id');
             $table->integer('eselon_id');
             $table->string('kode', 5);
-            $table->string('singkatan', 50);
-            $table->string('alamat_email', 100);
-            $table->integer('beban_sks');
-            $table->decimal('tunjangan', 15, 2)->nullable();
-            $table->string('singkatan', 100);
-            $table->string('alamat_email', 100)->nullable();
-            $table->integer('beban_sks')->nullable();
+            
+            // Gabungan hasil konflik
+            $table->string('singkatan', 100); // Gunakan panjang 100 dari incoming change
+            $table->string('alamat_email', 100)->nullable(); // Gunakan nullable agar lebih fleksibel
+            $table->integer('beban_sks')->nullable(); // nullable diambil dari incoming change
+            $table->decimal('tunjangan', 15, 2)->nullable(); // dari HEAD, tetap disimpan karena penting
+
             $table->boolean('is_pimpinan');
             $table->boolean('aktif');
             $table->text('keterangan')->nullable();
             $table->string('parent_jabatan', 100)->nullable();
             $table->timestamps();
-
         });
     }
 
