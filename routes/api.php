@@ -38,7 +38,7 @@ use App\Http\Controllers\Api\SimpegMediaPublikasiController;
 use App\Http\Controllers\Api\SimpegJenjangPendidikanController;
 
 use App\Http\Controllers\Api\SimpegJenisPelanggaranController;
-use App\Http\Controllers\Api\SimpegJenisPenghargaaniController;
+use App\Http\Controllers\Api\SimpegJenisPenghargaanController;
 use App\Http\Controllers\Api\SimpegJenisPublikasiController;
 use App\Http\Controllers\Api\SimpegJenisKenaikanPangkatController;
 use App\Http\Controllers\Api\SimpegJenisJenisIzinController;
@@ -450,7 +450,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('media-publikasi', SimpegMediaPublikasiController::class);
 
 
-        // Route::apiResource('jenis-penghargaan', SimpegJenisPenghargaanController::class);
+        Route::apiResource('jenis-penghargaan', SimpegJenisPenghargaanController::class);
         Route::apiResource('jenis-pelanggaran', SimpegJenisPelanggaranController::class);
         Route::apiResource('jenis-publikasi', SimpegJenisPublikasiController::class);
         Route::apiResource('jenis-kenaikan-pangkat', SimpegJenisKenaikanPangkatController::class);

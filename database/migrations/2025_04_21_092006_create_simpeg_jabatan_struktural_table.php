@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('singkatan', 50);
             $table->string('alamat_email', 100);
             $table->integer('beban_sks');
+            $table->decimal('tunjangan', 15, 2)->nullable();
             $table->boolean('is_pimpinan');
             $table->boolean('aktif');
             $table->text('keterangan')->nullable();

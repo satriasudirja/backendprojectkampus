@@ -38,21 +38,20 @@ class SimpegDataKeluargaPegawai extends Model
         'pekerjaan',
         'kartu_nikah',
         'file_akte',
+        'file_karpeg_pasangan',
         'pekerjaan_anak',
         'nama_pasangan',
         'pasangan_berkerja_dalam_satu_instansi',
-        'tempat_nikah',
-        'tgl_nikah',
-        'no_akta_nikah',
-            'status_pengajuan',
-                'tgl_input',
-                'tgl_diajukan',
-                'tgl_disetujui',
-                'tgl_ditolak',
-                'approved_by',
-                'approved_at',
-                'rejected_by',
-                'rejected_at',
+        'status_pengajuan',
+        'keterangan',
+        'tgl_input',
+        'tgl_diajukan',
+        'tgl_disetujui',
+        'tgl_ditolak',
+        'approved_by',
+        'approved_at',
+        'rejected_by',
+        'rejected_at',
     ];
 
     /**
@@ -61,7 +60,6 @@ class SimpegDataKeluargaPegawai extends Model
     protected $casts = [
         'tgl_lahir' => 'date',
         'tgl_input' => 'date',
-        'tgl_nikah' => 'date',
         'pasangan_berkerja_dalam_satu_instansi' => 'boolean',
         'umur' => 'integer',
         'anak_ke' => 'integer',
@@ -75,7 +73,6 @@ class SimpegDataKeluargaPegawai extends Model
         'deleted_at',
         'tgl_lahir',
         'tgl_input',
-        'tgl_nikah',
     ];
 
     /**

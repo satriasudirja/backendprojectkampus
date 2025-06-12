@@ -132,8 +132,9 @@ class SimpegDataPenghargaanAdmController extends Controller
     }
 
     // Store new data penghargaan
-    public function store(Request $request)
+   public function store(Request $request)
     {
+        // Validasi input dari request, termasuk file
         $validator = Validator::make($request->all(), [
             'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
             'jenis_penghargaan' => 'required|string|max:100',
@@ -141,8 +142,9 @@ class SimpegDataPenghargaanAdmController extends Controller
             'no_sk' => 'nullable|string|max:100',
             'tanggal_sk' => 'nullable|date',
             'tanggal_penghargaan' => 'nullable|date',
-            'keterangan' => 'nullable|string|max:255',
-            'file_penghargaan' => 'nullable|date', // Date field sesuai struktur database
+            'keterangan' => 'nullable|string',
+            // Aturan validasi diubah dari 'date' menjadi 'file'
+            'file_penghargaan' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', // Maksimal 2MB
         ]);
 
         if ($validator->fails()) {
@@ -154,21 +156,26 @@ class SimpegDataPenghargaanAdmController extends Controller
         }
 
         try {
-            // Create data
-            $dataPenghargaan = SimpegDataPenghargaanAdm::create($request->all());
+            // Ambil semua data yang sudah lolos validasi
+            $validatedData = $validator->validated();
+            
+            // Cek apakah ada file yang diunggah
+            if ($request->hasFile('file_penghargaan')) {
+                // Simpan file ke storage/app/public/penghargaan
+                // Nama file akan dibuat unik secara otomatis oleh Laravel
+                $filePath = $request->file('file_penghargaan')->store('penghargaan', 'public');
+                
+                // Simpan path (lokasi) file ke dalam array data
+                $validatedData['file_penghargaan'] = $filePath;
+            }
 
-            // Load relasi untuk response
-            $dataPenghargaan->load([
-                'pegawai' => function($q) {
-                    $q->select('id', 'nip', 'nama', 'unit_kerja_id', 'jabatan_akademik_id')
-                      ->with([
-                          'unitKerja:kode_unit,nama_unit',
-                          'jabatanAkademik:id,jabatan_akademik'
-                      ]);
-                }
-            ]);
+            // Buat data baru di database
+            $dataPenghargaan = SimpegDataPenghargaanAdm::create($validatedData);
 
-            // Log activity jika service tersedia
+            // (Opsional) Load relasi untuk data yang dikembalikan di response
+            $dataPenghargaan->load(['pegawai.unitKerja', 'pegawai.jabatanAkademik']);
+
+            // (Opsional) Catat aktivitas
             if (class_exists('App\Services\ActivityLogger')) {
                 ActivityLogger::log('create', $dataPenghargaan, $dataPenghargaan->toArray());
             }
@@ -176,10 +183,11 @@ class SimpegDataPenghargaanAdmController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data penghargaan berhasil ditambahkan',
-                'data' => $this->formatDataPenghargaan($dataPenghargaan, false)
+                'data' => $dataPenghargaan // Anda bisa memanggil helper formatDataPenghargaan di sini jika ada
             ], 201);
 
         } catch (\Exception $e) {
+            // Tangani jika ada error saat proses penyimpanan
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan data penghargaan: ' . $e->getMessage()
@@ -190,15 +198,13 @@ class SimpegDataPenghargaanAdmController extends Controller
     // Update data penghargaan
     public function update(Request $request, $id)
     {
+        // Cari data yang akan diupdate
         $dataPenghargaan = SimpegDataPenghargaanAdm::find($id);
-
         if (!$dataPenghargaan) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data penghargaan tidak ditemukan'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Data penghargaan tidak ditemukan'], 404);
         }
 
+        // Validasi input dari request
         $validator = Validator::make($request->all(), [
             'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
             'jenis_penghargaan' => 'sometimes|string|max:100',
@@ -206,36 +212,38 @@ class SimpegDataPenghargaanAdmController extends Controller
             'no_sk' => 'nullable|string|max:100',
             'tanggal_sk' => 'nullable|date',
             'tanggal_penghargaan' => 'nullable|date',
-            'keterangan' => 'nullable|string|max:255',
-            'file_penghargaan' => 'nullable|date', // Date field sesuai struktur database
+            'keterangan' => 'nullable|string',
+            'file_penghargaan' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', // Maksimal 2MB
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
         }
 
         try {
+            $validatedData = $validator->validated();
+            
+            // Logika untuk memperbarui file
+            if ($request->hasFile('file_penghargaan')) {
+                // 1. Hapus file lama dari storage jika ada
+                if ($dataPenghargaan->file_penghargaan) {
+                    Storage::disk('public')->delete($dataPenghargaan->file_penghargaan);
+                }
+
+                // 2. Simpan file yang baru diunggah
+                $filePath = $request->file('file_penghargaan')->store('penghargaan', 'public');
+                $validatedData['file_penghargaan'] = $filePath;
+            }
+
             $oldData = $dataPenghargaan->getOriginal();
             
-            // Update data
-            $dataPenghargaan->update($request->all());
+            // Update data di database
+            $dataPenghargaan->update($validatedData);
 
-            // Load relasi untuk response
-            $dataPenghargaan->load([
-                'pegawai' => function($q) {
-                    $q->select('id', 'nip', 'nama', 'unit_kerja_id', 'jabatan_akademik_id')
-                      ->with([
-                          'unitKerja:kode_unit,nama_unit',
-                          'jabatanAkademik:id,jabatan_akademik'
-                      ]);
-                }
-            ]);
+            // (Opsional) Load relasi untuk data yang dikembalikan di response
+            $dataPenghargaan->load(['pegawai.unitKerja', 'pegawai.jabatanAkademik']);
 
-            // Log activity jika service tersedia
+            // (Opsional) Catat aktivitas
             if (class_exists('App\Services\ActivityLogger')) {
                 ActivityLogger::log('update', $dataPenghargaan, $oldData);
             }
@@ -243,10 +251,11 @@ class SimpegDataPenghargaanAdmController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data penghargaan berhasil diperbarui',
-                'data' => $this->formatDataPenghargaan($dataPenghargaan, false)
+                'data' => $dataPenghargaan // Anda bisa memanggil helper formatDataPenghargaan di sini
             ]);
 
         } catch (\Exception $e) {
+            // Tangani jika ada error saat proses pembaruan
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui data penghargaan: ' . $e->getMessage()

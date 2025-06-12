@@ -26,7 +26,7 @@ return new class extends Migration
               $table->date('tanggal_sk')->nullable();
                 $table->string('keterangan', 255)->nullable();
             $table->date('tanggal_penghargaan')->nullable();  // Diperbaiki dari 'tanggai' ke 'tanggal'
-            $table->date('file_penghargaan')->nullable();  
+            $table->string('file_penghargaan', 255)->nullable(); 
        
             $table->timestamps();
             $table->softDeletes();

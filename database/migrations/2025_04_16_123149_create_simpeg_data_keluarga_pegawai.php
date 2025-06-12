@@ -39,9 +39,8 @@ return new class extends Migration
             // Data pasangan
             $table->string('nama_pasangan', 100)->nullable();
             $table->boolean('pasangan_berkerja_dalam_satu_instansi')->default(false)->nullable();
-            $table->string('tempat_nikah', 50)->nullable();
-            $table->date('tgl_nikah')->nullable();
-            $table->char('no_akta_nikah', 20)->nullable();
+            
+           
             
             $table->timestamps();
             $table->softDeletes();

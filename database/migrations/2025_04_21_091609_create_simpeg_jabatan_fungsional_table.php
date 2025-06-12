@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('pangkat', 10);
             $table->string('angka_kredit', 6);
             $table->integer('usia_pensiun');
+             $table->decimal('tunjangan', 15, 2)->nullable();
             $table->text('keterangan')->nullable();
 
                  $table->timestamps();
