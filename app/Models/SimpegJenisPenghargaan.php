@@ -11,11 +11,9 @@ class SimpegJenisPenghargaan extends Model
 
     protected $table = 'simpeg_jenis_penghargaan';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
         'kode',
-        'nama_penghargaan',
+        'nama',
     ];
 }

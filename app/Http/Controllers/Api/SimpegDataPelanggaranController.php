@@ -504,7 +504,9 @@ class SimpegDataPelanggaranController extends Controller
         
         $perUnitKerja = SimpegDataPelanggaran::select('simpeg_unit_kerja.nama_unit', DB::raw('COUNT(*) as total'))
             ->join('simpeg_pegawai', 'simpeg_data_pelanggaran.pegawai_id', '=', 'simpeg_pegawai.id')
-            ->join('simpeg_unit_kerja', 'simpeg_pegawai.unit_kerja_id', '=', 'simpeg_unit_kerja.kode_unit')
+            ->join('simpeg_unit_kerja', function($join) {
+                $join->on(DB::raw('CAST(simpeg_pegawai.unit_kerja_id AS VARCHAR)'), '=', 'simpeg_unit_kerja.kode_unit');
+        })
             ->groupBy('simpeg_unit_kerja.nama_unit')
             ->orderByDesc('total')
             ->limit(10)
@@ -517,9 +519,12 @@ class SimpegDataPelanggaranController extends Controller
             ->limit(10)
             ->get();
 
-        $perTahun = SimpegDataPelanggaran::select(DB::raw('YEAR(tgl_pelanggaran) as tahun'), DB::raw('COUNT(*) as total'))
+        $perTahun = SimpegDataPelanggaran::select(
+            DB::raw('EXTRACT(YEAR FROM tgl_pelanggaran) as tahun'), 
+            DB::raw('COUNT(*) as total')
+        )
             ->whereNotNull('tgl_pelanggaran')
-            ->groupBy(DB::raw('YEAR(tgl_pelanggaran)'))
+            ->groupBy(DB::raw('EXTRACT(YEAR FROM tgl_pelanggaran)'))
             ->orderByDesc('tahun')
             ->limit(5)
             ->get();

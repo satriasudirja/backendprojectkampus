@@ -414,12 +414,9 @@ class SimpegDataKeluargaController extends Controller
             'anak_ke' => $dataKeluarga->anak_ke,
             'pekerjaan_anak' => $dataKeluarga->pekerjaan_anak,
             
-            // Specific to spouse
+            // Specific to spouse (removed tempat_nikah, tgl_nikah, no_akta_nikah)
             'nama_pasangan' => $dataKeluarga->nama_pasangan,
             'pasangan_berkerja_dalam_satu_instansi' => $dataKeluarga->pasangan_berkerja_dalam_satu_instansi,
-            'tempat_nikah' => $dataKeluarga->tempat_nikah,
-            'tgl_nikah' => $dataKeluarga->tgl_nikah,
-            'no_akta_nikah' => $dataKeluarga->no_akta_nikah,
             
             // Specific to parents
             'status_orangtua' => $dataKeluarga->status_orangtua,

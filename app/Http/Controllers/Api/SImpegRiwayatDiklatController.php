@@ -317,25 +317,34 @@ class SimpegRiwayatDiklatController extends Controller
             $riwayat = SimpegDataDiklat::create($data);
 
             // Handle multiple file uploads untuk data pendukung
-            if ($request->has('files') && is_array($request->files)) {
-                foreach ($request->files as $index => $fileData) {
-                    if (isset($fileData['file']) && $fileData['file']->isValid()) {
-                        $file = $fileData['file'];
-                        $fileName = 'diklat_'.time().'_'.$request->pegawai_id.'_'.$index.'.'.$file->getClientOriginalExtension();
-                        $filePath = $file->storeAs('uploads/diklat/dokumen', $fileName, 'public');
+            if ($request->has('files') && is_array($request->input('files'))) {
+    // Iterasi melalui array input 'files'
+    foreach ($request->input('files') as $index => $fileInfo) {
+        // Cek apakah ada file yang diupload untuk index ini
+        if ($request->hasFile("files.{$index}.file") && $request->file("files.{$index}.file")->isValid()) {
+            
+            $file = $request->file("files.{$index}.file");
+            
+            // Buat nama file yang unik
+            $fileName = 'diklat_'.time().'_'.$request->pegawai_id.'_'.$index.'.'.$file->getClientOriginalExtension();
+            
+            // Simpan file ke storage/app/public/uploads/diklat/dokumen/
+            // Pastikan path ini sesuai dengan yang Anda inginkan
+            $file->storeAs('uploads/diklat/dokumen', $fileName, 'public');
 
-                        SimpegDataPendukung::create([
-                            'tipe_dokumen' => $request->input("files.{$index}.tipe_dokumen"),
-                            'file_path' => $fileName,
-                            'nama_dokumen' => $request->input("files.{$index}.nama_dokumen"),
-                            'jenis_dokumen_id' => $request->input("files.{$index}.jenis_dokumen_id"),
-                            'keterangan' => $request->input("files.{$index}.keterangan"),
-                            'pendukungable_type' => SimpegDataDiklat::class,
-                            'pendukungable_id' => $riwayat->id
-                        ]);
-                    }
-                }
-            }
+            // Ambil data dari input, bukan dari request->files
+            SimpegDataPendukung::create([
+                'tipe_dokumen'       => $fileInfo['tipe_dokumen'] ?? null,
+                'nama_dokumen'       => $fileInfo['nama_dokumen'] ?? null,
+                'jenis_dokumen_id'   => $fileInfo['jenis_dokumen_id'] ?? null,
+                'keterangan'         => $fileInfo['keterangan'] ?? null,
+                'file_path'          => $fileName, // Simpan nama filenya saja
+                'pendukungable_type' => SimpegDataDiklat::class,
+                'pendukungable_id'   => $riwayat->id
+            ]);
+        }
+    }
+}
 
             DB::commit();
             
@@ -429,36 +438,28 @@ class SimpegRiwayatDiklatController extends Controller
             $riwayat->update($data);
 
             // Handle file removal
-            if ($request->has('remove_files') && is_array($request->remove_files)) {
-                foreach ($request->remove_files as $fileId) {
-                    $pendukung = $riwayat->dataPendukung()->find($fileId);
-                    if ($pendukung) {
-                        Storage::disk('public')->delete('uploads/diklat/dokumen/'.$pendukung->file_path);
-                        $pendukung->delete();
-                    }
-                }
-            }
+            if ($request->has('files') && is_array($request->input('files'))) {
+    // Iterasi melalui array input 'files'
+    foreach ($request->input('files') as $index => $fileInfo) {
+        // Cek apakah ada file yang diupload untuk index ini
+        if ($request->hasFile("files.{$index}.file") && $request->file("files.{$index}.file")->isValid()) {
+            $file = $request->file("files.{$index}.file");
+            
+            $fileName = 'diklat_'.time().'_'.$riwayat->pegawai_id.'_'.$index.'.'.$file->getClientOriginalExtension();
+            $file->storeAs('uploads/diklat/dokumen', $fileName, 'public');
 
-            // Handle new file uploads
-            if ($request->has('files') && is_array($request->files)) {
-                foreach ($request->files as $index => $fileData) {
-                    if (isset($fileData['file']) && $fileData['file']->isValid()) {
-                        $file = $fileData['file'];
-                        $fileName = 'diklat_'.time().'_'.$riwayat->pegawai_id.'_'.$index.'.'.$file->getClientOriginalExtension();
-                        $filePath = $file->storeAs('uploads/diklat/dokumen', $fileName, 'public');
-
-                        SimpegDataPendukung::create([
-                            'tipe_dokumen' => $request->input("files.{$index}.tipe_dokumen"),
-                            'file_path' => $fileName,
-                            'nama_dokumen' => $request->input("files.{$index}.nama_dokumen"),
-                            'jenis_dokumen_id' => $request->input("files.{$index}.jenis_dokumen_id"),
-                            'keterangan' => $request->input("files.{$index}.keterangan"),
-                            'pendukungable_type' => SimpegDataDiklat::class,
-                            'pendukungable_id' => $riwayat->id
-                        ]);
-                    }
-                }
-            }
+            SimpegDataPendukung::create([
+                'tipe_dokumen'       => $fileInfo['tipe_dokumen'] ?? null,
+                'nama_dokumen'       => $fileInfo['nama_dokumen'] ?? null,
+                'jenis_dokumen_id'   => $fileInfo['jenis_dokumen_id'] ?? null,
+                'keterangan'         => $fileInfo['keterangan'] ?? null,
+                'file_path'          => $fileName,
+                'pendukungable_type' => SimpegDataDiklat::class,
+                'pendukungable_id'   => $riwayat->id
+            ]);
+        }
+    }
+}
 
             DB::commit();
             

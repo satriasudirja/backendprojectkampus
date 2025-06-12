@@ -22,6 +22,7 @@ class SimpegJabatanFungsional extends Model
         'angka_kredit',
         'usia_pensiun',
         'keterangan',
+        'tunjangan',
     ];
 
     // public function jabatanAkademik()

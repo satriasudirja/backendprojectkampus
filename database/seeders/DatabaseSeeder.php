@@ -99,6 +99,8 @@ class DatabaseSeeder extends Seeder
             SimpegMediaPublikasiSeeder::class,
             SimpegJenisKehadiranSeeder::class,
             SimpegJenisIzinSeeder::class,
+            SimpegAgamaSeeder::class,
+            SimpegGolonganDarahSeeder::class,
 
 
         ]);

@@ -24,6 +24,7 @@ class SimpegJabatanStruktural extends Model
         'aktif',
         'keterangan',
         'parent_jabatan',
+        'tunjangan',
     ];
 
     protected $casts = [
