@@ -102,12 +102,12 @@ use App\Http\Controllers\Api\SimpegGolonganDarahController;
 use App\Http\Controllers\Api\SimpegDataRiwayatTesController;
 use App\Http\Controllers\Api\SimpegDataSertifikasidosenController;
 use App\Http\Controllers\Api\SimpegAgamaController;
-<<<<<<< HEAD
+
 use App\Http\Controllers\Api\SimpegBankController;
 // use App\Http\Controllers\Api\SimpegPekerjaanController;
-=======
+
 use App\Http\Controllers\Api\SimpegBeritaDosenController;
->>>>>>> c66d582ecb6ab7f984a08689f93064d09d08a9b7
+
 
 
 Route::prefix('auth')->group(function () {
