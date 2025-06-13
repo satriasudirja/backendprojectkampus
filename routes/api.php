@@ -30,13 +30,13 @@ use App\Http\Controllers\Api\UnitKerjaController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\SimpegBeritaController;
 use App\Http\Controllers\Api\PegawaiController;
-
+use App\Http\Controllers\Api\SimpegPendidikanController;
 use App\Http\Controllers\Api\SimpegUnitKerjaController;
 use App\Http\Controllers\Api\SimpegRiwayatPendidikanController;
 use App\Http\Controllers\Api\SimpegKategoriSertifikasiController;
 use App\Http\Controllers\Api\SimpegMediaPublikasiController;
 use App\Http\Controllers\Api\SimpegJenjangPendidikanController;
-
+use App\Http\Controllers\Api\SimpegPekerjaanController;
 use App\Http\Controllers\Api\SimpegJenisPelanggaranController;
 use App\Http\Controllers\Api\SimpegJenisPenghargaanController;
 use App\Http\Controllers\Api\SimpegJenisPublikasiController;
@@ -102,6 +102,8 @@ use App\Http\Controllers\Api\SimpegGolonganDarahController;
 use App\Http\Controllers\Api\SimpegDataRiwayatTesController;
 use App\Http\Controllers\Api\SimpegDataSertifikasidosenController;
 use App\Http\Controllers\Api\SimpegAgamaController;
+use App\Http\Controllers\Api\SimpegBankController;
+// use App\Http\Controllers\Api\SimpegPekerjaanController;
 
 
 Route::prefix('auth')->group(function () {
@@ -581,16 +583,8 @@ Route::prefix('monitoring')->group(function () {
         Route::apiResource('rumpun-bidang-ilmu', SimpegRumpunBidangIlmuController::class);
         Route::apiResource('agama', SimpegAgamaController::class);
         Route::apiResource('golongan-darah', SimpegGolonganDarahController::class);
-
-        Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
-        Route::get('/unit-kerja/dropdown', [UnitKerjaController::class, 'getUnitsDropdown']);
-        Route::get('/news/{id}', [AdminDashboardController::class, 'getNewsDetail']);
-
-        // Endpoint tambahan untuk SoftDelete
-        Route::get('jenjang-pendidikan/trash', [SimpegJenjangPendidikanController::class, 'trash']);
-        Route::post('jenjang-pendidikan/{id}/restore', [SimpegJenjangPendidikanController::class, 'restore']);
-        Route::delete('jenjang-pendidikan/{id}/force-delete', [SimpegJenjangPendidikanController::class, 'forceDelete']);
-        Route::apiResource('jenjang-pendidikan', SimpegJenjangPendidikanController::class); // Setelah routes spesifik
+        Route::apiResource('pekerjaan', SimpegPekerjaanController::class);
+        Route::apiResource('bank', SimpegBankController::class); // Setelah routes spesifik
     });
 
     // Dosen Routes

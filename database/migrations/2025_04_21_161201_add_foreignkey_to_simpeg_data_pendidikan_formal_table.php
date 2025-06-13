@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreign('jenjang_pendidikan_id')->references('id')->on('simpeg_jenjang_pendidikan')->onDelete('restrict');
             $table->foreign('perguruan_tinggi_id')->references('id')->on('simpeg_master_perguruan_tinggi')->onDelete('restrict');
             $table->foreign('prodi_perguruan_tinggi_id')->references('id')->on('simpeg_master_prodi_perguruan_tinggi')->onDelete('restrict');
-            $table->foreign('gelar_akademik_id')->references('id')->on('simpeg_master_gelar_akademik')->onDelete('restrict');
+            $table->foreign('gelar_akademik_id')->references('id')->on('simpeg_gelar_akademik')->onDelete('restrict');
         });
     }
 
