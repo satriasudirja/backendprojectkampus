@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class GelarAkademikSeeder extends Seeder
+class MasterGelarAkademikSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -114,7 +114,15 @@ class GelarAkademikSeeder extends Seeder
             ['gelar' => 'S.Bitek', 'nama_gelar' => '-'],
         ];
 
-        // Insert data ke tabel gelar_akademik
-        DB::table('gelar_akademik')->insert($data);
+        foreach ($gelarData as $data) {
+            // Menggunakan updateOrCreate untuk mencari berdasarkan 'gelar', 
+            // dan membuat data baru jika tidak ada.
+            SimpegMasterGelarAkademik::updateOrCreate(
+                ['gelar' => $data['gelar']],
+                $data
+            );
+        }
+        
+        $this->command->info('Successfully seeded simpeg_gelar_akademik table.');
     }
 }

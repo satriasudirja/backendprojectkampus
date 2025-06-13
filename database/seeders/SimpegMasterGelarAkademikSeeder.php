@@ -224,6 +224,6 @@ class SimpegMasterGelarAkademikSeeder extends Seeder
             DB::table('simpeg_master_gelar_akademik')->insert($chunk);
         }
         
-        $this->command->info('Successfully seeded simpeg_master_gelar_akademik table with ' . count($gelarData) . ' records.');
+        $this->command->info('Successfully seeded simpeg_gelar_akademik table with ' . count($gelarData) . ' records.');
     }
 }
