@@ -26,13 +26,30 @@ class SimpegDataRiwayatPekerjaan extends Model
         'mulai_bekerja',
         'selesai_bekerja',
         'area_pekerjaan',
-        'tgl_input'
+         'status_pengajuan',
+        'tgl_input',
+        'tgl_diajukan',
+        'tgl_disetujui',
+        'tgl_ditolak',
+          'keterangan'
+        
+
+
+
+
+
+
+
+
+          
     ];
 
     protected $casts = [
         'mulai_bekerja' => 'date',
         'tgl_ditolak' => 'datetime',
         'selesai_bekerja' => 'date',
+           'tgl_diajukan'=> 'datetime',
+        'tgl_disetujui'=> 'datetime',
         'tgl_input' => 'date',
         'area_pekerjaan' => 'boolean'
     ];

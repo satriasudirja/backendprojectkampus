@@ -87,6 +87,13 @@ use App\Http\Controllers\Api\SimpegRiwayatJabatanStrukturalController;
 use App\Http\Controllers\Api\SimpegSettingKehadiranController;
 use App\Http\Controllers\Api\SimpegRiwayatDiklatController;
 use App\Http\Controllers\Api\EvaluasiKinerjaController;
+use App\Http\Controllers\Api\MonitoringPresensiController;
+use App\Http\Controllers\Api\MonitoringKegiatanController;
+use App\Http\Controllers\Api\AdminDataKeluargaController;
+use App\Http\Controllers\Api\InputPresensiController;
+use App\http\Controllers\Api\MonitoringHubunganKerjaController;
+use App\http\Controllers\Api\AdminMonitoringValidasiIzinController;
+use App\http\Controllers\Api\AdminMonitoringValidasiCutiController;
 use App\Models\JenisSertifikasi;
 use App\Models\SimpegDaftarCuti;
 
@@ -117,6 +124,104 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+        Route::prefix('validasi-cuti')->group(function () {
+    // List monitoring pengajuan cuti
+    Route::get('/', [AdminMonitoringValidasiCutiController::class, 'index']);
+    
+    // Detail pengajuan cuti
+    Route::get('/{id}', [AdminMonitoringValidasiCutiController::class, 'show']);
+    
+    // Approve pengajuan
+    Route::patch('/{id}/approve', [AdminMonitoringValidasiCutiController::class, 'approvePengajuan']);
+    
+    // Reject/Batalkan pengajuan
+    Route::patch('/{id}/reject', [AdminMonitoringValidasiCutiController::class, 'rejectPengajuan']);
+    
+    // Batch actions
+    Route::patch('/batch/approve', [AdminMonitoringValidasiCutiController::class, 'batchApprove']);
+    Route::patch('/batch/reject', [AdminMonitoringValidasiCutiController::class, 'batchReject']);
+    
+    // Statistics
+    Route::get('/statistics/dashboard', [AdminMonitoringValidasiCutiController::class, 'getStatistics']);
+});
+ Route::prefix('validasi-izin')->group(function () {
+        // List monitoring pengajuan izin
+        Route::get('/', [AdminMonitoringValidasiIzinController::class, 'index']);
+        
+        // Detail pengajuan izin
+        Route::get('/{id}', [AdminMonitoringValidasiIzinController::class, 'show']);
+        
+        // Approve pengajuan
+        Route::patch('/{id}/approve', [AdminMonitoringValidasiIzinController::class, 'approvePengajuan']);
+        
+        // Reject/Batalkan pengajuan
+        Route::patch('/{id}/reject', [AdminMonitoringValidasiIzinController::class, 'rejectPengajuan']);
+        
+        // Batch actions
+        Route::patch('/batch/approve', [AdminMonitoringValidasiIzinController::class, 'batchApprove']);
+        Route::patch('/batch/reject', [AdminMonitoringValidasiIzinController::class, 'batchReject']);
+        
+        // Statistics
+        Route::get('/statistics/dashboard', [AdminMonitoringValidasiIzinController::class, 'getStatistics']);
+    });
+        // Di routes/api.php
+
+Route::prefix('monitoring')->group(function () {
+    // Monitoring utama
+    Route::get('/hubungan-kerja', [MonitoringHubunganKerjaController::class, 'index']);
+    
+    // Detail hubungan kerja (menampilkan detail + semua riwayat pegawai)
+    Route::get('/hubungan-kerja/{id}', [MonitoringHubunganKerjaController::class, 'show']);
+    
+    // Riwayat hubungan kerja berdasarkan pegawai
+    Route::get('/hubungan-kerja/pegawai/{pegawaiId}', [MonitoringHubunganKerjaController::class, 'getRiwayatByPegawai']);
+    
+    // Download file dokumen
+    Route::get('/hubungan-kerja/{id}/download', [MonitoringHubunganKerjaController::class, 'downloadFile']);
+    
+    // Export (untuk implementasi nanti)
+    Route::get('/hubungan-kerja/export', [MonitoringHubunganKerjaController::class, 'export']);
+});
+        Route::controller(InputPresensiController::class)->prefix('input-presensi')->group(function () {
+            
+            // Main CRUD Operations
+            Route::get('/', 'index');                          // GET /api/admin/input-presensi
+            Route::post('/', 'store');                         // POST /api/admin/input-presensi
+            Route::get('/{id}', 'show');                       // GET /api/admin/input-presensi/{id}
+            Route::put('/{id}', 'update');                     // PUT /api/admin/input-presensi/{id}
+            Route::delete('/{id}', 'destroy');                 // DELETE /api/admin/input-presensi/{id}
+            
+            // Batch Operations
+            Route::delete('/batch/delete', 'batchDestroy');    // DELETE /api/admin/input-presensi/batch/delete
+            
+            // Import/Export Operations
+            Route::post('/import', 'import');                  // POST /api/admin/input-presensi/import
+            
+            // Utility Endpoints
+            Route::get('/utils/pegawai-list', 'getPegawaiList'); // GET /api/admin/input-presensi/utils/pegawai-list
+            Route::get('/utils/jenis-kehadiran-list', 'getJenisKehadiranList'); // GET /api/admin/input-presensi/utils/jenis-kehadiran-list
+            
+        });
+
+         Route::controller(AdminDataKeluargaController::class)->prefix('data-keluarga')->group(function () {
+            Route::get('/', 'index');                          // GET /api/admin/data-keluarga
+            Route::get('/{id}', 'show');                       // GET /api/admin/data-keluarga/{id}
+            Route::patch('/{id}/approve', 'approve');          // PATCH /api/admin/data-keluarga/{id}/approve
+            Route::patch('/{id}/reject', 'reject');            // PATCH /api/admin/data-keluarga/{id}/reject
+            Route::post('/batch-approve', 'batchApprove');     // POST /api/admin/data-keluarga/batch-approve
+            Route::post('/batch-reject', 'batchReject');       // POST /api/admin/data-keluarga/batch-reject
+        });
+         Route::prefix('monitoring-kegiatan')->group(function () {
+        
+        // List kegiatan dengan filter dan search
+        Route::get('/', [MonitoringKegiatanController::class, 'index']);
+        
+        // Detail kegiatan specific
+        Route::get('/{id}', [MonitoringKegiatanController::class, 'show']);
+        
+    });
+
+          Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index']);
    Route::group(['prefix' => 'evaluasi-kinerja'], function() {
     Route::get('/pegawai/{id}', [EvaluasiKinerjaController::class, 'show'])->name('evaluasi-kinerja.show');
     Route::get('/create', [EvaluasiKinerjaController::class, 'create'])->name('evaluasi-kinerja.create');
@@ -489,7 +594,7 @@ Route::middleware('auth:api')->group(function () {
     });
 
     // Dosen Routes
-    Route::middleware('role:Dosen,Tenaga Kependidikan,Dosen Praktisi/Industri')->prefix('dosen')->group(function () {
+    Route::middleware('role:Dosen,Tenaga Kependidikan,Dosen Praktisi/Industri,Admin')->prefix('dosen')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });

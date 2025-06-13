@@ -17,6 +17,9 @@ return new class extends Migration
             $table->integer('jenis_cuti_id');
             $table->string('no_urut_cuti', 50);
             $table->date('tgl_mulai');
+             $table->date('tgl_diajukan');
+              $table->date('tgl_disetujui');
+               $table->date('tgl_ditolak');
             $table->date('tgl_selesai');
             $table->integer('jumlah_cuti');
             $table->string('alasan_cuti', 255);
@@ -25,6 +28,7 @@ return new class extends Migration
             $table->string('file_cuti')->nullable();
             $table->string('status_pengajuan', 20);
             $table->timestamps();
+            $table->softDeletes();
         });
         
     }

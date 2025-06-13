@@ -12,9 +12,6 @@ class SimpegDaftarCuti extends Model
     use SoftDeletes;
     protected $table = 'simpeg_daftar_cuti';
 
-    protected $primaryKey = 'id';
-
-
     protected $fillable = [
         'id',
         'kode',
