@@ -30,9 +30,11 @@ class SimpegPengajuanIzinDosen extends Model
     ];
     
     protected $casts = [
-        'tgl_mulai' => 'date',
-        'tgl_selesai' => 'date',
+        'tgl_mulai' => 'date:Y-m-d',      // ← UBAH INI
+        'tgl_selesai' => 'date:Y-m-d',    // ← UBAH INI 
         'jumlah_izin' => 'integer',
+        'jenis_izin_id' => 'integer', // ✅ TAMBAHKAN INI
+        'pegawai_id' => 'integer',
         'tgl_diajukan' => 'datetime',
         'tgl_disetujui' => 'datetime',
         'tgl_ditolak' => 'datetime'

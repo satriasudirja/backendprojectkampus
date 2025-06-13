@@ -967,31 +967,32 @@ Route::group(['prefix' => 'evaluasi-kinerja'], function() {
             Route::get('/remaining-cuti', [SimpegPengajuanCutiDosenController::class, 'getRemainingCuti']);
         });
 
-        // Pengajuan Izin Dosen routes
         Route::prefix('pengajuan-izin-dosen')->group(function () {
-            Route::get('/', [SimpegPengajuanIzinDosenController::class, 'index']);
-            Route::get('/{id}', [SimpegPengajuanIzinDosenController::class, 'show']);
-            Route::post('/', [SimpegPengajuanIzinDosenController::class, 'store']);
-            Route::put('/{id}', [SimpegPengajuanIzinDosenController::class, 'update']);
-            Route::delete('/{id}', [SimpegPengajuanIzinDosenController::class, 'destroy']);
-
-            // STATUS PENGAJUAN ROUTES
-            Route::patch('/{id}/submit', [SimpegPengajuanIzinDosenController::class, 'submitDraft']);
-
-            // BATCH OPERATIONS ROUTES
-            Route::delete('/batch/delete', [SimpegPengajuanIzinDosenController::class, 'batchDelete']);
-            Route::patch('/batch/submit', [SimpegPengajuanIzinDosenController::class, 'batchSubmitDrafts']);
-            Route::patch('/batch/status', [SimpegPengajuanIzinDosenController::class, 'batchUpdateStatus']);
-
-            // CONFIGURATION & STATISTICS ROUTES
-            Route::get('/config/system', [SimpegPengajuanIzinDosenController::class, 'getSystemConfig']);
-            Route::get('/statistics/status', [SimpegPengajuanIzinDosenController::class, 'getStatusStatistics']);
-            Route::get('/filter-options', [SimpegPengajuanIzinDosenController::class, 'getFilterOptions']);
-            Route::get('/available-actions', [SimpegPengajuanIzinDosenController::class, 'getAvailableActions']);
-
-            // PRINT ROUTE
-            Route::get('/{id}/print', [SimpegPengajuanIzinDosenController::class, 'printIzinDocument']);
-        });
+    
+    // 1. BATCH OPERATIONS - HARUS PALING ATAS
+    Route::delete('/batch/delete', [SimpegPengajuanIzinDosenController::class, 'batchDelete']);
+    Route::patch('/batch/submit', [SimpegPengajuanIzinDosenController::class, 'batchSubmitDrafts']);
+    Route::patch('/batch/status', [SimpegPengajuanIzinDosenController::class, 'batchUpdateStatus']);
+    
+    // 2. CONFIGURATION & STATISTICS ROUTES
+    Route::get('/config/system', [SimpegPengajuanIzinDosenController::class, 'getSystemConfig']);
+    Route::get('/statistics/status', [SimpegPengajuanIzinDosenController::class, 'getStatusStatistics']);
+    Route::get('/filter-options', [SimpegPengajuanIzinDosenController::class, 'getFilterOptions']);
+    Route::get('/available-actions', [SimpegPengajuanIzinDosenController::class, 'getAvailableActions']);
+    
+    // 3. MAIN CRUD ROUTES (TANPA PARAMETER)
+    Route::get('/', [SimpegPengajuanIzinDosenController::class, 'index']);
+    Route::post('/', [SimpegPengajuanIzinDosenController::class, 'store']);
+    
+    // 4. ROUTES DENGAN PARAMETER {id} - PALING BAWAH
+    Route::get('/{id}', [SimpegPengajuanIzinDosenController::class, 'show']);
+    Route::put('/{id}', [SimpegPengajuanIzinDosenController::class, 'update']);
+    Route::delete('/{id}', [SimpegPengajuanIzinDosenController::class, 'destroy']);
+    
+    // 5. ROUTES DENGAN PARAMETER {id} + SUFFIX
+    Route::patch('/{id}/submit', [SimpegPengajuanIzinDosenController::class, 'submitDraft']);
+    Route::get('/{id}/print', [SimpegPengajuanIzinDosenController::class, 'printIzinDocument']);
+});
 
         // Data Orang Tua Routes
         Route::prefix('orangtua')->middleware('auth:api')->group(function () {
@@ -1757,31 +1758,7 @@ Route::group(['prefix' => 'evaluasi-kinerja'], function() {
                 Route::get('/remaining-cuti', [SimpegPengajuanCutiDosenController::class, 'getRemainingCuti']);
             });
 
-            // Pengajuan Izin Dosen routes
-            Route::prefix('pengajuan-izin-dosen')->group(function () {
-                Route::get('/', [SimpegPengajuanIzinDosenController::class, 'index']);
-                Route::get('/{id}', [SimpegPengajuanIzinDosenController::class, 'show']);
-                Route::post('/', [SimpegPengajuanIzinDosenController::class, 'store']);
-                Route::put('/{id}', [SimpegPengajuanIzinDosenController::class, 'update']);
-                Route::delete('/{id}', [SimpegPengajuanIzinDosenController::class, 'destroy']);
-
-                // STATUS PENGAJUAN ROUTES
-                Route::patch('/{id}/submit', [SimpegPengajuanIzinDosenController::class, 'submitDraft']);
-
-                // BATCH OPERATIONS ROUTES
-                Route::delete('/batch/delete', [SimpegPengajuanIzinDosenController::class, 'batchDelete']);
-                Route::patch('/batch/submit', [SimpegPengajuanIzinDosenController::class, 'batchSubmitDrafts']);
-                Route::patch('/batch/status', [SimpegPengajuanIzinDosenController::class, 'batchUpdateStatus']);
-
-                // CONFIGURATION & STATISTICS ROUTES
-                Route::get('/config/system', [SimpegPengajuanIzinDosenController::class, 'getSystemConfig']);
-                Route::get('/statistics/status', [SimpegPengajuanIzinDosenController::class, 'getStatusStatistics']);
-                Route::get('/filter-options', [SimpegPengajuanIzinDosenController::class, 'getFilterOptions']);
-                Route::get('/available-actions', [SimpegPengajuanIzinDosenController::class, 'getAvailableActions']);
-
-                // PRINT ROUTE
-                Route::get('/{id}/print', [SimpegPengajuanIzinDosenController::class, 'printIzinDocument']);
-            });
+           
         });
 
 

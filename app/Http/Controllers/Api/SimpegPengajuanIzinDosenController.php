@@ -273,6 +273,102 @@ class SimpegPengajuanIzinDosenController extends Controller
         return true;
     }
 
+    private function parseMultipartFormData()
+{
+    $rawData = file_get_contents('php://input');
+    
+    if (empty($rawData)) {
+        return ['fields' => [], 'files' => []];
+    }
+    
+    // Extract boundary
+    $boundary = substr($rawData, 0, strpos($rawData, "\r\n"));
+    
+    if (empty($boundary)) {
+        return ['fields' => [], 'files' => []];
+    }
+    
+    // Split data by boundary
+    $parts = array_slice(explode($boundary, $rawData), 1);
+    $fields = [];
+    $files = [];
+    
+    foreach ($parts as $part) {
+        if ($part == "--\r\n" || $part == "--") break;
+        
+        $part = ltrim($part, "\r\n");
+        if (empty($part)) continue;
+        
+        // Split headers and body
+        if (strpos($part, "\r\n\r\n") === false) continue;
+        
+        list($rawHeaders, $body) = explode("\r\n\r\n", $part, 2);
+        $body = substr($body, 0, strlen($body) - 2); // Remove trailing \r\n
+        
+        // Parse headers
+        $name = null;
+        $filename = null;
+        $contentType = null;
+        
+        foreach (explode("\r\n", $rawHeaders) as $header) {
+            if (stripos($header, 'Content-Disposition:') === 0) {
+                // Extract name
+                if (preg_match('/name="([^"]*)"/', $header, $matches)) {
+                    $name = $matches[1];
+                }
+                // Extract filename
+                if (preg_match('/filename="([^"]*)"/', $header, $matches)) {
+                    $filename = $matches[1];
+                }
+            } elseif (stripos($header, 'Content-Type:') === 0) {
+                $contentType = trim(substr($header, 13));
+            }
+        }
+        
+        if ($name) {
+            if (!empty($filename)) {
+                // This is a file
+                $files[$name] = [
+                    'name' => $filename,
+                    'type' => $contentType,
+                    'tmp_name' => null, // We'll create temp file
+                    'error' => empty($filename) ? UPLOAD_ERR_NO_FILE : UPLOAD_ERR_OK,
+                    'size' => strlen($body),
+                    'content' => $body
+                ];
+            } else {
+                // This is a regular field
+                $fields[$name] = $body;
+            }
+        }
+    }
+    
+    return ['fields' => $fields, 'files' => $files];
+}
+
+/**
+ * Create temporary file from multipart file data
+ */
+private function createTempFileFromMultipart($fileData)
+{
+    if (empty($fileData['content']) || empty($fileData['name'])) {
+        return null;
+    }
+    
+    // Create temporary file
+    $tempFile = tempnam(sys_get_temp_dir(), 'multipart_');
+    file_put_contents($tempFile, $fileData['content']);
+    
+    // Create UploadedFile instance
+    return new \Illuminate\Http\UploadedFile(
+        $tempFile,
+        $fileData['name'],
+        $fileData['type'],
+        $fileData['error'],
+        true // test mode
+    );
+}
+
     // Fix existing data dengan status_pengajuan null
     public function fixExistingData()
     {
@@ -505,119 +601,237 @@ class SimpegPengajuanIzinDosenController extends Controller
     }
 }
 
-    // Update data izin dengan validasi status
-    public function update(Request $request, $id)
-    {
-        try {
-            $pegawai = Auth::user();
+// ENHANCED UPDATE METHOD - Debug Request Data Issue
+public function update(Request $request, $id)
+{
+    DB::beginTransaction();
+    try {
+        $pegawai = Auth::user();
 
-            if (!$pegawai) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data pegawai tidak ditemukan'
-                ], 404);
-            }
-
-            $dataIzin = SimpegPengajuanIzinDosen::where('pegawai_id', $pegawai->id)
-                ->find($id);
-
-            if (!$dataIzin) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data pengajuan izin tidak ditemukan'
-                ], 404);
-            }
-
-            // Validasi apakah bisa diedit berdasarkan status
-            $editableStatuses = ['draft', 'ditolak'];
-            if (!in_array($dataIzin->status_pengajuan, $editableStatuses)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data tidak dapat diedit karena sudah diajukan atau disetujui'
-                ], 422);
-            }
-
-            $validator = Validator::make($request->all(), [
-               'jenis_izin_id' => 'required|integer|exists:simpeg_jenis_izin,id',
-                'tgl_mulai' => 'sometimes|date',
-                'tgl_selesai' => 'sometimes|date|after_or_equal:tgl_mulai',
-                'jumlah_izin' => 'nullable|integer|min:1',
-                'alasan_izin' => 'sometimes|string|max:255',
-                'file_pendukung' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'submit_type' => 'sometimes|in:draft,submit',
-                'keterangan' => 'nullable|string'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $oldData = $dataIzin->getOriginal();
-            $data = $request->except(['file_pendukung', 'submit_type']);
-
-            // Update no_izin if jenis_izin_id changed
-            if ($request->has('jenis_izin_id') && $request->jenis_izin_id != $dataIzin->jenis_izin_id) {
-                $data['no_izin'] = $this->generateNoIzin($request->jenis_izin_id);
-            }
-
-            // Calculate jumlah_izin if tgl_mulai or tgl_selesai changed
-            if (($request->has('tgl_mulai') || $request->has('tgl_selesai')) && !$request->has('jumlah_izin')) {
-                $tglMulai = $request->tgl_mulai ?? $dataIzin->tgl_mulai;
-                $tglSelesai = $request->tgl_selesai ?? $dataIzin->tgl_selesai;
-                $data['jumlah_izin'] = $this->calculateJumlahIzin($tglMulai, $tglSelesai);
-            }
-
-            // Reset status jika dari ditolak
-            if ($dataIzin->status_pengajuan === 'ditolak') {
-                $data['status_pengajuan'] = 'draft';
-                $data['tgl_ditolak'] = null;
-                $data['keterangan'] = $request->keterangan ?? null;
-            }
-
-            // Handle submit_type
-            if ($request->submit_type === 'submit') {
-                $data['status_pengajuan'] = 'diajukan';
-                $data['tgl_diajukan'] = now();
-                $message = 'Pengajuan izin berhasil diperbarui dan diajukan untuk persetujuan';
-            } else {
-                $message = 'Pengajuan izin berhasil diperbarui';
-            }
-
-            // Handle file upload
-            if ($request->hasFile('file_pendukung')) {
-                if ($dataIzin->file_pendukung) {
-                    Storage::delete('public/pegawai/izin/'.$dataIzin->file_pendukung);
-                }
-
-                $file = $request->file('file_pendukung');
-                $fileName = 'izin_'.time().'_'.$pegawai->id.'.'.$file->getClientOriginalExtension();
-                $file->storeAs('public/pegawai/izin', $fileName);
-                $data['file_pendukung'] = $fileName;
-            }
-
-            $dataIzin->update($data);
-
-            // Log activity if ActivityLogger exists
-            if (class_exists('App\Services\ActivityLogger')) {
-                ActivityLogger::log('update', $dataIzin, $oldData);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $this->formatDataIzin($dataIzin->fresh(['jenisIzin'])),
-                'message' => $message
-            ]);
-
-        } catch (\Exception $e) {
+        if (!$pegawai) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal update data: ' . $e->getMessage()
+                'message' => 'Data pegawai tidak ditemukan'
+            ], 404);
+        }
+
+        $dataIzin = SimpegPengajuanIzinDosen::where('pegawai_id', $pegawai->id)->find($id);
+
+        if (!$dataIzin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pengajuan izin tidak ditemukan'
+            ], 404);
+        }
+
+        if (!in_array($dataIzin->status_pengajuan, ['draft', 'ditolak'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak dapat diedit karena sudah diajukan atau disetujui'
+            ], 422);
+        }
+
+        // ENHANCED: Handle both JSON and multipart data
+        $requestData = [];
+        $uploadedFiles = [];
+        $dataSource = 'unknown';
+        
+        if ($request->isJson() || !empty($request->all())) {
+            // Standard Laravel request handling (JSON or regular form)
+            $requestData = $request->all();
+            $uploadedFiles = $request->allFiles();
+            $dataSource = $request->isJson() ? 'json' : 'form';
+        } else if (strpos($request->header('Content-Type'), 'multipart/form-data') !== false) {
+            // Manual multipart parsing for PUT requests
+            $parsed = $this->parseMultipartFormData();
+            $requestData = $parsed['fields'];
+            
+            // Handle files
+            foreach ($parsed['files'] as $fieldName => $fileData) {
+                if ($fileData['error'] === UPLOAD_ERR_OK && !empty($fileData['name'])) {
+                    $uploadedFiles[$fieldName] = $this->createTempFileFromMultipart($fileData);
+                }
+            }
+            $dataSource = 'multipart_manual';
+        }
+
+        // ENHANCED DEBUG
+        \Log::info('=== ENHANCED DEBUG WITH MULTIPART PARSER ===');
+        \Log::info('Content Type:', [$request->header('Content-Type')]);
+        \Log::info('Request Method:', [$request->method()]);
+        \Log::info('Data Source:', [$dataSource]);
+        \Log::info('Is JSON:', [$request->isJson()]);
+        \Log::info('Laravel Request All:', $request->all());
+        \Log::info('Laravel Request Files:', array_keys($request->allFiles()));
+        \Log::info('Parsed Request Data:', $requestData);
+        \Log::info('Parsed Files:', array_keys($uploadedFiles));
+        \Log::info('Before Update Data:', $dataIzin->toArray());
+
+        if (empty($requestData)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada data untuk diupdate',
+                'debug_info' => [
+                    'content_type' => $request->header('Content-Type'),
+                    'data_source' => $dataSource,
+                    'is_json' => $request->isJson(),
+                    'laravel_request_all' => $request->all(),
+                    'parsed_request_data' => $requestData,
+                    'raw_input_length' => strlen($request->getContent())
+                ]
+            ], 400);
+        }
+
+        // Merge uploaded files into request for validation
+        $validationData = array_merge($requestData, [
+            'file_pendukung' => $uploadedFiles['file_pendukung'] ?? null
+        ]);
+
+        // Validation
+        $validator = Validator::make($validationData, [
+            'jenis_izin_id' => 'sometimes|integer|exists:simpeg_jenis_izin,id',
+            'tgl_mulai' => 'sometimes|date',
+            'tgl_selesai' => 'sometimes|date|after_or_equal:tgl_mulai',
+            'jumlah_izin' => 'sometimes|integer|min:1',
+            'alasan_izin' => 'sometimes|string|max:500',
+            'file_pendukung' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'submit_type' => 'sometimes|in:draft,submit',
+            'keterangan' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+                'debug_info' => [
+                    'validation_data' => array_keys($validationData),
+                    'parsed_data' => $requestData
+                ]
+            ], 422);
+        }
+
+        // Prepare update data (exclude files and submit_type)
+        $updateData = collect($requestData)->except(['file_pendukung', 'submit_type'])->toArray();
+        
+        // Cast data types
+        if (isset($updateData['jenis_izin_id'])) {
+    $updateData['jenis_izin_id'] = (int) $updateData['jenis_izin_id'];
+}
+if (isset($updateData['jumlah_izin'])) {
+    $updateData['jumlah_izin'] = (int) $updateData['jumlah_izin'];
+}
+
+// FIX TIMEZONE - TAMBAHKAN CODE INI
+if (isset($updateData['tgl_mulai'])) {
+    $updateData['tgl_mulai'] = \Carbon\Carbon::parse($updateData['tgl_mulai'])
+        ->setTimezone('Asia/Jakarta')
+        ->format('Y-m-d');
+}
+if (isset($updateData['tgl_selesai'])) {
+    $updateData['tgl_selesai'] = \Carbon\Carbon::parse($updateData['tgl_selesai'])
+        ->setTimezone('Asia/Jakarta')
+        ->format('Y-m-d');
+}
+// END FIX TIMEZONE
+
+// Generate no_izin if jenis_izin_id changed
+if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $dataIzin->jenis_izin_id) {
+    $updateData['no_izin'] = $this->generateNoIzin($updateData['jenis_izin_id']);
+}
+        // Handle submit_type
+        $message = 'Pengajuan izin berhasil diperbarui';
+        $submitType = $requestData['submit_type'] ?? null;
+        if ($submitType === 'submit') {
+            $updateData['status_pengajuan'] = 'diajukan';
+            $updateData['tgl_diajukan'] = now();
+            $message = 'Pengajuan izin berhasil diperbarui dan diajukan untuk persetujuan';
+        }
+
+        // Handle file upload
+        $fileUploaded = false;
+        if (isset($uploadedFiles['file_pendukung']) && $uploadedFiles['file_pendukung']) {
+            $file = $uploadedFiles['file_pendukung'];
+            
+            // Delete old file
+            if ($dataIzin->file_pendukung) {
+                Storage::delete('public/pegawai/izin/'.$dataIzin->file_pendukung);
+            }
+
+            // Store new file
+            $fileName = 'izin_'.time().'_'.$pegawai->id.'.'.$file->getClientOriginalExtension();
+            $file->storeAs('public/pegawai/izin', $fileName);
+            $updateData['file_pendukung'] = $fileName;
+            $fileUploaded = true;
+        }
+
+        \Log::info('Final Update Data:', $updateData);
+        \Log::info('File Uploaded:', [$fileUploaded]);
+
+        // Perform update
+        $updated = $dataIzin->update($updateData);
+
+        if (!$updated) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal melakukan update data'
             ], 500);
         }
+
+        // Refresh data
+        $dataIzin = $dataIzin->fresh(['jenisIzin']);
+        
+        \Log::info('After Update:', $dataIzin->toArray());
+
+        DB::commit();
+
+        // Clean up temporary files
+        foreach ($uploadedFiles as $file) {
+            if ($file && method_exists($file, 'getRealPath')) {
+                $tempPath = $file->getRealPath();
+                if (file_exists($tempPath) && strpos($tempPath, sys_get_temp_dir()) === 0) {
+                    @unlink($tempPath);
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatDataIzin($dataIzin),
+            'message' => $message,
+            'debug_info' => [
+                'table_used' => $dataIzin->getTable(),
+                'updated_fields' => array_keys($updateData),
+                'total_fields' => count($updateData),
+                'data_source' => $dataSource,
+                'file_uploaded' => $fileUploaded,
+                'request_method' => $request->method(),
+                'content_type' => $request->header('Content-Type')
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        \Log::error('UPDATE ERROR:', [
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal update data: ' . $e->getMessage(),
+            'debug_info' => config('app.debug') ? [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ] : null
+        ], 500);
     }
+}
 
     // Delete data izin
     public function destroy($id)
@@ -911,57 +1125,67 @@ class SimpegPengajuanIzinDosenController extends Controller
 
     // Get status statistics untuk dashboard
     public function getStatusStatistics()
-    {
-        try {
-            $pegawai = Auth::user();
+{
+    try {
+        $pegawai = Auth::user();
 
-            if (!$pegawai) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data pegawai tidak ditemukan'
-                ], 404);
-            }
-
-            $statistics = SimpegPengajuanIzinDosen::where('pegawai_id', $pegawai->id)
-                ->selectRaw('status_pengajuan, COUNT(*) as total')
-                ->groupBy('status_pengajuan')
-                ->get()
-                ->pluck('total', 'status_pengajuan')
-                ->toArray();
-
-            $defaultStats = [
-                'draft' => 0,
-                'diajukan' => 0,
-                'disetujui' => 0,
-                'ditolak' => 0
-            ];
-
-            $statistics = array_merge($defaultStats, $statistics);
-            $statistics['total'] = array_sum($statistics);
-
-            // Get statistics by jenis izin
-            $jenisStat = SimpegPengajuanIzinDosen::where('pegawai_id', $pegawai->id)
-                ->where('status_pengajuan', 'disetujui')
-                ->whereYear('tgl_mulai', date('Y'))
-                ->join('simpeg_jenis_izin', 'simpeg_pengajuan_izin_dosen.jenis_izin_id', '=', 'simpeg_jenis_izin.id')
-                ->selectRaw('simpeg_jenis_izin.nama_jenis_izin, COUNT(*) as total, SUM(jumlah_izin) as jumlah_hari')
-                ->groupBy('simpeg_jenis_izin.nama_jenis_izin')
-                ->get();
-
-            $statistics['by_jenis'] = $jenisStat;
-
-            return response()->json([
-                'success' => true,
-                'statistics' => $statistics
-            ]);
-
-        } catch (\Exception $e) {
+        if (!$pegawai) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil statistik: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Data pegawai tidak ditemukan'
+            ], 404);
         }
+
+        // Basic statistics
+        $statistics = SimpegPengajuanIzinDosen::where('pegawai_id', $pegawai->id)
+            ->selectRaw('status_pengajuan, COUNT(*) as total')
+            ->groupBy('status_pengajuan')
+            ->get()
+            ->pluck('total', 'status_pengajuan')
+            ->toArray();
+
+        $defaultStats = [
+            'draft' => 0,
+            'diajukan' => 0,
+            'disetujui' => 0,
+            'ditolak' => 0
+        ];
+
+        $statistics = array_merge($defaultStats, $statistics);
+        $statistics['total'] = array_sum($statistics);
+
+        // BETTER APPROACH: Gunakan Eloquent relationship
+        $jenisStat = SimpegPengajuanIzinDosen::with('jenisIzin')
+            ->where('pegawai_id', $pegawai->id)
+            ->where('status_pengajuan', 'disetujui')
+            ->whereYear('tgl_mulai', date('Y'))
+            ->get()
+            ->groupBy(function($item) {
+                return $item->jenisIzin ? $item->jenisIzin->nama_jenis_izin : 'Unknown';
+            })
+            ->map(function($group, $jenisNama) {
+                return [
+                    'nama_jenis_izin' => $jenisNama,
+                    'total' => $group->count(),
+                    'jumlah_hari' => $group->sum('jumlah_izin')
+                ];
+            })
+            ->values();
+
+        $statistics['by_jenis'] = $jenisStat;
+
+        return response()->json([
+            'success' => true,
+            'statistics' => $statistics
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil statistik: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     // Get system configuration
     public function getSystemConfig()
@@ -1272,119 +1496,139 @@ class SimpegPengajuanIzinDosenController extends Controller
 
     // Helper: Format data izin response
     protected function formatDataIzin($dataIzin, $includeActions = true)
-    {
-        // Handle null status_pengajuan - set default to draft
-        $status = $dataIzin->status_pengajuan ?? 'draft';
-        $statusInfo = $this->getStatusInfo($status);
+{
+    // Handle null status_pengajuan - set default to draft
+    $status = $dataIzin->status_pengajuan ?? 'draft';
+    $statusInfo = $this->getStatusInfo($status);
+    
+    $canEdit = in_array($status, ['draft', 'ditolak']);
+    $canSubmit = $status === 'draft';
+    $canDelete = in_array($status, ['draft', 'ditolak']);
+    $canPrint = $status === 'disetujui';
+    
+    // FIX TIMEZONE - Format tanggal dengan benar
+    $tglMulai = $dataIzin->tgl_mulai;
+    $tglSelesai = $dataIzin->tgl_selesai;
+    
+    // Jika masih dalam format datetime, convert ke date saja
+    if ($tglMulai instanceof \Carbon\Carbon || $tglMulai instanceof \DateTime) {
+        $tglMulai = $tglMulai->format('Y-m-d');
+    }
+    if ($tglSelesai instanceof \Carbon\Carbon || $tglSelesai instanceof \DateTime) {
+        $tglSelesai = $tglSelesai->format('Y-m-d');
+    }
+    
+    // Jika masih string dengan timezone, parse dan format ulang
+    if (is_string($tglMulai) && strpos($tglMulai, 'T') !== false) {
+        $tglMulai = \Carbon\Carbon::parse($tglMulai)->format('Y-m-d');
+    }
+    if (is_string($tglSelesai) && strpos($tglSelesai, 'T') !== false) {
+        $tglSelesai = \Carbon\Carbon::parse($tglSelesai)->format('Y-m-d');
+    }
+    
+    $data = [
+        'id' => $dataIzin->id,
+        'no_izin' => $dataIzin->no_izin,
+        'jenis_izin_id' => $dataIzin->jenis_izin_id,
+        'jenis_izin' => $dataIzin->jenisIzin ? $dataIzin->jenisIzin->nama_jenis_izin : null,
+        'tgl_mulai' => $tglMulai,        // ← FIX: Gunakan variable yang sudah di-format
+        'tgl_selesai' => $tglSelesai,    // ← FIX: Gunakan variable yang sudah di-format
+        'jumlah_izin' => $dataIzin->jumlah_izin,
+        'alasan_izin' => $dataIzin->alasan_izin,
+        'status_pengajuan' => $status,
+        'status_info' => $statusInfo,
+        'keterangan' => $dataIzin->keterangan,
+        'can_edit' => $canEdit,
+        'can_submit' => $canSubmit,
+        'can_delete' => $canDelete,
+        'can_print' => $canPrint,
+        'timestamps' => [
+            'tgl_diajukan' => $dataIzin->tgl_diajukan,
+            'tgl_disetujui' => $dataIzin->tgl_disetujui,
+            'tgl_ditolak' => $dataIzin->tgl_ditolak
+        ],
+        'dokumen' => $dataIzin->file_pendukung ? [
+            'nama_file' => $dataIzin->file_pendukung,
+            'url' => url('storage/pegawai/izin/'.$dataIzin->file_pendukung)
+        ] : null,
+        'created_at' => $dataIzin->created_at,
+        'updated_at' => $dataIzin->updated_at
+    ];
+
+    // Add action URLs if requested
+    if ($includeActions) {
+        // Get URL prefix from request
+        $request = request();
+        $prefix = $request->segment(2) ?? 'dosen'; // fallback to 'dosen'
         
-        $canEdit = in_array($status, ['draft', 'ditolak']);
-        $canSubmit = $status === 'draft';
-        $canDelete = in_array($status, ['draft', 'ditolak']);
-        $canPrint = $status === 'disetujui';
-        
-        $data = [
-            'id' => $dataIzin->id,
-            'no_izin' => $dataIzin->no_izin,
-            'jenis_izin_id' => $dataIzin->jenis_izin_id,
-            'jenis_izin' => $dataIzin->jenisIzin ? $dataIzin->jenisIzin->nama_jenis_izin : null,
-            'tgl_mulai' => $dataIzin->tgl_mulai,
-            'tgl_selesai' => $dataIzin->tgl_selesai,
-            'jumlah_izin' => $dataIzin->jumlah_izin,
-            'alasan_izin' => $dataIzin->alasan_izin,
-            'status_pengajuan' => $status,
-            'status_info' => $statusInfo,
-            'keterangan' => $dataIzin->keterangan,
-            'can_edit' => $canEdit,
-            'can_submit' => $canSubmit,
-            'can_delete' => $canDelete,
-            'can_print' => $canPrint,
-            'timestamps' => [
-                'tgl_diajukan' => $dataIzin->tgl_diajukan,
-                'tgl_disetujui' => $dataIzin->tgl_disetujui,
-                'tgl_ditolak' => $dataIzin->tgl_ditolak
-            ],
-            'dokumen' => $dataIzin->file_pendukung ? [
-                'nama_file' => $dataIzin->file_pendukung,
-                'url' => url('storage/pegawai/izin/'.$dataIzin->file_pendukung)
-            ] : null,
-            'created_at' => $dataIzin->created_at,
-            'updated_at' => $dataIzin->updated_at
+        $data['aksi'] = [
+            'detail_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}"),
+            'update_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}"),
+            'delete_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}"),
+            'submit_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}/submit"),
+            'print_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}/print"),
         ];
 
-        // Add action URLs if requested
-        if ($includeActions) {
-            // Get URL prefix from request
-            $request = request();
-            $prefix = $request->segment(2) ?? 'dosen'; // fallback to 'dosen'
-            
-            $data['aksi'] = [
-                'detail_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}"),
-                'update_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}"),
-                'delete_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}"),
-                'submit_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}/submit"),
-                'print_url' => url("/api/{$prefix}/pengajuan-izin-dosen/{$dataIzin->id}/print"),
-            ];
-
-            // Conditional action URLs based on permissions
-            $data['actions'] = [];
-            
-            if ($canEdit) {
-                $data['actions']['edit'] = [
-                    'url' => $data['aksi']['update_url'],
-                    'method' => 'PUT',
-                    'label' => 'Edit',
-                    'icon' => 'edit',
-                    'color' => 'warning'
-                ];
-            }
-            
-            if ($canDelete) {
-                $data['actions']['delete'] = [
-                    'url' => $data['aksi']['delete_url'],
-                    'method' => 'DELETE',
-                    'label' => 'Hapus',
-                    'icon' => 'trash',
-                    'color' => 'danger',
-                    'confirm' => true,
-                    'confirm_message' => 'Apakah Anda yakin ingin menghapus pengajuan izin ini?'
-                ];
-            }
-            
-            if ($canSubmit) {
-                $data['actions']['submit'] = [
-                    'url' => $data['aksi']['submit_url'],
-                    'method' => 'PATCH',
-                    'label' => 'Ajukan',
-                    'icon' => 'paper-plane',
-                    'color' => 'primary',
-                    'confirm' => true,
-                    'confirm_message' => 'Apakah Anda yakin ingin mengajukan izin ini untuk persetujuan?'
-                ];
-            }
-            
-            if ($canPrint) {
-                $data['actions']['print'] = [
-                    'url' => $data['aksi']['print_url'],
-                    'method' => 'GET',
-                    'label' => 'Cetak',
-                    'icon' => 'printer',
-                    'color' => 'success',
-                    'target' => '_blank'
-                ];
-            }
-            
-            // Always allow view/detail
-            $data['actions']['view'] = [
-                'url' => $data['aksi']['detail_url'],
-                'method' => 'GET',
-                'label' => 'Lihat Detail',
-                'icon' => 'eye',
-                'color' => 'info'
+        // Conditional action URLs based on permissions
+        $data['actions'] = [];
+        
+        if ($canEdit) {
+            $data['actions']['edit'] = [
+                'url' => $data['aksi']['update_url'],
+                'method' => 'PUT',
+                'label' => 'Edit',
+                'icon' => 'edit',
+                'color' => 'warning'
             ];
         }
-
-        return $data;
+        
+        if ($canDelete) {
+            $data['actions']['delete'] = [
+                'url' => $data['aksi']['delete_url'],
+                'method' => 'DELETE',
+                'label' => 'Hapus',
+                'icon' => 'trash',
+                'color' => 'danger',
+                'confirm' => true,
+                'confirm_message' => 'Apakah Anda yakin ingin menghapus pengajuan izin ini?'
+            ];
+        }
+        
+        if ($canSubmit) {
+            $data['actions']['submit'] = [
+                'url' => $data['aksi']['submit_url'],
+                'method' => 'PATCH',
+                'label' => 'Ajukan',
+                'icon' => 'paper-plane',
+                'color' => 'primary',
+                'confirm' => true,
+                'confirm_message' => 'Apakah Anda yakin ingin mengajukan izin ini untuk persetujuan?'
+            ];
+        }
+        
+        if ($canPrint) {
+            $data['actions']['print'] = [
+                'url' => $data['aksi']['print_url'],
+                'method' => 'GET',
+                'label' => 'Cetak',
+                'icon' => 'printer',
+                'color' => 'success',
+                'target' => '_blank'
+            ];
+        }
+        
+        // Always allow view/detail
+        $data['actions']['view'] = [
+            'url' => $data['aksi']['detail_url'],
+            'method' => 'GET',
+            'label' => 'Lihat Detail',
+            'icon' => 'eye',
+            'color' => 'info'
+        ];
     }
+
+    return $data;
+}
 
     // Helper: Get status info
     private function getStatusInfo($status)
