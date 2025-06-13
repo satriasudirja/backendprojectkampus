@@ -1,0 +1,87 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\SimpegMasterGelarAkademik;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Validator;
+
+class SimpegMasterGelarAkademikController extends Controller
+{
+    /**
+     * Menampilkan daftar gelar akademik dengan pencarian dan paginasi.
+     */
+    public function index(Request $request)
+    {
+        $query = SimpegMasterGelarAkademik::query();
+
+        // Fitur pencarian
+        if ($request->filled('search')) {
+            $query->where('gelar', 'like', '%' . $request->search . '%')
+                  ->orWhere('nama_gelar', 'like', '%' . $request->search . '%');
+        }
+
+        $gelarAkademik = $query->orderBy('gelar', 'asc')->paginate(15);
+        return response()->json($gelarAkademik);
+    }
+
+    /**
+     * Menyimpan data gelar akademik baru.
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'gelar' => 'required|string|max:15|unique:simpeg_master_gelar_akademik,gelar',
+            'nama_gelar' => 'required|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $gelarAkademik = SimpegMasterGelarAkademik::create($validator->validated());
+        return response()->json($gelarAkademik, 201);
+    }
+
+    /**
+     * Menampilkan satu data spesifik.
+     */
+    public function show(SimpegMasterGelarAkademik $gelarAkademik)
+    {
+        return response()->json($gelarAkademik);
+    }
+
+    /**
+     * Memperbarui data yang ada.
+     */
+    public function update(Request $request, SimpegMasterGelarAkademik $gelarAkademik)
+    {
+        $validator = Validator::make($request->all(), [
+            'gelar' => ['required', 'string', 'max:15', Rule::unique('simpeg_master_gelar_akademik')->ignore($gelarAkademik->id)],
+            'nama_gelar' => 'required|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $gelarAkademik->update($validator->validated());
+        return response()->json($gelarAkademik);
+    }
+
+    /**
+     * Menghapus data secara permanen.
+     */
+    public function destroy(SimpegMasterGelarAkademik $gelarAkademik)
+    {
+        // Proteksi: Cek apakah gelar ini digunakan sebelum menghapus.
+        if ($gelarAkademik->dataPendidikanFormal()->exists()) {
+            return response()->json(['message' => 'Gagal menghapus: Gelar ini sedang digunakan pada data pendidikan pegawai.'], 409);
+        }
+
+        $gelarAkademik->delete();
+        return response()->json(null, 204); // 204 No Content
+    }
+}
