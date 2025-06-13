@@ -99,9 +99,12 @@ use App\Http\Controllers\Api\AdminMonitoringValidasiCutiController;
 
 
 use App\Models\JenisSertifikasi;
+
+
+
 use App\Models\SimpegDaftarCuti;
 
-use App\Http\Controllers\Api\SimpegRumpunBidangIlmuController;
+use App\Http\Controllers\Api\simpegRumpunBidangIlmuController;
 use App\Http\Controllers\Api\SimpegGolonganDarahController;
 use App\Http\Controllers\Api\SimpegDataRiwayatTesController;
 use App\Http\Controllers\Api\SimpegDataSertifikasidosenController;
@@ -588,7 +591,7 @@ Route::prefix('monitoring')->group(function () {
         Route::apiResource('gaji-periode', SimpegGajiPeriodeController::class);
         Route::apiResource('jenis-hari', SimpegJenisHariController::class);
         Route::apiResource('jenis-kehadiran', SimpegJenisKehadiranController::class);
-        Route::apiResource('rumpun-bidang-ilmu', SimpegRumpunBidangIlmuController::class);
+        Route::apiResource('rumpun-bidang-ilmu', simpegRumpunBidangIlmuController::class);
         Route::apiResource('agama', SimpegAgamaController::class);
         Route::apiResource('golongan-darah', SimpegGolonganDarahController::class);
         Route::apiResource('pekerjaan', SimpegPekerjaanController::class);
