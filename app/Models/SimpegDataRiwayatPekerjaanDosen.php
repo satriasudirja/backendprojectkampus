@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class SimpegDataRiwayatPekerjaan extends Model
+class SimpegDataRiwayatPekerjaanDosen extends Model
 {
     use SoftDeletes;
 

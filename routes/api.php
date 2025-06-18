@@ -94,6 +94,7 @@ use App\Http\Controllers\Api\InputPresensiController;
 use App\Http\Controllers\Api\MonitoringHubunganKerjaController;
 use App\Http\Controllers\Api\AdminMonitoringValidasiIzinController;
 use App\Http\Controllers\Api\AdminMonitoringValidasiCutiController;
+use App\Http\Controllers\Api\SimpegDataKemampuanBahasaAdminController; 
 
 
 
@@ -137,6 +138,30 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+
+    Route::prefix('datakemampuanbahasa')->group(function () {
+    // Define specific routes first
+    Route::get('filter-options', [SimpegDataKemampuanBahasaAdminController::class, 'getFilterOptions']);
+    Route::get('statistics', [SimpegDataKemampuanBahasaAdminController::class, 'getStatusStatistics']);
+
+    // Define batch actions BEFORE generic {id} routes
+    Route::patch('batch/approve', [SimpegDataKemampuanBahasaAdminController::class, 'batchApprove']);
+    Route::patch('batch/reject', [SimpegDataKemampuanBahasaAdminController::class, 'batchReject']);
+    Route::delete('batch/delete', [SimpegDataKemampuanBahasaAdminController::class, 'batchDelete']);
+
+    // Then define generic resource routes or {id} routes
+    Route::get('/', [SimpegDataKemampuanBahasaAdminController::class, 'index']); // GET /api/admin/datakemampuanbahasa
+    Route::post('/', [SimpegDataKemampuanBahasaAdminController::class, 'store']); // POST /api/admin/datakemampuanbahasa
+    
+    // Resource routes for single item operations
+    Route::get('{id}', [SimpegDataKemampuanBahasaAdminController::class, 'show']); // GET /api/admin/datakemampuanbahasa/{id}
+    Route::put('{id}', [SimpegDataKemampuanBahasaAdminController::class, 'update']); // PUT /api/admin/datakemampuanbahasa/{id}
+    Route::delete('{id}', [SimpegDataKemampuanBahasaAdminController::class, 'destroy']); // DELETE /api/admin/datakemampuanbahasa/{id}
+
+    // Specific actions for a single item (approve/reject) should come after the generic {id}
+    Route::patch('{id}/approve', [SimpegDataKemampuanBahasaAdminController::class, 'approve']);
+    Route::patch('{id}/reject', [SimpegDataKemampuanBahasaAdminController::class, 'reject']);
+});
         Route::prefix('validasi-cuti')->group(function () {
     // List monitoring pengajuan cuti
     Route::get('/', [AdminMonitoringValidasiCutiController::class, 'index']);

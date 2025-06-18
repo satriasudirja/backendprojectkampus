@@ -25,6 +25,7 @@ class SimpegDataJabatanAkademik extends Model
         'tgl_diajukan',
         'tgl_disetujui',
         'tgl_ditolak',
+        'tanggal_mulai',
     ];
 
     protected $casts = [
@@ -33,7 +34,8 @@ class SimpegDataJabatanAkademik extends Model
         'tgl_input' => 'date',
         'tgl_diajukan' => 'datetime',
         'tgl_disetujui' => 'datetime',
-        'tgl_ditolak' => 'datetime'
+        'tgl_ditolak' => 'datetime',
+          'tanggal_mulai' => 'datetime'
     ];
 
     // Status pengajuan constants

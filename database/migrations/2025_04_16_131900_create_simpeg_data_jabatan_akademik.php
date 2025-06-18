@@ -34,6 +34,8 @@ return new class extends Migration
             
              // Timestamp untuk workflow approval
             $table->timestamps();
+            
+            $table->timestamp('tanggal_mulai')->nullable();
             $table->timestamp('tgl_diajukan')->nullable();
             $table->timestamp('tgl_disetujui')->nullable();
             $table->timestamp('tgl_ditolak')->nullable();
