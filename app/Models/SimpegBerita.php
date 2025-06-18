@@ -29,67 +29,32 @@ class SimpegBerita extends Model
         'tgl_posting' => 'date',
         'tgl_expired' => 'date',
         'prioritas' => 'boolean',
-        'unit_kerja_id' => 'array',
+        // 'unit_kerja_id' => 'array', // Tetap di sini, tapi akan di-override manual encode saat saving
         'deleted_at' => 'datetime',
     ];
 
     /**
      * Boot the model.
+     * Mengomentari manual cast di boot karena $casts harusnya sudah cukup
+     * DAN kita akan melakukan json_encode manual di controller jika DB column TEXT.
      */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Cast unit_kerja_id to JSON when saving
-        static::saving(function ($model) {
-            if (is_array($model->unit_kerja_id)) {
-                $model->unit_kerja_id = json_encode($model->unit_kerja_id);
-            }
-        });
-
-        // Cast unit_kerja_id from JSON when retrieving
-        static::retrieved(function ($model) {
-            if (is_string($model->unit_kerja_id) && is_array(json_decode($model->unit_kerja_id, true))) {
-                $model->unit_kerja_id = json_decode($model->unit_kerja_id, true);
-            }
-        });
-    }
-
-    /**
-     * Relasi dengan Unit Kerja
-     */
-    // public function unitKerja()
+    // protected static function boot()
     // {
-    //     // Assuming there's a model for unit_kerja
-    //     return $this->belongsTo(SImpegUnitKerja::class, 'unit_kerja_id',  'kode_unit');
+    //     parent::boot();
+
+    //     static::saving(function ($model) {
+    //         if (is_array($model->unit_kerja_id)) {
+    //             $model->unit_kerja_id = json_encode($model->unit_kerja_id);
+    //         }
+    //     });
+
+    //     static::retrieved(function ($model) {
+    //         if (is_string($model->unit_kerja_id) && is_array(json_decode($model->unit_kerja_id, true))) {
+    //             $model->unit_kerja_id = json_decode($model->unit_kerja_id, true);
+    //         }
+    //     });
     // }
 
-public function unitKerja()
-    {
-        // If unit_kerja_id is an array, use the first value
-        $unitKerjaId = is_array($this->unit_kerja_id) && !empty($this->unit_kerja_id) 
-            ? $this->unit_kerja_id[0] 
-            : $this->unit_kerja_id;
-        
-        return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id', 'kode_unit')
-            ->withDefault([
-                'nama_unit' => 'Tidak ditemukan'
-            ]);
-    }
-
-    /**
-     * Get all related unit kerja records
-     */
-    public function allUnitKerja()
-    {
-        if (!is_array($this->unit_kerja_id)) {
-            $unitIds = [$this->unit_kerja_id];
-        } else {
-            $unitIds = $this->unit_kerja_id;
-        }
-        
-        return SimpegUnitKerja::whereIn('kode_unit', $unitIds)->get();
-    }
     /**
      * Relasi dengan Jabatan Akademik (Many-to-Many)
      */
@@ -104,26 +69,21 @@ public function unitKerja()
     }
 
     /**
-     * Generate slug from title
-     */
-
-
-    /**
      * Set slug otomatis dari judul
+     * Ini adalah "mutator" yang akan dipanggil saat Anda mengatur $model->judul = '...'
      */
     public function setJudulAttribute($value)
     {
         $this->attributes['judul'] = $value;
         
-        // Generate slug dari judul
         $slug = Str::slug($value);
         $originalSlug = $slug;
         $count = 1;
         
         // Pastikan slug unik
         while (static::where('slug', $slug)
-                    ->where('id', '!=', $this->id ?? 0)
-                    ->exists()) {
+                     ->where('id', '!=', $this->id ?? 0)
+                     ->exists()) {
             $slug = $originalSlug . '-' . $count++;
         }
         
@@ -131,9 +91,35 @@ public function unitKerja()
     }
 
     /**
-     * Relasi dengan Unit Kerja (jika diperlukan)
-     * Catatan: Ini opsional karena unit_kerja_id disimpan sebagai JSON array
+     * Relasi dengan Unit Kerja (One-to-Many, jika unit_kerja_id hanya 1)
+     * atau untuk mendapatkan detail dari unit kerja pertama di array.
      */
+    public function unitKerja()
+    {
+        // Jika unit_kerja_id adalah array, ambil nilai pertama untuk relasi belongsTo
+        $unitKerjaId = is_array($this->unit_kerja_id) && !empty($this->unit_kerja_id) 
+            ? $this->unit_kerja_id[0] 
+            : $this->unit_kerja_id;
+        
+        // Asumsi 'kode_unit' adalah kolom yang cocok di tabel simpeg_unit_kerja
+        // Penting: Pastikan SimpegUnitKerja diimport jika ingin digunakan di sini
+        return $this->belongsTo(\App\Models\SimpegUnitKerja::class, 'unit_kerja_id', 'kode_unit')
+            ->withDefault([
+                'nama_unit' => 'Tidak ditemukan'
+            ]);
+    }
+
+    /**
+     * Mendapatkan semua record unit kerja yang terkait dengan ID dalam array unit_kerja_id
+     * Ini lebih sesuai jika unit_kerja_id bisa menampung banyak relasi.
+     */
+    public function allUnitKerja()
+    {
+        $unitIds = is_array($this->unit_kerja_id) ? $this->unit_kerja_id : [$this->unit_kerja_id];
+        
+        // Penting: Pastikan SimpegUnitKerja diimport jika ingin digunakan di sini
+        return \App\Models\SimpegUnitKerja::whereIn('kode_unit', $unitIds)->get();
+    }
 
     /**
      * Scope untuk filter berdasarkan jabatan akademik
@@ -153,7 +139,4 @@ public function unitKerja()
         // PostgreSQL specific JSON querying
         return $query->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([$unitKerjaId])]);
     }
-
-    
-    
 }

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Validator; // <-- PASTIKAN BARIS INI ADA UNTUK KONSISTENSI
 
 class SimpegBeritaController extends Controller
 {
@@ -188,7 +189,7 @@ class SimpegBeritaController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+ public function update(Request $request, $id)
     {
         $berita = SimpegBerita::find($id);
 
@@ -196,7 +197,7 @@ class SimpegBeritaController extends Controller
             return response()->json(['success' => false, 'message' => 'Berita tidak ditemukan'], 404);
         }
 
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'unit_kerja_id' => 'required|array',
             'unit_kerja_id.*' => 'required|integer', // Tidak validasi ke tabel unit_kerja
             'judul' => 'required|string|max:100',
@@ -210,69 +211,97 @@ class SimpegBeritaController extends Controller
             'jabatan_akademik_id.*' => 'required|integer|exists:simpeg_jabatan_akademik,id',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $validatedData = $validator->validated();
+
+        // --- MULAI PERUBAHAN UTAMA DI SINI ---
+        // Lakukan JSON encode untuk field array sebelum disimpan ke DB (karena DB adalah TEXT)
+        if (isset($validatedData['unit_kerja_id']) && is_array($validatedData['unit_kerja_id'])) {
+            $validatedData['unit_kerja_id'] = json_encode($validatedData['unit_kerja_id']);
+        }
+        // Jika jabatan_akademik_id juga disimpan sebagai JSON string di kolom TEXT,
+        // lakukan encode juga di sini. (Saat ini disimpan di tabel pivot, jadi tidak perlu)
+        // if (isset($validatedData['jabatan_akademik_id']) && is_array($validatedData['jabatan_akademik_id'])) {
+        //     $validatedData['jabatan_akademik_id'] = json_encode($validatedData['jabatan_akademik_id']);
+        // }
+        // --- AKHIR PERUBAHAN UTAMA ---
+
+
         DB::beginTransaction();
         try {
             $old = $berita->getOriginal();
 
-            // Upload gambar berita baru jika ada
+            // Handle gambar_berita update
             if ($request->hasFile('gambar_berita')) {
-                // Hapus gambar lama jika ada
                 if ($berita->gambar_berita && Storage::disk('public')->exists($berita->gambar_berita)) {
                     Storage::disk('public')->delete($berita->gambar_berita);
                 }
-                
-                $gambarBeritaPath = $request->file('gambar_berita')
-                    ->store('berita/gambar', 'public');
-                    
-                $berita->gambar_berita = $gambarBeritaPath;
+                $berita->gambar_berita = $request->file('gambar_berita')->store('berita/gambar', 'public');
+            } elseif ($request->has('gambar_berita_clear') && (bool)$request->gambar_berita_clear) {
+                if ($berita->gambar_berita && Storage::disk('public')->exists($berita->gambar_berita)) {
+                    Storage::disk('public')->delete($berita->gambar_berita);
+                }
+                $berita->gambar_berita = null;
             }
 
-            // Upload file berita baru jika ada
+            // Handle file_berita update
             if ($request->hasFile('file_berita')) {
-                // Hapus file lama jika ada
                 if ($berita->file_berita && Storage::disk('public')->exists($berita->file_berita)) {
                     Storage::disk('public')->delete($berita->file_berita);
                 }
-                
-                $fileBeritaPath = $request->file('file_berita')
-                    ->store('berita/file', 'public');
-                    
-                $berita->file_berita = $fileBeritaPath;
+                $berita->file_berita = $request->file('file_berita')->store('berita/file', 'public');
+            } elseif ($request->has('file_berita_clear') && (bool)$request->file_berita_clear) {
+                if ($berita->file_berita && Storage::disk('public')->exists($berita->file_berita)) {
+                    Storage::disk('public')->delete($berita->file_berita);
+                }
+                $berita->file_berita = null;
             }
 
-            // Update slug hanya jika judul berubah
-            if ($berita->judul !== $request->judul) {
-                $slug = Str::slug($request->judul);
+
+            // Update slug if title changed (using validated data)
+            if ($berita->judul !== $validatedData['judul']) {
+                $slug = Str::slug($validatedData['judul']);
                 $originalSlug = $slug;
                 $count = 1;
-
-                // Pastikan slug unik
                 while (SimpegBerita::where('slug', $slug)->where('id', '!=', $berita->id)->exists()) {
                     $slug = $originalSlug . '-' . $count++;
                 }
-                
                 $berita->slug = $slug;
             }
 
-            // Update data lainnya
-            $berita->unit_kerja_id = $request->unit_kerja_id;
-            $berita->judul = $request->judul;
-            $berita->konten = $request->konten;
-            $berita->tgl_posting = $request->tgl_posting;
-            $berita->tgl_expired = $request->tgl_expired;
-            $berita->prioritas = $request->prioritas;
-            $berita->save();
+            // Fill the model with ALL validated data (which now includes encoded unit_kerja_id)
+            // But still exclude files and _method as they are handled separately.
+            $berita->fill($validatedData); // <-- PAKAI $validatedData LANGSUNG
+            
+            // Hapus field yang tidak disimpan langsung atau ditangani terpisah dari fill()
+            unset($berita->gambar_berita, $berita->file_berita, $berita->jabatan_akademik_id); // Ini sudah ditangani
+            // Juga, hapus _method dan clear flags jika ada di validatedData
+            // if (isset($berita['_method'])) unset($berita['_method']);
+            // if (isset($berita['gambar_berita_clear'])) unset($berita['gambar_berita_clear']);
+            // if (isset($berita['file_berita_clear'])) unset($berita['file_berita_clear']);
 
-            // Update relasi dengan jabatan akademik
-            $berita->jabatanAkademik()->sync($request->jabatan_akademik_id);
 
-            // Log perubahan
+            $berita->save(); // Save all changes to the database
+
+            // Sync relation with jabatan akademik (using validated data - which is still an array here)
+            $berita->jabatanAkademik()->sync($request->jabatan_akademik_id); // Gunakan $request->jabatan_akademik_id
+                                                                           // karena $validatedData['jabatan_akademik_id']
+                                                                           // sudah dimodifikasi di atas jika di-encode
+
+            // Log changes
             $changes = array_diff_assoc($berita->toArray(), $old);
             ActivityLogger::log('update', $berita, $changes);
 
             DB::commit();
 
-            // Load relasi untuk response
+            // Load relations for response
             $berita->load('jabatanAkademik');
 
             return response()->json([
@@ -282,6 +311,7 @@ class SimpegBeritaController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Error updating berita: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui berita: ' . $e->getMessage()
