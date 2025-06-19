@@ -29,6 +29,7 @@ class SimpegDataTes extends Model
         'tgl_diajukan',
         'tgl_disetujui',
         'tgl_ditolak',
+        'tgl_ditangguhkan'
     
     ];
 
@@ -38,6 +39,7 @@ class SimpegDataTes extends Model
         'tgl_diajukan' => 'datetime',
         'tgl_disetujui' => 'datetime', 
         'tgl_ditolak' => 'datetime',
+          'tgl_ditangguhkan' => 'datetime',
         'skor' => 'float'
     ];
 

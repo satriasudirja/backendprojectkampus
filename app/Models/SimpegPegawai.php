@@ -108,11 +108,14 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
         return $this->belongsTo(SimpegJabatanAkademik::class, 'user_id');
     }
 
+    // public function unitKerja()
+    // {
+    //     return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id', 'id');
+    // }
     public function unitKerja()
     {
         return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id', 'kode_unit');
     }
-
     public function statusPernikahan()
     {
         return $this->belongsTo(SimpegStatusPernikahan::class, 'kode_status_pernikahan');

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('pegawai_id')->constrained('simpeg_pegawai');
+            $table->foreignId('pegawai_id')->constrained('simpeg_pegawai')->nullable();
             $table->string('event'); // create, update, delete
             $table->string('model_type'); // Nama model yang diubah
             $table->unsignedBigInteger('model_id'); // ID data model-nya
