@@ -110,6 +110,7 @@ use App\Http\Controllers\Api\SimpegDataRiwayatTesController;
 use App\Http\Controllers\Api\SimpegDataSertifikasidosenController;
 use App\Http\Controllers\Api\SimpegAgamaController;
 
+
 use App\Http\Controllers\Api\SimpegBankController;
 // use App\Http\Controllers\Api\SimpegPekerjaanController;
 
@@ -593,6 +594,7 @@ Route::prefix('monitoring')->group(function () {
         Route::apiResource('jenis-hari', SimpegJenisHariController::class);
         Route::apiResource('jenis-kehadiran', SimpegJenisKehadiranController::class);
         Route::apiResource('rumpun-bidang-ilmu', simpegRumpunBidangIlmuController::class);
+        Route::apiResource('jenjang-pendidikan', SimpegJenjangPendidikanController::class);
         Route::apiResource('agama', SimpegAgamaController::class);
         Route::apiResource('golongan-darah', SimpegGolonganDarahController::class);
         Route::apiResource('pekerjaan', SimpegPekerjaanController::class);

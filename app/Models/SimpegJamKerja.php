@@ -17,8 +17,8 @@ class SimpegJamKerja extends Model
 protected $fillable = [
     'jenis_jam_kerja',
     'jam_normal',
-    'jam_masuk',        // Format: H:i:s
-    'jam_keluar',       // Format: H:i:s
+    'jam_datang', // <-- BENAR, disamakan dengan migration & controller
+    'jam_pulang', // <-- BENAR, disamakan dengan migration & controller
     'is_default',
     'is_active',
     'toleransi_terlambat',    // dalam menit
