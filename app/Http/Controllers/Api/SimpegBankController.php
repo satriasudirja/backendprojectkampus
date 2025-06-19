@@ -27,7 +27,7 @@ class SimpegBankController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'kode' => 'required|string|max:10|unique:simpeg_master_bank,kode',
+            'kode' => 'required|string|max:10|unique:simpeg_bank,kode',
             'nama_bank' => 'required|string|max:100',
         ]);
 
@@ -47,7 +47,7 @@ class SimpegBankController extends Controller
     public function update(Request $request, SimpegBank $bank)
     {
         $validator = Validator::make($request->all(), [
-            'kode' => ['required', 'string', 'max:10', Rule::unique('simpeg_master_bank')->ignore($bank->id)],
+            'kode' => ['required', 'string', 'max:10', Rule::unique('simpeg_bank')->ignore($bank->id)],
             'nama_bank' => 'required|string|max:100',
         ]);
 

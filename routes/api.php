@@ -111,12 +111,11 @@ use App\Http\Controllers\Api\SimpegGolonganDarahController;
 use App\Http\Controllers\Api\SimpegDataRiwayatTesController;
 use App\Http\Controllers\Api\SimpegDataSertifikasidosenController;
 use App\Http\Controllers\Api\SimpegAgamaController;
-
 use App\Http\Controllers\Api\SimpegDataPenghargaanValidasiController;
 use App\Http\Controllers\Api\SimpegDataRiwayatTesAdminController;
+
 use App\Http\Controllers\Api\SimpegBankController;
 // use App\Http\Controllers\Api\SimpegPekerjaanController;
-
 use App\Http\Controllers\Api\SimpegBeritaDosenController;
 use App\Http\Controllers\Api\SimpegDataSertifikasiAdminController;
 use App\Http\Controllers\Api\SimpegDataPendidikanFormalAdminController;
@@ -127,6 +126,8 @@ use App\Http\Controllers\Api\SimpegDataJabatanAkademikAdminController;
 use App\Http\Controllers\Api\SimpegDataJabatanFungsionalAdminController;
 use App\Http\Controllers\Api\SimpegDataJabatanStrukturalAdminController; 
 use App\Http\Controllers\Api\SimpegDataPangkatAdminController;
+
+use App\Http\Controllers\Api\SimpegPendidikanFormalDosenController;
 
 
 Route::prefix('auth')->group(function () {
@@ -149,7 +150,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
-
+        
          Route::get('datapangkatadm/filter-options', [SimpegDataPangkatAdminController::class, 'getFilterOptions']);
     Route::get('datapangkatadm/form-options', [SimpegDataPangkatAdminController::class, 'getFormOptions']);
     Route::get('datapangkatadm/status-statistics', [SimpegDataPangkatAdminController::class, 'getStatusStatistics']);
@@ -403,6 +404,7 @@ Route::middleware('auth:api')->group(function () {
     Route::patch('{id}/approve', [SimpegDataKemampuanBahasaAdminController::class, 'approve']);
     Route::patch('{id}/reject', [SimpegDataKemampuanBahasaAdminController::class, 'reject']);
 });
+
         Route::prefix('validasi-cuti')->group(function () {
     // List monitoring pengajuan cuti
     Route::get('/', [AdminMonitoringValidasiCutiController::class, 'index']);
@@ -878,6 +880,7 @@ Route::prefix('evaluasi-kinerja')->group(function () {
         Route::apiResource('jenis-hari', SimpegJenisHariController::class);
         Route::apiResource('jenis-kehadiran', SimpegJenisKehadiranController::class);
         Route::apiResource('rumpun-bidang-ilmu', simpegRumpunBidangIlmuController::class);
+        Route::apiResource('jenjang-pendidikan', SimpegJenjangPendidikanController::class);
         Route::apiResource('agama', SimpegAgamaController::class);
         Route::apiResource('golongan-darah', SimpegGolonganDarahController::class);
         Route::apiResource('pekerjaan', SimpegPekerjaanController::class);
@@ -1030,6 +1033,42 @@ Route::prefix('evaluasi-kinerja')->group(function () {
             Route::get('/available-actions', [SimpegDataAnakController::class, 'getAvailableActions']);
         });
 
+        Route::prefix('pendidikanformaldosen')->group(function () {
+        // ========================================
+        // STATIC ROUTES (HARUS DI ATAS!)
+        // ========================================
+        
+        // Configuration & Statistics Routes
+        Route::get('/config/system', [SimpegPendidikanFormalDosenController::class, 'getSystemConfig']);
+        Route::get('/statistics/status', [SimpegPendidikanFormalDosenController::class, 'getStatusStatistics']);
+        Route::get('/filter-options', [SimpegPendidikanFormalDosenController::class, 'getFilterOptions']);
+        Route::get('/available-actions', [SimpegPendidikanFormalDosenController::class, 'getAvailableActions']);
+        
+        // Utility Routes
+        Route::patch('/fix-existing-data', [SimpegPendidikanFormalDosenController::class, 'fixExistingData']);
+        Route::patch('/bulk-fix-existing-data', [SimpegPendidikanFormalDosenController::class, 'bulkFixExistingData']);
+        
+        // ========================================
+        // BATCH OPERATIONS ROUTES (HARUS SEBELUM {id} ROUTES!)
+        // ========================================
+        Route::delete('/batch/delete', [SimpegPendidikanFormalDosenController::class, 'batchDelete']);
+        Route::patch('/batch/submit', [SimpegPendidikanFormalDosenController::class, 'batchSubmitDrafts']);
+        Route::patch('/batch/status', [SimpegPendidikanFormalDosenController::class, 'batchUpdateStatus']);
+        
+        // ========================================
+        // CRUD OPERATIONS (PARAMETER ROUTES DI BAWAH!)
+        // ========================================
+        Route::get('/', [SimpegPendidikanFormalDosenController::class, 'index']);
+        Route::post('/', [SimpegPendidikanFormalDosenController::class, 'store']);
+        Route::get('/{id}', [SimpegPendidikanFormalDosenController::class, 'show']);
+        Route::put('/{id}', [SimpegPendidikanFormalDosenController::class, 'update']);
+        Route::delete('/{id}', [SimpegPendidikanFormalDosenController::class, 'destroy']);
+        
+        // ========================================
+        // STATUS PENGAJUAN ROUTES (DENGAN {id} DI BAWAH!)
+        // ========================================
+        Route::patch('/{id}/submit', [SimpegPendidikanFormalDosenController::class, 'submitDraft']);
+    });
 
         Route::prefix('pengajuan-izin-dosen')->group(function () {
                 // 1. BATCH OPERATIONS - HARUS PALING ATASAdd commentMore actions
