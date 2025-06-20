@@ -8,14 +8,31 @@ use App\Models\SimpegPegawai;
 use App\Models\SimpegUnitKerja;
 use App\Models\HubunganKerja;
 use App\Models\SimpegJabatanFungsional;
+use App\Models\SimpegJabatanAkademik;
+use App\Models\SimpegDataJabatanFungsional;
+use App\Models\SimpegDataJabatanStruktural;
+use App\Models\SimpegDataPendidikanFormal;
+use App\Models\SimpegStatusAktif;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
+
 
 class MonitoringHubunganKerjaController extends Controller
 {
+    // =========================================================
+    // PUBLIC API ENDPOINTS
+    // (These methods are directly accessible via routes)
+    // =========================================================
+
     /**
      * Monitoring hubungan kerja dengan filter unit kerja, status masa kerja, dan hubungan kerja
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
@@ -23,59 +40,64 @@ class MonitoringHubunganKerjaController extends Controller
         $search = $request->search;
         
         // Filter parameters
-        $unitKerjaFilter = $request->unit_kerja; // ID unit kerja
-        $statusMasaKerjaFilter = $request->status_masa_kerja; // hampir_berakhir, hampir_pensiun
-        $hubunganKerjaFilter = $request->hubungan_kerja; // ID hubungan kerja
-        $levelFilter = $request->level ?? 'seuniv'; // seuniv, sefakultas, seprodi
+        $unitKerjaFilter = $request->unit_kerja; // Sekarang diasumsikan ini adalah 'kode_unit' dari dropdown
+        $statusMasaKerjaFilter = $request->status_masa_kerja;
+        $hubunganKerjaFilter = $request->hubungan_kerja;
+        $levelFilter = $request->level ?? 'seuniv';
 
         // Base query - ambil hubungan kerja yang aktif
         $query = SimpegDataHubunganKerja::with([
             'pegawai.unitKerja',
-            'pegawai.jabatanAkademik', 
+            'pegawai.jabatanAkademik',
+            'pegawai.dataJabatanFungsional' => function($q) {
+                $q->with('jabatanFungsional')->latest('tmt_jabatan')->limit(1);
+            },
             'hubunganKerja',
             'statusAktif'
         ])->where('is_aktif', true);
 
         // Filter berdasarkan unit kerja dan level
-        if ($unitKerjaFilter) {
+        if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
+            // FIX: Panggil helper method. Method ini akan mengonversi kode_unit ke ID integer jika diperlukan
             $unitKerjaIds = $this->getUnitKerjaIdsByLevel($unitKerjaFilter, $levelFilter);
             
             $query->whereHas('pegawai', function($q) use ($unitKerjaIds) {
+                // FIX: unit_kerja_id di tabel pegawai sekarang diasumsikan merujuk ke ID (integer) dari simpeg_unit_kerja
                 $q->whereIn('unit_kerja_id', $unitKerjaIds);
             });
         }
 
         // Filter berdasarkan jenis hubungan kerja
-        if ($hubunganKerjaFilter) {
+        if ($hubunganKerjaFilter && $hubunganKerjaFilter !== 'semua') {
             $query->where('hubungan_kerja_id', $hubunganKerjaFilter);
         }
 
         // Filter berdasarkan status masa kerja
         if ($statusMasaKerjaFilter) {
+            // FIX: Panggil helper method
             $query = $this->applyStatusMasaKerjaFilter($query, $statusMasaKerjaFilter);
         }
 
         // Search functionality
         if ($search) {
             $query->where(function($q) use ($search) {
-                // Search by NIP
-                $q->whereHas('pegawai', function($subQ) use ($search) {
-                    $subQ->where('nip', 'like', '%'.$search.'%');
+                $connection = config('database.default');
+                $driver = config("database.connections.{$connection}.driver");
+                $likeOperator = ($driver === 'pgsql') ? 'ilike' : 'like';
+
+                $q->whereHas('pegawai', function($subQ) use ($search, $likeOperator) {
+                    $subQ->where('nip', $likeOperator, '%'.$search.'%');
                 })
-                // Search by nama pegawai
-                ->orWhereHas('pegawai', function($subQ) use ($search) {
-                    $subQ->where('nama', 'like', '%'.$search.'%');
+                ->orWhereHas('pegawai', function($subQ) use ($search, $likeOperator) {
+                    $subQ->where('nama', $likeOperator, '%'.$search.'%');
                 })
-                // Search by unit kerja
-                ->orWhereHas('pegawai.unitKerja', function($subQ) use ($search) {
-                    $subQ->where('nama_unit', 'like', '%'.$search.'%');
+                ->orWhereHas('pegawai.unitKerja', function($subQ) use ($search, $likeOperator) {
+                    $subQ->where('nama_unit', $likeOperator, '%'.$search.'%');
                 })
-                // Search by jenis hubungan kerja
-                ->orWhereHas('hubunganKerja', function($subQ) use ($search) {
-                    $subQ->where('nama_hub_kerja', 'like', '%'.$search.'%');
+                ->orWhereHas('hubunganKerja', function($subQ) use ($search, $likeOperator) {
+                    $subQ->where('nama_hub_kerja', $likeOperator, '%'.$search.'%');
                 })
-                // Search by nomor SK
-                ->orWhere('no_sk', 'like', '%'.$search.'%');
+                ->orWhere('no_sk', $likeOperator, '%'.$search.'%');
             });
         }
 
@@ -86,10 +108,10 @@ class MonitoringHubunganKerjaController extends Controller
 
         $hubunganKerjaData = $query->paginate($perPage);
 
-        // Get summary statistics
+        // FIX: Panggil helper method
         $summaryStats = $this->getSummaryStatistics($unitKerjaFilter, $levelFilter, $hubunganKerjaFilter, $statusMasaKerjaFilter);
 
-        // Get filter options
+        // FIX: Panggil metode public getFilterOptions()
         $filterOptions = $this->getFilterOptions();
 
         return response()->json([
@@ -97,7 +119,8 @@ class MonitoringHubunganKerjaController extends Controller
             'summary' => $summaryStats,
             'filter_options' => $filterOptions,
             'data' => $hubunganKerjaData->map(function ($item) {
-                return $this->formatHubunganKerjaData($item);
+                // FIX: Panggil helper method
+                return $this->formatMonitoringData($item);
             }),
             'pagination' => [
                 'current_page' => $hubunganKerjaData->currentPage(),
@@ -111,12 +134,26 @@ class MonitoringHubunganKerjaController extends Controller
                 'hubungan_kerja' => $hubunganKerjaFilter,
                 'status_masa_kerja' => $statusMasaKerjaFilter,
                 'search' => $search
+            ],
+            'table_columns' => [
+                ['field' => 'nip', 'label' => 'NIP', 'sortable' => true],
+                ['field' => 'nama_pegawai', 'label' => 'Nama Pegawai', 'sortable' => true],
+                ['field' => 'hubungan_kerja', 'label' => 'Hubungan Kerja', 'sortable' => true],
+                ['field' => 'jabatan_fungsional', 'label' => 'Fungsional', 'sortable' => false],
+                ['field' => 'usia_pensiun', 'label' => 'Usia Pensiun', 'sortable' => false],
+                ['field' => 'tanggal_lahir', 'label' => 'Tgl Lahir', 'sortable' => true],
+                ['field' => 'tanggal_efektif', 'label' => 'Tgl Efektif', 'sortable' => true],
+                ['field' => 'tanggal_berakhir', 'label' => 'Tgl Berakhir', 'sortable' => true],
+                ['field' => 'aksi', 'label' => 'Aksi', 'sortable' => false],
             ]
         ]);
     }
 
     /**
      * Download file hubungan kerja
+     *
+     * @param int $id
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate->Http->JsonResponse
      */
     public function downloadFile($id)
     {
@@ -138,54 +175,227 @@ class MonitoringHubunganKerjaController extends Controller
             ], 404);
         }
 
-        return response()->download($filePath);
+        return response()->download($filePath, basename($riwayat->file_hubungan_kerja));
     }
 
-    // ==================== HELPER METHODS ====================
+    /**
+     * Get detail hubungan kerja by ID dengan riwayat lengkap
+     *
+     * @param int $id
+     * @return \Illuminate->Http->JsonResponse
+     */
+    public function show($id)
+    {
+        $hubunganKerja = SimpegDataHubunganKerja::with([
+            'pegawai' => function($query) {
+                $query->with([
+                    'unitKerja',
+                    'statusAktif', 
+                    'jabatanAkademik',
+                    'dataJabatanFungsional' => function($q) {
+                        $q->with('jabatanFungsional')->latest('tmt_jabatan')->limit(1);
+                    },
+                    'dataJabatanStruktural' => function($q) {
+                        $q->with('jabatanStruktural.jenisJabatanStruktural')->latest('tgl_mulai')->limit(1);
+                    },
+                    'dataPendidikanFormal' => function($q) {
+                        $q->with('jenjangPendidikan')->orderBy('jenjang_pendidikan_id', 'desc')->limit(1);
+                    },
+                    'dataHubunganKerja'
+                ]);
+            },
+            'hubunganKerja',
+            'statusAktif'
+        ])->find($id);
+
+        if (!$hubunganKerja) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data hubungan kerja tidak ditemukan'
+            ], 404);
+        }
+
+        $riwayatHubunganKerja = SimpegDataHubunganKerja::with(['hubunganKerja', 'statusAktif'])
+            ->where('pegawai_id', $hubunganKerja->pegawai_id)
+            ->orderBy('tgl_awal', 'desc')
+            ->get();
+
+        // FIX: Panggil helper method
+        $masaKerja = $this->calculateMasaKerja($hubunganKerja);
+
+        // FIX: Panggil helper method
+        $timeline = $this->getStatusTimeline($hubunganKerja);
+
+        return response()->json([
+            'success' => true,
+            // FIX: Panggil helper method
+            'data' => $this->formatRiwayatHubunganKerjaForDetail($hubunganKerja),
+            // FIX: Panggil helper method
+            'pegawai_detail' => $this->formatPegawaiInfo($hubunganKerja->pegawai),
+            'masa_kerja' => $masaKerja,
+            'timeline' => $timeline,
+            'riwayat_lainnya' => $riwayatHubunganKerja->map(function($item) {
+                // FIX: Panggil helper method
+                return $this->formatRiwayatHubunganKerjaForDetail($item);
+            })->filter(function($item) use ($id) {
+                return $item['id'] !== $id;
+            })->values(),
+            'metadata' => [
+                'total_riwayat_pegawai' => $riwayatHubunganKerja->count(),
+                'status_aktif_hubungan_kerja' => $hubunganKerja->is_aktif ?? false,
+            ]
+        ]);
+    }
+
+    /**
+     * Get semua riwayat hubungan kerja dari pegawai tertentu
+     *
+     * @param int $pegawaiId
+     * @return \Illuminate->Http->JsonResponse
+     */
+    public function getRiwayatByPegawai($pegawaiId)
+    {
+        $pegawai = SimpegPegawai::with([
+            'unitKerja', 'statusAktif', 'jabatanAkademik',
+            'dataJabatanFungsional' => function($query) {
+                $query->with('jabatanFungsional')->orderBy('tmt_jabatan', 'desc')->limit(1);
+            },
+            'dataJabatanStruktural' => function($query) {
+                $query->with('jabatanStruktural.jenisJabatanStruktural')->orderBy('tgl_mulai', 'desc')->limit(1);
+            },
+            'dataPendidikanFormal' => function($query) {
+                $query->with('jenjangPendidikan')->orderBy('jenjang_pendidikan_id', 'desc')->limit(1);
+            }
+        ])->find($pegawaiId);
+
+        if (!$pegawai) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pegawai tidak ditemukan'
+            ], 404);
+        }
+
+        $riwayat = SimpegDataHubunganKerja::with(['hubunganKerja', 'statusAktif'])
+            ->where('pegawai_id', $pegawaiId)
+            ->orderBy('tgl_awal', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            // FIX: Panggil helper method
+            'pegawai_detail' => $this->formatPegawaiInfo($pegawai),
+            'data' => $riwayat->map(function ($item) {
+                // FIX: Panggil helper method
+                return $this->formatRiwayatHubunganKerjaForDetail($item);
+            })
+        ]);
+    }
+
+    /**
+     * Get filter options for the frontend
+     * @return array
+     */
+    public function getFilterOptions() // FIX: This method must be public as it's directly routed
+    {
+        // Unit Kerja Options - map to 'id' and 'nama' for general dropdowns
+        $unitKerjaOptions = SimpegUnitKerja::select('id', 'kode_unit', 'nama_unit', 'parent_unit_id')
+                                         ->orderBy('nama_unit')
+                                         ->get()
+                                         ->map(function($unit) {
+                                             return [
+                                                 'id' => $unit->kode_unit, // Use kode_unit as ID for filter dropdown
+                                                 'nama' => $unit->nama_unit,
+                                                 'parent_unit_id' => $unit->parent_unit_id,
+                                             ];
+                                         })
+                                         ->prepend(['id' => 'semua', 'nama' => 'Semua Unit Kerja']);
+
+        // Hubungan Kerja Options
+        $hubunganKerjaOptions = HubunganKerja::select('id', 'nama_hub_kerja')
+                                             ->where('status_aktif', true)
+                                             ->orderBy('nama_hub_kerja')
+                                             ->get()
+                                             ->map(function($hubungan) {
+                                                 return [
+                                                     'id' => $hubungan->id,
+                                                     'nama' => $hubungan->nama_hub_kerja,
+                                                 ];
+                                             })
+                                             ->prepend(['id' => 'semua', 'nama' => 'Semua Hubungan Kerja']);
+
+        // Status Masa Kerja Options
+        $statusMasaKerjaOptions = [
+            ['id' => 'semua', 'nama' => 'Semua Status'],
+            ['id' => 'hampir_berakhir', 'nama' => 'Hampir Berakhir (Kontrak/Masa Jabatan)'],
+            ['id' => 'hampir_pensiun', 'nama' => 'Hampir Pensiun (Usia)'],
+            ['id' => 'berakhir_sekarang', 'nama' => 'Kontrak Sudah Berakhir'],
+            ['id' => 'sudah_pensiun_sekarang', 'nama' => 'Sudah Pensiun'],
+        ];
+
+        // Level Filter Options
+        $levelFilterOptions = [
+            ['id' => 'seuniv', 'nama' => 'Se-Universitas'],
+            ['id' => 'sefakultas', 'nama' => 'Se-Fakultas'],
+            ['id' => 'seprodi', 'nama' => 'Se-Prodi'],
+        ];
+
+        return [
+            'unit_kerja' => $unitKerjaOptions,
+            'hubungan_kerja' => $hubunganKerjaOptions,
+            'status_masa_kerja' => $statusMasaKerjaOptions,
+            'level_filter' => $levelFilterOptions,
+        ];
+    }
+
+
+    // =========================================================
+    // PRIVATE HELPER METHODS (Only called internally within this class)
+    // =========================================================
 
     /**
      * Helper: Format pegawai info (sesuai dengan controller riwayat)
+     * @param SimpegPegawai $pegawai
+     * @return array
      */
     private function formatPegawaiInfo($pegawai)
     {
+        if (!$pegawai) {
+            return null;
+        }
+
         $jabatanAkademikNama = '-';
-        if ($pegawai->jabatanAkademik) {
+        if ($pegawai->dataJabatanAkademik && $pegawai->dataJabatanAkademik->isNotEmpty()) {
+            $jabatanAkademik = $pegawai->dataJabatanAkademik->sortByDesc('tmt_jabatan')->first();
+            if ($jabatanAkademik && $jabatanAkademik->jabatanAkademik) {
+                $jabatanAkademikNama = $jabatanAkademik->jabatanAkademik->jabatan_akademik ?? '-';
+            }
+        } else if ($pegawai->jabatanAkademik) {
             $jabatanAkademikNama = $pegawai->jabatanAkademik->jabatan_akademik ?? '-';
         }
 
         $jabatanFungsionalNama = '-';
         if ($pegawai->dataJabatanFungsional && $pegawai->dataJabatanFungsional->isNotEmpty()) {
-            $jabatanFungsional = $pegawai->dataJabatanFungsional->first()->jabatanFungsional;
-            if ($jabatanFungsional) {
-                if (isset($jabatanFungsional->nama_jabatan_fungsional)) {
-                    $jabatanFungsionalNama = $jabatanFungsional->nama_jabatan_fungsional;
-                } elseif (isset($jabatanFungsional->nama)) {
-                    $jabatanFungsionalNama = $jabatanFungsional->nama;
-                }
+            $jabatanFungsional = $pegawai->dataJabatanFungsional->sortByDesc('tmt_jabatan')->first();
+            if ($jabatanFungsional && $jabatanFungsional->jabatanFungsional) {
+                $jabatanFungsionalNama = $jabatanFungsional->jabatanFungsional->nama_jabatan_fungsional ?? '-';
             }
         }
 
         $jabatanStrukturalNama = '-';
         if ($pegawai->dataJabatanStruktural && $pegawai->dataJabatanStruktural->isNotEmpty()) {
-            $jabatanStruktural = $pegawai->dataJabatanStruktural->first();
-            
-            if ($jabatanStruktural->jabatanStruktural && $jabatanStruktural->jabatanStruktural->jenisJabatanStruktural) {
-                $jabatanStrukturalNama = $jabatanStruktural->jabatanStruktural->jenisJabatanStruktural->jenis_jabatan_struktural;
-            }
-            elseif (isset($jabatanStruktural->jabatanStruktural->nama_jabatan)) {
-                $jabatanStrukturalNama = $jabatanStruktural->jabatanStruktural->nama_jabatan;
-            }
-            elseif (isset($jabatanStruktural->jabatanStruktural->singkatan)) {
-                $jabatanStrukturalNama = $jabatanStruktural->jabatanStruktural->singkatan;
-            }
-            elseif (isset($jabatanStruktural->nama_jabatan)) {
-                $jabatanStrukturalNama = $jabatanStruktural->nama_jabatan;
+            $jabatanStruktural = $pegawai->dataJabatanStruktural->sortByDesc('tgl_mulai')->first();
+            if ($jabatanStruktural && $jabatanStruktural->jabatanStruktural) {
+                if ($jabatanStruktural->jabatanStruktural->jenisJabatanStruktural) {
+                     $jabatanStrukturalNama = $jabatanStruktural->jabatanStruktural->jenisJabatanStruktural->jenis_jabatan_struktural;
+                } else {
+                     $jabatanStrukturalNama = $jabatanStruktural->jabatanStruktural->nama_jabatan ?? $jabatanStruktural->jabatanStruktural->singkatan ?? '-';
+                }
             }
         }
 
         $jenjangPendidikanNama = '-';
         if ($pegawai->dataPendidikanFormal && $pegawai->dataPendidikanFormal->isNotEmpty()) {
-            $highestEducation = $pegawai->dataPendidikanFormal->first();
+            $highestEducation = $pegawai->dataPendidikanFormal->sortByDesc('jenjang_pendidikan_id')->first();
             if ($highestEducation && $highestEducation->jenjangPendidikan) {
                 $jenjangPendidikanNama = $highestEducation->jenjangPendidikan->jenjang_pendidikan ?? '-';
             }
@@ -195,42 +405,117 @@ class MonitoringHubunganKerjaController extends Controller
         if ($pegawai->unitKerja) {
             $unitKerjaNama = $pegawai->unitKerja->nama_unit;
         } elseif ($pegawai->unit_kerja_id) {
-            $unitKerja = SimpegUnitKerja::find($pegawai->unit_kerja_id);
+            // FIX: Menggunakan ID integer dari unit_kerja_id di pegawai untuk lookup di simpeg_unit_kerja.id
+            $unitKerja = SimpegUnitKerja::find($pegawai->unit_kerja_id); // Find by PK (id)
             $unitKerjaNama = $unitKerja ? $unitKerja->nama_unit : 'Unit Kerja #' . $pegawai->unit_kerja_id;
+        }
+
+        $hubunganKerjaNama = '-';
+        if ($pegawai->dataHubunganKerja && $pegawai->dataHubunganKerja->isNotEmpty()) {
+            $latestHubunganKerja = $pegawai->dataHubunganKerja->sortByDesc('tgl_awal')->first();
+            if ($latestHubunganKerja && $latestHubunganKerja->hubunganKerja) {
+                $hubunganKerjaNama = $latestHubunganKerja->hubunganKerja->nama_hub_kerja ?? '-';
+            }
         }
 
         return [
             'id' => $pegawai->id,
             'nip' => $pegawai->nip ?? '-',
-            'nama' => $pegawai->nama ?? '-',
+            'nama_lengkap' => ($pegawai->gelar_depan ? $pegawai->gelar_depan . ' ' : '') . $pegawai->nama . ($pegawai->gelar_belakang ? ', ' . $pegawai->gelar_belakang : ''),
             'unit_kerja' => $unitKerjaNama,
-            'status' => $pegawai->statusAktif ? $pegawai->statusAktif->nama_status_aktif : '-',
-            'jab_akademik' => $jabatanAkademikNama,
-            'jab_fungsional' => $jabatanFungsionalNama,
-            'jab_struktural' => $jabatanStrukturalNama,
-            'pendidikan' => $jenjangPendidikanNama
+            'status_aktif_pegawai' => $pegawai->statusAktif ? $pegawai->statusAktif->nama_status_aktif : '-',
+            'jab_akademik_pegawai' => $jabatanAkademikNama,
+            'jab_fungsional_pegawai' => $jabatanFungsionalNama,
+            'jab_struktural_pegawai' => $jabatanStrukturalNama,
+            'pendidikan_terakhir' => $jenjangPendidikanNama,
+            'hubungan_kerja_pegawai' => $hubunganKerjaNama,
         ];
     }
 
     /**
-     * Format riwayat hubungan kerja (sesuai dengan controller riwayat)
+     * Format data hubungan kerja for the main monitoring table (index method).
+     * @param SimpegDataHubunganKerja $hubunganKerja
+     * @return array
      */
-    private function formatRiwayatHubunganKerja($riwayat)
+    private function formatMonitoringData($hubunganKerja)
+    {
+        $pegawai = $hubunganKerja->pegawai;
+        $currentDate = Carbon::now();
+        
+        // Hitung usia
+        $usia = null;
+        $tanggalLahir = null;
+        if ($pegawai && $pegawai->tanggal_lahir) {
+            $tanggalLahir = Carbon::parse($pegawai->tanggal_lahir);
+            $usia = $tanggalLahir->age;
+        }
+        
+        // Hitung usia pensiun (asumsi pensiun 65 tahun)
+        $usiaPensiunInfo = '-';
+        $tanggalPensiun = null;
+        if ($tanggalLahir) {
+            $tanggalPensiun = $tanggalLahir->copy()->addYears(65);
+            if ($tanggalPensiun->isPast()) {
+                 $usiaPensiunInfo = 'Sudah Pensiun';
+            } else {
+                 $diffForHumans = $tanggalPensiun->diffForHumans($currentDate, ['syntax' => Carbon::DIFF_RELATIVE_TO_NOW, 'parts' => 2]);
+                 $usiaPensiunInfo = 'Pensiun ' . $diffForHumans;
+            }
+        }
+        
+        // Format tanggal
+        $tglAwal = $hubunganKerja->tgl_awal ? Carbon::parse($hubunganKerja->tgl_awal)->format('d M Y') : '-';
+        $tglAkhir = $hubunganKerja->tgl_akhir ? Carbon::parse($hubunganKerja->tgl_akhir)->format('d M Y') : 'Tidak Terbatas';
+        $tglLahir = $tanggalLahir ? $tanggalLahir->format('d M Y') : '-';
+        
+        // Get jabatan fungsional terbaru dari relasi dataJabatanFungsional
+        $jabatanFungsionalNama = '-';
+        if ($pegawai && $pegawai->dataJabatanFungsional && $pegawai->dataJabatanFungsional->isNotEmpty()) {
+            $latestFungsional = $pegawai->dataJabatanFungsional->first();
+            if ($latestFungsional->jabatanFungsional) {
+                $jabatanFungsionalNama = $latestFungsional->jabatanFungsional->nama_jabatan_fungsional ?? '-';
+            }
+        } else if ($pegawai && $pegawai->jabatanAkademik) {
+            $jabatanFungsionalNama = $pegawai->jabatanAkademik->jabatan_akademik ?? '-';
+        }
+        
+        return [
+            'id' => $hubunganKerja->id,
+            'nip' => $pegawai->nip ?? '-',
+            'nama_pegawai' => ($pegawai->gelar_depan ? $pegawai->gelar_depan . ' ' : '') . ($pegawai->nama ?? '-') . ($pegawai->gelar_belakang ? ', ' . $pegawai->gelar_belakang : ''),
+            'unit_kerja' => $pegawai->unitKerja->nama_unit ?? '-',
+            'hubungan_kerja' => $hubunganKerja->hubunganKerja->nama_hub_kerja ?? '-',
+            'jabatan_fungsional' => $jabatanFungsionalNama,
+            'usia' => $usia ?? '-',
+            'usia_pensiun' => $usiaPensiunInfo,
+            'tanggal_lahir' => $tglLahir,
+            'tanggal_efektif' => $tglAwal,
+            'tanggal_berakhir' => $tglAkhir,
+            'aksi' => ['detail_url' => url("/api/admin/monitoring/hubungan-kerja/{$hubunganKerja->id}")],
+        ];
+    }
+
+    /**
+     * Format riwayat hubungan kerja for detailed view (show and getRiwayatByPegawai methods).
+     * @param SimpegDataHubunganKerja $riwayat
+     * @return array
+     */
+    private function formatRiwayatHubunganKerjaForDetail($riwayat)
     {
         return [
             'id' => $riwayat->id,
             'pegawai_id' => $riwayat->pegawai_id,
             'pegawai' => $riwayat->pegawai ? [
                 'nip' => $riwayat->pegawai->nip ?? '-',
-                'nama' => $riwayat->pegawai->nama ?? '-'
+                'nama' => ($riwayat->pegawai->gelar_depan ? $riwayat->pegawai->gelar_depan . ' ' : '') . ($riwayat->pegawai->nama ?? '-') . ($riwayat->pegawai->gelar_belakang ? ', ' . $riwayat->pegawai->gelar_belakang : '')
             ] : null,
             'tgl_awal' => $riwayat->tgl_awal,
-            'tgl_awal_formatted' => $riwayat->tgl_awal ? Carbon::parse($riwayat->tgl_awal)->format('d-m-Y') : '-',
+            'tgl_awal_formatted' => $riwayat->tgl_awal ? Carbon::parse($riwayat->tgl_awal)->format('d M Y') : '-',
             'tgl_akhir' => $riwayat->tgl_akhir,
-            'tgl_akhir_formatted' => $riwayat->tgl_akhir ? Carbon::parse($riwayat->tgl_akhir)->format('d-m-Y') : '-',
+            'tgl_akhir_formatted' => $riwayat->tgl_akhir ? Carbon::parse($riwayat->tgl_akhir)->format('d M Y') : 'Tidak Terbatas',
             'no_sk' => $riwayat->no_sk ?? '-',
             'tgl_sk' => $riwayat->tgl_sk,
-            'tgl_sk_formatted' => $riwayat->tgl_sk ? Carbon::parse($riwayat->tgl_sk)->format('d-m-Y') : '-',
+            'tgl_sk_formatted' => $riwayat->tgl_sk ? Carbon::parse($riwayat->tgl_sk)->format('d M Y') : '-',
             'pejabat_penetap' => $riwayat->pejabat_penetap ?? '-',
             'hubungan_kerja' => $riwayat->hubunganKerja ? [
                 'id' => $riwayat->hubunganKerja->id,
@@ -250,487 +535,22 @@ class MonitoringHubunganKerjaController extends Controller
                 'download_url' => url("/api/admin/monitoring/hubungan-kerja/{$riwayat->id}/download")
             ] : null,
             'tgl_input' => $riwayat->tgl_input,
-            'tgl_input_formatted' => $riwayat->tgl_input ? Carbon::parse($riwayat->tgl_input)->format('d-m-Y') : '-',
+            'tgl_input_formatted' => $riwayat->tgl_input ? Carbon::parse($riwayat->tgl_input)->format('d M Y') : '-',
+            'tgl_diajukan' => $riwayat->tgl_diajukan,
+            'tgl_diajukan_formatted' => $riwayat->tgl_diajukan ? Carbon::parse($riwayat->tgl_diajukan)->format('d M Y H:i:s') : '-',
+            'tgl_disetujui' => $riwayat->tgl_disetujui,
+            'tgl_disetujui_formatted' => $riwayat->tgl_disetujui ? Carbon::parse($riwayat->tgl_disetujui)->format('d M Y H:i:s') : '-',
+            'tgl_ditolak' => $riwayat->tgl_ditolak,
+            'tgl_ditolak_formatted' => $riwayat->tgl_ditolak ? Carbon::parse($riwayat->tgl_ditolak)->format('d M Y H:i:s') : '-',
             'created_at' => $riwayat->created_at,
             'updated_at' => $riwayat->updated_at
         ];
     }
 
     /**
-     * Dapatkan unit kerja IDs berdasarkan level filter
-     */
-    private function getUnitKerjaIdsByLevel($unitKerjaId, $level)
-    {
-        $unitKerja = SimpegUnitKerja::find($unitKerjaId);
-        if (!$unitKerja) {
-            return [$unitKerjaId];
-        }
-
-        $unitKerjaIds = [];
-
-        switch ($level) {
-            case 'seuniv':
-                // Ambil semua unit kerja di universitas
-                $unitKerjaIds = SimpegUnitKerja::pluck('kode_unit')->toArray();
-                break;
-                
-            case 'sefakultas':
-                // Ambil unit kerja satu fakultas (parent + children)
-                $unitKerjaIds = [$unitKerja->kode_unit];
-                
-                // Jika ini fakultas, ambil semua prodi di bawahnya
-                if ($unitKerja->parent_unit_id == '041001') { // Parent adalah universitas
-                    $children = SimpegUnitKerja::where('parent_unit_id', $unitKerja->kode_unit)
-                                              ->pluck('kode_unit')
-                                              ->toArray();
-                    $unitKerjaIds = array_merge($unitKerjaIds, $children);
-                }
-                // Jika ini prodi, ambil juga fakultas parentnya
-                else if ($unitKerja->parent_unit_id && $unitKerja->parent_unit_id != '041001') {
-                    $parent = SimpegUnitKerja::where('kode_unit', $unitKerja->parent_unit_id)->first();
-                    if ($parent) {
-                        $unitKerjaIds[] = $parent->kode_unit;
-                        // Ambil semua prodi saudara
-                        $siblings = SimpegUnitKerja::where('parent_unit_id', $parent->kode_unit)
-                                                  ->pluck('kode_unit')
-                                                  ->toArray();
-                        $unitKerjaIds = array_merge($unitKerjaIds, $siblings);
-                    }
-                }
-                break;
-                
-            case 'seprodi':
-                // Hanya unit kerja yang dipilih
-                $unitKerjaIds = [$unitKerja->kode_unit];
-                break;
-                
-            default:
-                $unitKerjaIds = [$unitKerja->kode_unit];
-                break;
-        }
-
-        return array_unique($unitKerjaIds);
-    }
-
-    /**
-     * Apply filter berdasarkan status masa kerja
-     */
-    private function applyStatusMasaKerjaFilter($query, $statusFilter)
-    {
-        $currentDate = Carbon::now();
-        
-        switch ($statusFilter) {
-            case 'hampir_berakhir':
-                // Masa kerja berakhir dalam 6 bulan ke depan
-                $sixMonthsLater = $currentDate->copy()->addMonths(6);
-                $query->where(function($q) use ($currentDate, $sixMonthsLater) {
-                    $q->whereNotNull('tgl_akhir')
-                      ->whereDate('tgl_akhir', '>', $currentDate)
-                      ->whereDate('tgl_akhir', '<=', $sixMonthsLater);
-                });
-                break;
-                
-            case 'hampir_pensiun':
-                // Pegawai yang akan pensiun dalam 2 tahun (asumsi pensiun usia 65)
-                $twoYearsLater = $currentDate->copy()->addYears(2);
-                
-                // Deteksi database type untuk menggunakan syntax yang tepat
-                $connection = config('database.default');
-                $driver = config("database.connections.{$connection}.driver");
-                
-                if ($driver === 'pgsql') {
-                    // PostgreSQL syntax
-                    $query->whereHas('pegawai', function($q) use ($currentDate, $twoYearsLater) {
-                        $q->whereNotNull('tanggal_lahir')
-                          ->whereRaw("(tanggal_lahir + INTERVAL '65 years')::date BETWEEN ? AND ?", 
-                                    [$currentDate->format('Y-m-d'), $twoYearsLater->format('Y-m-d')]);
-                    });
-                } else {
-                    // MySQL syntax
-                    $query->whereHas('pegawai', function($q) use ($currentDate, $twoYearsLater) {
-                        $q->whereNotNull('tanggal_lahir')
-                          ->whereRaw("DATE_ADD(tanggal_lahir, INTERVAL 65 YEAR) BETWEEN ? AND ?", 
-                                    [$currentDate->format('Y-m-d'), $twoYearsLater->format('Y-m-d')]);
-                    });
-                }
-                break;
-        }
-        
-        return $query;
-    }
-
-    /**
-     * Get summary statistics
-     */
-    private function getSummaryStatistics($unitKerja = null, $level = 'seuniv', $hubunganKerja = null, $statusMasaKerja = null)
-    {
-        $baseQuery = SimpegDataHubunganKerja::where('is_aktif', true);
-        
-        // Apply same filters as main query
-        if ($unitKerja) {
-            $unitKerjaIds = $this->getUnitKerjaIdsByLevel($unitKerja, $level);
-            $baseQuery->whereHas('pegawai', function($q) use ($unitKerjaIds) {
-                $q->whereIn('unit_kerja_id', $unitKerjaIds);
-            });
-        }
-        
-        if ($hubunganKerja) {
-            $baseQuery->where('hubungan_kerja_id', $hubunganKerja);
-        }
-
-        $total = $baseQuery->count();
-        
-        // Statistik berdasarkan jenis hubungan kerja
-        $statsHubunganKerja = $baseQuery->clone()
-                                       ->join('simpeg_hubungan_kerja', 'simpeg_data_hubungan_kerja.hubungan_kerja_id', '=', 'simpeg_hubungan_kerja.id')
-                                       ->groupBy('simpeg_hubungan_kerja.nama_hub_kerja')
-                                       ->selectRaw('simpeg_hubungan_kerja.nama_hub_kerja, COUNT(*) as jumlah')
-                                       ->get();
-
-        // Statistik masa kerja
-        $currentDate = Carbon::now();
-        $sixMonthsLater = $currentDate->copy()->addMonths(6);
-        $twoYearsLater = $currentDate->copy()->addYears(2);
-        
-        $hampirBerakhir = $baseQuery->clone()
-                                  ->whereNotNull('tgl_akhir')
-                                  ->whereDate('tgl_akhir', '>', $currentDate)
-                                  ->whereDate('tgl_akhir', '<=', $sixMonthsLater)
-                                  ->count();
-        
-        // Deteksi database type untuk query hampir pensiun
-        $connection = config('database.default');
-        $driver = config("database.connections.{$connection}.driver");
-        
-        if ($driver === 'pgsql') {
-            // PostgreSQL syntax
-            $hampirPensiun = $baseQuery->clone()
-                                     ->whereHas('pegawai', function($q) use ($currentDate, $twoYearsLater) {
-                                         $q->whereNotNull('tanggal_lahir')
-                                           ->whereRaw("(tanggal_lahir + INTERVAL '65 years')::date BETWEEN ? AND ?", 
-                                                     [$currentDate->format('Y-m-d'), $twoYearsLater->format('Y-m-d')]);
-                                     })
-                                     ->count();
-        } else {
-            // MySQL syntax
-            $hampirPensiun = $baseQuery->clone()
-                                     ->whereHas('pegawai', function($q) use ($currentDate, $twoYearsLater) {
-                                         $q->whereNotNull('tanggal_lahir')
-                                           ->whereRaw("DATE_ADD(tanggal_lahir, INTERVAL 65 YEAR) BETWEEN ? AND ?", 
-                                                     [$currentDate->format('Y-m-d'), $twoYearsLater->format('Y-m-d')]);
-                                     })
-                                     ->count();
-        }
-
-        return [
-            'total_pegawai' => $total,
-            'hampir_berakhir' => $hampirBerakhir,
-            'hampir_pensiun' => $hampirPensiun,
-            'distribusi_hubungan_kerja' => $statsHubunganKerja,
-        ];
-    }
-
-    /**
-     * Get filter options
-     */
-    private function getFilterOptions()
-    {
-        return [
-            'unit_kerja' => SimpegUnitKerja::select('id', 'kode_unit', 'nama_unit', 'parent_unit_id')
-                                          ->orderBy('nama_unit')
-                                          ->get()
-                                          ->map(function($unit) {
-                                              return [
-                                                  'id' => $unit->id,
-                                                  'kode_unit' => $unit->kode_unit,
-                                                  'nama_unit' => $unit->nama_unit,
-                                                  'parent_unit_id' => $unit->parent_unit_id,
-                                                  'value' => $unit->id,
-                                                  'label' => $unit->nama_unit
-                                              ];
-                                          }),
-            'hubungan_kerja' => HubunganKerja::select('id', 'kode', 'nama_hub_kerja')
-                                           ->where('status_aktif', true)
-                                           ->orderBy('nama_hub_kerja')
-                                           ->get()
-                                           ->map(function($hubungan) {
-                                               return [
-                                                   'id' => $hubungan->id,
-                                                   'kode' => $hubungan->kode,
-                                                   'nama_hub_kerja' => $hubungan->nama_hub_kerja,
-                                                   'value' => $hubungan->id,
-                                                   'label' => $hubungan->nama_hub_kerja
-                                               ];
-                                           }),
-            'status_masa_kerja' => [
-                ['value' => '', 'label' => 'Semua Status'],
-                ['value' => 'hampir_berakhir', 'label' => 'Hampir Berakhir (6 Bulan)'],
-                ['value' => 'hampir_pensiun', 'label' => 'Hampir Pensiun (2 Tahun)']
-            ],
-            'level_filter' => [
-                ['value' => 'seuniv', 'label' => 'Se-Universitas'],
-                ['value' => 'sefakultas', 'label' => 'Se-Fakultas'],
-                ['value' => 'seprodi', 'label' => 'Se-Prodi']
-            ]
-        ];
-    }
-
-    /**
-     * Format data hubungan kerja untuk tampilan tabel monitoring
-     */
-    private function formatHubunganKerjaData($hubunganKerja)
-    {
-        $pegawai = $hubunganKerja->pegawai;
-        $currentDate = Carbon::now();
-        
-        // Hitung usia
-        $usia = null;
-        $tanggalLahir = null;
-        if ($pegawai->tanggal_lahir) {
-            $tanggalLahir = Carbon::parse($pegawai->tanggal_lahir);
-            $usia = $tanggalLahir->age;
-        }
-        
-        // Hitung usia pensiun (asumsi pensiun 65 tahun)
-        $usiapensiun = null;
-        $tanggalPensiun = null;
-        if ($tanggalLahir) {
-            $tanggalPensiun = $tanggalLahir->copy()->addYears(65);
-            $usiapensiun = 65 - $usia;
-        }
-        
-        // Format tanggal
-        $tglAwal = $hubunganKerja->tgl_awal ? Carbon::parse($hubunganKerja->tgl_awal)->format('d M Y') : '-';
-        $tglAkhir = $hubunganKerja->tgl_akhir ? Carbon::parse($hubunganKerja->tgl_akhir)->format('d M Y') : 'Tidak Terbatas';
-        $tglLahir = $tanggalLahir ? $tanggalLahir->format('d M Y') : '-';
-        
-        // Get jabatan fungsional terbaru
-        $jabatanFungsional = $pegawai->jabatanAkademik->jabatan_akademik ?? '-';
-        
-        // Status badge untuk masa kerja
-        $statusBadge = '';
-        if ($hubunganKerja->tgl_akhir) {
-            $tglAkhirCarbon = Carbon::parse($hubunganKerja->tgl_akhir);
-            $daysDiff = $currentDate->diffInDays($tglAkhirCarbon, false);
-            
-            if ($daysDiff <= 180 && $daysDiff > 0) { // Kurang dari 6 bulan
-                $statusBadge = 'hampir-berakhir';
-            } elseif ($daysDiff <= 0) {
-                $statusBadge = 'berakhir';
-            }
-        }
-        
-        // Status badge untuk pensiun
-        $statusPensiunBadge = '';
-        if ($usiapensiun !== null && $usiapensiun <= 2 && $usiapensiun > 0) {
-            $statusPensiunBadge = 'hampir-pensiun';
-        } elseif ($usiapensiun !== null && $usiapensiun <= 0) {
-            $statusPensiunBadge = 'sudah-pensiun';
-        }
-        
-        return [
-            'id' => $hubunganKerja->id,
-            'nip' => $pegawai->nip ?? '-',
-            'nama_pegawai' => $pegawai->nama ?? '-',
-            'unit_kerja' => $pegawai->unitKerja->nama_unit ?? '-',
-            'hubungan_kerja' => $hubunganKerja->hubunganKerja->nama_hub_kerja ?? '-',
-            'jabatan_fungsional' => $jabatanFungsional,
-            'usia' => $usia ?? '-',
-            'usia_pensiun' => $usiapensiun && $usiapensiun > 0 ? $usiapensiun . ' tahun lagi' : ($usiapensiun <= 0 ? 'Sudah Pensiun' : '-'),
-            'tanggal_lahir' => $tglLahir,
-            'tanggal_efektif' => $tglAwal,
-            'tanggal_berakhir' => $tglAkhir,
-            'status_badge' => $statusBadge,
-            'status_pensiun_badge' => $statusPensiunBadge,
-            'detail' => [
-                'no_sk' => $hubunganKerja->no_sk ?? '-',
-                'tgl_sk' => $hubunganKerja->tgl_sk ? Carbon::parse($hubunganKerja->tgl_sk)->format('d M Y') : '-',
-                'pejabat_penetap' => $hubunganKerja->pejabat_penetap ?? '-',
-                'status_pengajuan' => $hubunganKerja->status_pengajuan_label ?? $hubunganKerja->status_pengajuan ?? 'Draft',
-                'file_hubungan_kerja' => $hubunganKerja->file_hubungan_kerja ? [
-                    'nama_file' => basename($hubunganKerja->file_hubungan_kerja),
-                    'url' => \Storage::url($hubunganKerja->file_hubungan_kerja),
-                    'download_url' => url("/api/admin/monitoring/hubungan-kerja/{$hubunganKerja->id}/download")
-                ] : null,
-                'keterangan' => $hubunganKerja->keterangan ?? '-'
-            ]
-        ];
-    }
-
-    /**
-     * Get detail hubungan kerja by ID dengan riwayat lengkap
-     */
-    public function show($id)
-    {
-        $hubunganKerja = SimpegDataHubunganKerja::with([
-            'pegawai' => function($query) {
-                $query->with([
-                    'unitKerja',
-                    'statusAktif', 
-                    'jabatanAkademik',
-                    'dataJabatanFungsional' => function($q) {
-                        $q->with('jabatanFungsional')
-                          ->orderBy('tmt_jabatan', 'desc')
-                          ->limit(1);
-                    },
-                    'dataJabatanStruktural' => function($q) {
-                        $q->with('jabatanStruktural.jenisJabatanStruktural')
-                          ->orderBy('tgl_mulai', 'desc')
-                          ->limit(1);
-                    },
-                    'dataPendidikanFormal' => function($q) {
-                        $q->with('jenjangPendidikan')
-                          ->orderBy('jenjang_pendidikan_id', 'desc')
-                          ->limit(1);
-                    }
-                ]);
-            },
-            'hubunganKerja',
-            'statusAktif'
-        ])->find($id);
-
-        if (!$hubunganKerja) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data hubungan kerja tidak ditemukan'
-            ], 404);
-        }
-
-        // Ambil semua riwayat hubungan kerja untuk pegawai ini
-        $riwayatHubunganKerja = SimpegDataHubunganKerja::with(['hubunganKerja', 'statusAktif'])
-            ->where('pegawai_id', $hubunganKerja->pegawai_id)
-            ->orderBy('tgl_awal', 'desc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $this->formatRiwayatHubunganKerja($hubunganKerja),
-            'pegawai' => $this->formatPegawaiInfo($hubunganKerja->pegawai),
-            'riwayat_hubungan_kerja' => $riwayatHubunganKerja->map(function($item) {
-                return $this->formatRiwayatHubunganKerja($item);
-            })
-        ]);
-    }
-
-    /**
-     * Get semua riwayat hubungan kerja dari pegawai tertentu
-     */
-    public function getRiwayatByPegawai($pegawaiId)
-    {
-        $pegawai = SimpegPegawai::with([
-            'unitKerja',
-            'statusAktif', 
-            'jabatanAkademik',
-            'dataJabatanFungsional' => function($query) {
-                $query->with('jabatanFungsional')
-                      ->orderBy('tmt_jabatan', 'desc')
-                      ->limit(1);
-            },
-            'dataJabatanStruktural' => function($query) {
-                $query->with('jabatanStruktural.jenisJabatanStruktural')
-                      ->orderBy('tgl_mulai', 'desc')
-                      ->limit(1);
-            },
-            'dataPendidikanFormal' => function($query) {
-                $query->with('jenjangPendidikan')
-                      ->orderBy('jenjang_pendidikan_id', 'desc')
-                      ->limit(1);
-            }
-        ])->find($pegawaiId);
-
-        if (!$pegawai) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pegawai tidak ditemukan'
-            ], 404);
-        }
-
-        $riwayat = SimpegDataHubunganKerja::with(['hubunganKerja', 'statusAktif'])
-            ->where('pegawai_id', $pegawaiId)
-            ->orderBy('tgl_awal', 'desc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'pegawai' => $this->formatPegawaiInfo($pegawai),
-            'data' => $riwayat->map(function ($item) {
-                return $this->formatRiwayatHubunganKerja($item);
-            })
-        ]);
-    }
-
-    /**
-     * Get detail riwayat hubungan kerja (endpoint khusus untuk detail lengkap)
-     */
-    public function getDetailRiwayat($id)
-    {
-        $riwayat = SimpegDataHubunganKerja::with([
-            'pegawai' => function($query) {
-                $query->with([
-                    'unitKerja',
-                    'statusAktif', 
-                    'jabatanAkademik',
-                    'dataJabatanFungsional' => function($q) {
-                        $q->with('jabatanFungsional')
-                          ->orderBy('tmt_jabatan', 'desc')
-                          ->limit(1);
-                    },
-                    'dataJabatanStruktural' => function($q) {
-                        $q->with('jabatanStruktural.jenisJabatanStruktural')
-                          ->orderBy('tgl_mulai', 'desc')
-                          ->limit(1);
-                    },
-                    'dataPendidikanFormal' => function($q) {
-                        $q->with('jenjangPendidikan')
-                          ->orderBy('jenjang_pendidikan_id', 'desc')
-                          ->limit(1);
-                    }
-                ]);
-            },
-            'hubunganKerja',
-            'statusAktif'
-        ])->find($id);
-
-        if (!$riwayat) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data riwayat hubungan kerja tidak ditemukan'
-            ], 404);
-        }
-
-        // Ambil riwayat hubungan kerja lainnya untuk pegawai yang sama (excluding current)
-        $riwayatLainnya = SimpegDataHubunganKerja::with(['hubunganKerja', 'statusAktif'])
-            ->where('pegawai_id', $riwayat->pegawai_id)
-            ->where('id', '!=', $id)
-            ->orderBy('tgl_awal', 'desc')
-            ->get();
-
-        // Hitung masa kerja
-        $masaKerja = $this->calculateMasaKerja($riwayat);
-
-        // Status timeline
-        $timeline = $this->getStatusTimeline($riwayat);
-
-        return response()->json([
-            'success' => true,
-            'data' => $this->formatRiwayatHubunganKerja($riwayat),
-            'pegawai' => $this->formatPegawaiInfo($riwayat->pegawai),
-            'masa_kerja' => $masaKerja,
-            'timeline' => $timeline,
-            'riwayat_lainnya' => $riwayatLainnya->map(function($item) {
-                return $this->formatRiwayatHubunganKerja($item);
-            }),
-            'metadata' => [
-                'total_riwayat' => $riwayatLainnya->count() + 1,
-                'status_aktif' => $riwayat->is_aktif ?? false,
-                'dapat_diubah' => in_array($riwayat->status_pengajuan ?? 'draft', ['draft', 'ditolak']),
-                'memiliki_dokumen' => !empty($riwayat->file_hubungan_kerja)
-            ]
-        ]);
-    }
-
-    /**
      * Calculate masa kerja dari riwayat hubungan kerja
+     * @param SimpegDataHubunganKerja $riwayat
+     * @return array
      */
     private function calculateMasaKerja($riwayat)
     {
@@ -747,7 +567,6 @@ class MonitoringHubunganKerjaController extends Controller
         $tglMulai = Carbon::parse($riwayat->tgl_awal);
         $tglSelesai = $riwayat->tgl_akhir ? Carbon::parse($riwayat->tgl_akhir) : Carbon::now();
 
-        // Jika masa kerja belum dimulai
         if ($tglMulai > Carbon::now()) {
             return [
                 'tahun' => 0,
@@ -783,18 +602,19 @@ class MonitoringHubunganKerjaController extends Controller
             'hari' => $diff->d,
             'total_hari' => $totalHari,
             'formatted' => trim($formatted),
-            'status' => $riwayat->tgl_akhir && Carbon::parse($riwayat->tgl_akhir) < Carbon::now() ? 'selesai' : 'aktif'
+            'status' => $riwayat->tgl_akhir && Carbon::parse($riwayat->tgl_akhir)->isPast() ? 'selesai' : 'aktif'
         ];
     }
 
     /**
      * Get timeline status pengajuan
+     * @param SimpegDataHubunganKerja $riwayat
+     * @return array
      */
     private function getStatusTimeline($riwayat)
     {
         $timeline = [];
 
-        // Timeline berdasarkan status pengajuan
         $statusPengajuan = $riwayat->status_pengajuan ?? 'draft';
 
         $timeline[] = [
@@ -807,7 +627,7 @@ class MonitoringHubunganKerjaController extends Controller
             'color' => 'gray'
         ];
 
-        if (in_array($statusPengajuan, ['diajukan', 'disetujui', 'ditolak'])) {
+        if ($riwayat->tgl_diajukan || in_array($statusPengajuan, ['diajukan', 'disetujui', 'ditolak'])) {
             $timeline[] = [
                 'status' => 'diajukan',
                 'label' => 'Diajukan',
@@ -818,6 +638,7 @@ class MonitoringHubunganKerjaController extends Controller
                 'color' => 'blue'
             ];
         }
+
 
         if ($statusPengajuan === 'disetujui') {
             $timeline[] = [
@@ -844,5 +665,190 @@ class MonitoringHubunganKerjaController extends Controller
         }
 
         return $timeline;
+    }
+
+    /**
+     * Dapatkan unit kerja kode (string) berdasarkan level filter.
+     * @param string $unitKerjaId - Ini adalah kode_unit (string) dari SimpegUnitKerja
+     * @param string $level
+     * @return array - Mengembalikan array ID (integer) dari SimpegUnitKerja
+     */
+    private function getUnitKerjaIdsByLevel($unitKerjaId, $level)
+    {
+        // Temukan unit kerja berdasarkan kode_unit (string)
+        $unitKerja = SimpegUnitKerja::where('kode_unit', $unitKerjaId)->first();
+        
+        if (!$unitKerja) {
+            return [];
+        }
+
+        $unitIds = [];
+
+        switch ($level) {
+            case 'seuniv':
+                $unitIds = SimpegUnitKerja::pluck('id')->toArray();
+                break;
+                
+            case 'sefakultas':
+                $unitIds[] = $unitKerja->id;
+                $childrenIds = $unitKerja->children()->pluck('id')->toArray();
+                $unitIds = array_merge($unitIds, $childrenIds);
+
+                if ($unitKerja->parent_unit_id && $unitKerja->parent_unit_id != '041001') { 
+                    $parentFakultas = SimpegUnitKerja::where('kode_unit', $unitKerja->parent_unit_id)->first();
+                    if ($parentFakultas) {
+                        $unitIds[] = $parentFakultas->id;
+                        $siblingsIds = $parentFakultas->children()->pluck('id')->toArray();
+                        $unitIds = array_merge($unitIds, $siblingsIds);
+                    }
+                }
+                break;
+                
+            case 'seprodi':
+                $unitIds = [$unitKerja->id];
+                break;
+                
+            default:
+                $unitIds = [$unitKerja->id];
+                break;
+        }
+
+        return array_unique($unitIds);
+    }
+
+    /**
+     * Apply filter berdasarkan status masa kerja
+     * @param Builder $query
+     * @param string $statusFilter
+     * @return Builder
+     */
+    private function applyStatusMasaKerjaFilter(Builder $query, $statusFilter)
+    {
+        $currentDate = Carbon::now();
+        
+        switch ($statusFilter) {
+            case 'hampir_berakhir':
+                $sixMonthsLater = $currentDate->copy()->addMonths(6);
+                $query->where(function($q) use ($currentDate, $sixMonthsLater) {
+                    $q->whereNotNull('tgl_akhir')
+                      ->whereDate('tgl_akhir', '>', $currentDate->format('Y-m-d'))
+                      ->whereDate('tgl_akhir', '<=', $sixMonthsLater->format('Y-m-d'));
+                });
+                break;
+                
+            case 'hampir_pensiun':
+                $twoYearsLater = $currentDate->copy()->addYears(2);
+                
+                $connection = config('database.default');
+                $driver = config("database.connections.{$connection}.driver");
+                
+                if ($driver === 'pgsql') {
+                    $query->whereHas('pegawai', function($q) use ($currentDate, $twoYearsLater) {
+                        $q->whereNotNull('tanggal_lahir')
+                          ->whereRaw("(tanggal_lahir + INTERVAL '65 years')::date BETWEEN ? AND ?", 
+                                     [$currentDate->format('Y-m-d'), $twoYearsLater->format('Y-m-d')]);
+                    });
+                } else {
+                    $query->whereHas('pegawai', function($q) use ($currentDate, $twoYearsLater) {
+                        $q->whereNotNull('tanggal_lahir')
+                          ->whereRaw("DATE_ADD(tanggal_lahir, INTERVAL 65 YEAR) BETWEEN ? AND ?", 
+                                     [$currentDate->format('Y-m-d'), $twoYearsLater->format('Y-m-d')]);
+                    });
+                }
+                break;
+            case 'berakhir_sekarang':
+                $query->whereNotNull('tgl_akhir')->whereDate('tgl_akhir', '<=', $currentDate->format('Y-m-d'));
+                break;
+            case 'sudah_pensiun_sekarang':
+                $connection = config('database.default');
+                $driver = config("database.connections.{$connection}.driver");
+                if ($driver === 'pgsql') {
+                    $query->whereHas('pegawai', function($q) use ($currentDate) {
+                        $q->whereNotNull('tanggal_lahir')
+                          ->whereRaw("(tanggal_lahir + INTERVAL '65 years')::date <= ?", [$currentDate->format('Y-m-d')]);
+                    });
+                } else {
+                    $query->whereHas('pegawai', function($q) use ($currentDate) {
+                        $q->whereNotNull('tanggal_lahir')
+                          ->whereRaw("DATE_ADD(tanggal_lahir, INTERVAL 65 YEAR) <= ?", [$currentDate->format('Y-m-d')]);
+                    });
+                }
+                break;
+        }
+        
+        return $query;
+    }
+
+    /**
+     * Get summary statistics
+     * @param string|null $unitKerjaFilter
+     * @param string $levelFilter
+     * @param string|null $hubunganKerjaFilter
+     * @param string|null $statusMasaKerjaFilter
+     * @return array
+     */
+    private function getSummaryStatistics($unitKerjaFilter = null, $levelFilter = 'seuniv', $hubunganKerjaFilter = null, $statusMasaKerjaFilter = null)
+    {
+        $baseQuery = SimpegDataHubunganKerja::where('is_aktif', true);
+        
+        if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
+            $unitKerjaIds = $this->getUnitKerjaIdsByLevel($unitKerjaFilter, $levelFilter);
+            $baseQuery->whereHas('pegawai', function($q) use ($unitKerjaIds) {
+                $q->whereIn('unit_kerja_id', $unitKerjaIds);
+            });
+        }
+        
+        if ($hubunganKerjaFilter && $hubunganKerjaFilter !== 'semua') {
+            $baseQuery->where('hubungan_kerja_id', $hubunganKerjaFilter);
+        }
+
+        $totalHampirBerakhirQuery = clone $baseQuery;
+        $totalHampirPensiunQuery = clone $baseQuery;
+
+        $total = $baseQuery->count();
+        
+        $statsHubunganKerja = $baseQuery->clone()
+                                         ->join('simpeg_hubungan_kerja', 'simpeg_data_hubungan_kerja.hubungan_kerja_id', '=', 'simpeg_hubungan_kerja.id')
+                                         ->groupBy('simpeg_hubungan_kerja.nama_hub_kerja')
+                                         ->selectRaw('simpeg_hubungan_kerja.nama_hub_kerja, COUNT(*) as jumlah')
+                                         ->get();
+
+        $currentDate = Carbon::now();
+        $sixMonthsLater = $currentDate->copy()->addMonths(6);
+        $twoYearsLater = $currentDate->copy()->addYears(2);
+        
+        $hampirBerakhir = $totalHampirBerakhirQuery
+                                     ->whereNotNull('tgl_akhir')
+                                     ->whereDate('tgl_akhir', '>', $currentDate->format('Y-m-d'))
+                                     ->whereDate('tgl_akhir', '<=', $sixMonthsLater->format('Y-m-d'))
+                                     ->count();
+        
+        $connection = config('database.default');
+        $driver = config("database.connections.{$connection}.driver");
+        
+        if ($driver === 'pgsql') {
+            $hampirPensiun = $totalHampirPensiunQuery
+                                            ->whereHas('pegawai', function($q) use ($currentDate, $twoYearsLater) {
+                                                $q->whereNotNull('tanggal_lahir')
+                                                  ->whereRaw("(tanggal_lahir + INTERVAL '65 years')::date BETWEEN ? AND ?", 
+                                                             [$currentDate->format('Y-m-d'), $twoYearsLater->format('Y-m-d')]);
+                                            })
+                                            ->count();
+        } else {
+            $hampirPensiun = $totalHampirPensiunQuery
+                                            ->whereHas('pegawai', function($q) use ($currentDate, $twoYearsLater) {
+                                                $q->whereNotNull('tanggal_lahir')
+                                                  ->whereRaw("DATE_ADD(tanggal_lahir, INTERVAL 65 YEAR) BETWEEN ? AND ?", 
+                                                             [$currentDate->format('Y-m-d'), $twoYearsLater->format('Y-m-d')]);
+                                            })
+                                            ->count();
+        }
+
+        return [
+            'total_pegawai' => $total,
+            'hampir_berakhir_kontrak' => $hampirBerakhir,
+            'hampir_pensiun_usia' => $hampirPensiun,
+            'distribusi_hubungan_kerja' => $statsHubunganKerja,
+        ];
     }
 }

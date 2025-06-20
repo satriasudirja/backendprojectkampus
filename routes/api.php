@@ -96,6 +96,7 @@ use App\Http\Controllers\Api\MonitoringHubunganKerjaController;
 use App\Http\Controllers\Api\AdminMonitoringValidasiIzinController;
 use App\Http\Controllers\Api\AdminMonitoringValidasiCutiController;
 use App\Http\Controllers\Api\SimpegDataKemampuanBahasaAdminController; 
+use App\Http\Controllers\Api\SimpegDataOrganisasiAdminController; 
 
 
 
@@ -111,13 +112,23 @@ use App\Http\Controllers\Api\SimpegGolonganDarahController;
 use App\Http\Controllers\Api\SimpegDataRiwayatTesController;
 use App\Http\Controllers\Api\SimpegDataSertifikasidosenController;
 use App\Http\Controllers\Api\SimpegAgamaController;
-
+use App\Http\Controllers\Api\SimpegDataPenghargaanValidasiController;
+use App\Http\Controllers\Api\SimpegDataRiwayatTesAdminController;
 
 use App\Http\Controllers\Api\SimpegBankController;
 // use App\Http\Controllers\Api\SimpegPekerjaanController;
-
 use App\Http\Controllers\Api\SimpegBeritaDosenController;
+use App\Http\Controllers\Api\SimpegDataSertifikasiAdminController;
+use App\Http\Controllers\Api\SimpegDataPendidikanFormalAdminController;
+use App\Http\Controllers\Api\SimpegDataRiwayatPekerjaanDosenAdminController;
+use App\Http\Controllers\Api\MonitoringValidasiController;
+use App\Http\Controllers\Api\SimpegDataHubunganKerjaAdminController;
+use App\Http\Controllers\Api\SimpegDataJabatanAkademikAdminController;
+use App\Http\Controllers\Api\SimpegDataJabatanFungsionalAdminController;
+use App\Http\Controllers\Api\SimpegDataJabatanStrukturalAdminController; 
+use App\Http\Controllers\Api\SimpegDataPangkatAdminController;
 
+use App\Http\Controllers\Api\SimpegPendidikanFormalDosenController;
 
 
 Route::prefix('auth')->group(function () {
@@ -140,6 +151,236 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+        
+         Route::get('datapangkatadm/filter-options', [SimpegDataPangkatAdminController::class, 'getFilterOptions']);
+    Route::get('datapangkatadm/form-options', [SimpegDataPangkatAdminController::class, 'getFormOptions']);
+    Route::get('datapangkatadm/status-statistics', [SimpegDataPangkatAdminController::class, 'getStatusStatistics']);
+
+    Route::patch('datapangkatadm/batch/approve', [SimpegDataPangkatAdminController::class, 'batchApprove']);
+    Route::patch('datapangkatadm/batch/reject', [SimpegDataPangkatAdminController::class, 'batchReject']);
+    Route::patch('datapangkatadm/batch/todraft', [SimpegDataPangkatAdminController::class, 'batchToDraft']);
+    Route::delete('datapangkatadm/batch/delete', [SimpegDataPangkatAdminController::class, 'batchDelete']);
+
+    Route::patch('datapangkatadm/{id}/approve', [SimpegDataPangkatAdminController::class, 'approve']);
+    Route::patch('datapangkatadm/{id}/reject', [SimpegDataPangkatAdminController::class, 'reject']);
+    Route::patch('datapangkatadm/{id}/todraft', [SimpegDataPangkatAdminController::class, 'toDraft']);
+
+    Route::apiResource('datapangkatadm', SimpegDataPangkatAdminController::class)->except(['create', 'edit']);
+
+          // --- NEW: Routes for Jabatan Struktural Validation ---
+    Route::get('datajabatanstrukturaladm/filter-options', [SimpegDataJabatanStrukturalAdminController::class, 'getFilterOptions']);
+    Route::get('datajabatanstrukturaladm/form-options', [SimpegDataJabatanStrukturalAdminController::class, 'getFormOptions']);
+    Route::get('datajabatanstrukturaladm/status-statistics', [SimpegDataJabatanStrukturalAdminController::class, 'getStatusStatistics']);
+
+    Route::patch('datajabatanstrukturaladm/batch/approve', [SimpegDataJabatanStrukturalAdminController::class, 'batchApprove']);
+    Route::patch('datajabatanstrukturaladm/batch/reject', [SimpegDataJabatanStrukturalAdminController::class, 'batchReject']);
+    Route::patch('datajabatanstrukturaladm/batch/todraft', [SimpegDataJabatanStrukturalAdminController::class, 'batchToDraft']);
+    Route::delete('datajabatanstrukturaladm/batch/delete', [SimpegDataJabatanStrukturalAdminController::class, 'batchDelete']);
+
+    Route::patch('datajabatanstrukturaladm/{id}/approve', [SimpegDataJabatanStrukturalAdminController::class, 'approve']);
+    Route::patch('datajabatanstrukturaladm/{id}/reject', [SimpegDataJabatanStrukturalAdminController::class, 'reject']);
+    Route::patch('datajabatanstrukturaladm/{id}/todraft', [SimpegDataJabatanStrukturalAdminController::class, 'toDraft']);
+
+    Route::apiResource('datajabatanstrukturaladm', SimpegDataJabatanStrukturalAdminController::class)->except(['create', 'edit']);
+
+        Route::get('datajabatanfungsionaladm/filter-options', [SimpegDataJabatanFungsionalAdminController::class, 'getFilterOptions']);
+    Route::get('datajabatanfungsionaladm/form-options', [SimpegDataJabatanFungsionalAdminController::class, 'getFormOptions']);
+    Route::get('datajabatanfungsionaladm/status-statistics', [SimpegDataJabatanFungsionalAdminController::class, 'getStatusStatistics']);
+
+    Route::patch('datajabatanfungsionaladm/batch/approve', [SimpegDataJabatanFungsionalAdminController::class, 'batchApprove']);
+    Route::patch('datajabatanfungsionaladm/batch/reject', [SimpegDataJabatanFungsionalAdminController::class, 'batchReject']);
+    Route::patch('datajabatanfungsionaladm/batch/todraft', [SimpegDataJabatanFungsionalAdminController::class, 'batchToDraft']);
+    Route::delete('datajabatanfungsionaladm/batch/delete', [SimpegDataJabatanFungsionalAdminController::class, 'batchDelete']);
+
+    Route::patch('datajabatanfungsionaladm/{id}/approve', [SimpegDataJabatanFungsionalAdminController::class, 'approve']);
+    Route::patch('datajabatanfungsionaladm/{id}/reject', [SimpegDataJabatanFungsionalAdminController::class, 'reject']);
+    Route::patch('datajabatanfungsionaladm/{id}/todraft', [SimpegDataJabatanFungsionalAdminController::class, 'toDraft']);
+
+    Route::apiResource('datajabatanfungsionaladm', SimpegDataJabatanFungsionalAdminController::class)->except(['create', 'edit']);
+         // --- NEW: Routes for Jabatan Akademik Validation ---
+    Route::get('datajabatanakademikadm/filter-options', [SimpegDataJabatanAkademikAdminController::class, 'getFilterOptions']);
+    Route::get('datajabatanakademikadm/form-options', [SimpegDataJabatanAkademikAdminController::class, 'getFormOptions']);
+    Route::get('datajabatanakademikadm/status-statistics', [SimpegDataJabatanAkademikAdminController::class, 'getStatusStatistics']);
+
+    Route::patch('datajabatanakademikadm/batch/approve', [SimpegDataJabatanAkademikAdminController::class, 'batchApprove']);
+    Route::patch('datajabatanakademikadm/batch/reject', [SimpegDataJabatanAkademikAdminController::class, 'batchReject']);
+    Route::patch('datajabatanakademikadm/batch/todraft', [SimpegDataJabatanAkademikAdminController::class, 'batchToDraft']);
+    Route::delete('datajabatanakademikadm/batch/delete', [SimpegDataJabatanAkademikAdminController::class, 'batchDelete']);
+
+    Route::patch('datajabatanakademikadm/{id}/approve', [SimpegDataJabatanAkademikAdminController::class, 'approve']);
+    Route::patch('datajabatanakademikadm/{id}/reject', [SimpegDataJabatanAkademikAdminController::class, 'reject']);
+    Route::patch('datajabatanakademikadm/{id}/todraft', [SimpegDataJabatanAkademikAdminController::class, 'toDraft']);
+
+    Route::apiResource('datajabatanakademikadm', SimpegDataJabatanAkademikAdminController::class)->except(['create', 'edit']);
+
+    // Filter options, status statistics, and form options must come before the apiResource
+    Route::get('datahubungankerjaadm/filter-options', [SimpegDataHubunganKerjaAdminController::class, 'getFilterOptions']);
+    Route::get('datahubungankerjaadm/form-options', [SimpegDataHubunganKerjaAdminController::class, 'getFormOptions']);
+    Route::get('datahubungankerjaadm/status-statistics', [SimpegDataHubunganKerjaAdminController::class, 'getStatusStatistics']);
+
+    // Batch operations must also come before the apiResource
+    Route::patch('datahubungankerjaadm/batch/approve', [SimpegDataHubunganKerjaAdminController::class, 'batchApprove']);
+    Route::patch('datahubungankerjaadm/batch/reject', [SimpegDataHubunganKerjaAdminController::class, 'batchReject']);
+    Route::patch('datahubungankerjaadm/batch/todraft', [SimpegDataHubunganKerjaAdminController::class, 'batchToDraft']);
+    Route::delete('datahubungankerjaadm/batch/delete', [SimpegDataHubunganKerjaAdminController::class, 'batchDelete']);
+
+
+    // Single record actions (approve, reject, todraft) also need to be explicit if they conflict with resource
+    // Usually, Laravel's resource routes handle them well if they are PATCH on {id}/{action}
+    // but explicit definition before resource is safer to ensure correct routing
+    Route::patch('datahubungankerjaadm/{id}/approve', [SimpegDataHubunganKerjaAdminController::class, 'approve']);
+    Route::patch('datahubungankerjaadm/{id}/reject', [SimpegDataHubunganKerjaAdminController::class, 'reject']);
+    Route::patch('datahubungankerjaadm/{id}/todraft', [SimpegDataHubunganKerjaAdminController::class, 'toDraft']);
+
+    // Finally, define the API resource
+    Route::apiResource('datahubungankerjaadm', SimpegDataHubunganKerjaAdminController::class)->except(['create', 'edit']);
+
+
+
+
+        Route::get('/monitoring/validasi', [MonitoringValidasiController::class, 'index']);
+        Route::get('/monitoring/pegawai-list', [MonitoringValidasiController::class, 'getPegawaiList']); // Rute baru
+
+
+        Route::get('/dashboard', [AdminDashboardController::class, 'getDashboardData']);
+        Route::get('/unit-kerja/dropdown', [UnitKerjaController::class, 'getUnitsDropdown']);
+        Route::get('/news/{id}', [AdminDashboardController::class, 'getNewsDetail']);
+
+
+         Route::delete('datariwayatpekerjaanadm/batch/delete', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'batchDelete']);
+    Route::patch('datariwayatpekerjaanadm/batch/approve', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'batchApprove']);
+    Route::patch('datariwayatpekerjaanadm/batch/reject', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'batchReject']);
+    Route::patch('datariwayatpekerjaanadm/batch/todraft', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'batchToDraft']); // New batch action
+
+    // Routes for fetching options and statistics (also more specific than resource route for /{id})
+    Route::get('datariwayatpekerjaanadm/options/filters', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'getFilterOptions']);
+    Route::get('datariwayatpekerjaanadm/options/form', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'getFormOptions']);
+    Route::get('datariwayatpekerjaanadm/statistics', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'getStatusStatistics']);
+
+    // Route for getting employee options (if needed separately for other forms/filters)
+    Route::get('pegawai_options', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'getPegawaiOptions']); // Re-using if not defined elsewhere
+
+    // Now, define the resource routes.
+    // This single line covers: index, store, show, update, destroy
+    Route::apiResource('datariwayatpekerjaanadm', SimpegDataRiwayatPekerjaanDosenAdminController::class);
+
+    // Specific routes for single record actions (these will typically match after apiResource, which is fine)
+    Route::patch('datariwayatpekerjaanadm/{id}/approve', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'approve']);
+    Route::patch('datariwayatpekerjaanadm/{id}/reject', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'reject']);
+    Route::patch('datariwayatpekerjaanadm/{id}/todraft', [SimpegDataRiwayatPekerjaanDosenAdminController::class, 'toDraft']);
+        
+    // Routes for batch operations
+    Route::delete('datapendidikanformaladm/batch/delete', [SimpegDataPendidikanFormalAdminController::class, 'batchDelete']);
+    Route::patch('datapendidikanformaladm/batch/approve', [SimpegDataPendidikanFormalAdminController::class, 'batchApprove']);
+    Route::patch('datapendidikanformaladm/batch/reject', [SimpegDataPendidikanFormalAdminController::class, 'batchReject']);
+    Route::patch('datapendidikanformaladm/batch/todraft', [SimpegDataPendidikanFormalAdminController::class, 'batchToDraft']); // New batch action
+
+    // Routes for fetching options and statistics (also more specific than resource route for /{id})
+    Route::get('datapendidikanformaladm/options/filters', [SimpegDataPendidikanFormalAdminController::class, 'getFilterOptions']);
+        Route::get('datapendidikanformaladm/options/form', [SimpegDataPendidikanFormalAdminController::class, 'getFormOptions']);
+        Route::get('datapendidikanformaladm/statistics', [SimpegDataPendidikanFormalAdminController::class, 'getStatusStatistics']);
+
+    // Route for getting employee options (if needed separately for other forms/filters)
+    // This route is general and can be shared across multiple admin controllers if the method exists.
+    Route::get('pegawai_options', [SimpegDataPendidikanFormalAdminController::class, 'getPegawaiOptions']);
+
+    Route::apiResource('datapendidikanformaladm', SimpegDataPendidikanFormalAdminController::class);
+
+    // Specific routes for single record actions (these will typically match after apiResource, which is fine)
+    // PATCH /api/admin/datapendidikanformaladm/{id}/approve
+    Route::patch('datapendidikanformaladm/{id}/approve', [SimpegDataPendidikanFormalAdminController::class, 'approve']);
+    // PATCH /api/admin/datapendidikanformaladm/{id}/reject
+    Route::patch('datapendidikanformaladm/{id}/reject', [SimpegDataPendidikanFormalAdminController::class, 'reject']);
+    // PATCH /api/admin/datapendidikanformaladm/{id}/todraft
+    Route::patch('datapendidikanformaladm/{id}/todraft', [SimpegDataPendidikanFormalAdminController::class, 'toDraft']);
+
+
+         Route::delete('datasertifikasiadm/batch/delete', [SimpegDataSertifikasiAdminController::class, 'batchDelete']);
+    Route::patch('datasertifikasiadm/batch/approve', [SimpegDataSertifikasiAdminController::class, 'batchApprove']);
+    Route::patch('datasertifikasiadm/batch/reject', [SimpegDataSertifikasiAdminController::class, 'batchReject']);
+    Route::patch('datasertifikasiadm/batch/todraft', [SimpegDataSertifikasiAdminController::class, 'batchToDraft']);
+
+    Route::get('datasertifikasiadm/options/filters', [SimpegDataSertifikasiAdminController::class, 'getFilterOptions']);
+    Route::get('datasertifikasiadm/options/form', [SimpegDataSertifikasiAdminController::class, 'getFormOptions']);
+    Route::get('datasertifikasiadm/statistics', [SimpegDataSertifikasiAdminController::class, 'getStatusStatistics']);
+
+    Route::get('pegawai_options', [SimpegDataSertifikasiAdminController::class, 'getPegawaiOptions']); // Jika ingin menggunakan yang di controller ini
+
+    Route::apiResource('datasertifikasiadm', SimpegDataSertifikasiAdminController::class);
+
+    Route::patch('datasertifikasiadm/{id}/approve', [SimpegDataSertifikasiAdminController::class, 'approve']);
+    Route::patch('datasertifikasiadm/{id}/reject', [SimpegDataSertifikasiAdminController::class, 'reject']);
+    Route::patch('datasertifikasiadm/{id}/todraft', [SimpegDataSertifikasiAdminController::class, 'toDraft']);
+     // Routes for batch operations
+    Route::delete('datariwayattesadm/batch/delete', [SimpegDataRiwayatTesAdminController::class, 'batchDelete']);
+    Route::patch('datariwayattesadm/batch/approve', [SimpegDataRiwayatTesAdminController::class, 'batchApprove']);
+    Route::patch('datariwayattesadm/batch/reject', [SimpegDataRiwayatTesAdminController::class, 'batchReject']);
+    Route::patch('datariwayattesadm/batch/todraft', [SimpegDataRiwayatTesAdminController::class, 'batchToDraft']); // New batch action
+
+    // Routes for fetching options and statistics (also more specific than resource route for /{id})
+    Route::get('datariwayattesadm/options/filters', [SimpegDataRiwayatTesAdminController::class, 'getFilterOptions']);
+    Route::get('datariwayattesadm/options/form', [SimpegDataRiwayatTesAdminController::class, 'getFormOptions']);
+    Route::get('datariwayattesadm/statistics', [SimpegDataRiwayatTesAdminController::class, 'getStatusStatistics']);
+
+    // Route for getting employee options (can be here or a more general 'admin' route)
+    Route::get('pegawai_options', [SimpegDataRiwayatTesAdminController::class, 'getPegawaiOptions']);
+
+    // Now, define the resource routes. The /{id} placeholder won't clash with 'batch', 'options', 'statistics' anymore.
+    Route::apiResource('datariwayattesadm', SimpegDataRiwayatTesAdminController::class);
+
+    // Specific routes for single record actions (these will typically match after apiResource, which is fine)
+    Route::patch('datariwayattesadm/{id}/approve', [SimpegDataRiwayatTesAdminController::class, 'approve']);
+    Route::patch('datariwayattesadm/{id}/reject', [SimpegDataRiwayatTesAdminController::class, 'reject']);
+    Route::patch('datariwayattesadm/{id}/todraft', [SimpegDataRiwayatTesAdminController::class, 'toDraft']); // New action
+   Route::prefix('datapenghargaan')->group(function () {
+            // Rute kustom/statis untuk Penghargaan Operasional harus di atas apiResource
+            Route::delete('batch/delete', [SimpegDataPenghargaanAdmController::class, 'batchDelete']);
+            Route::get('pegawai-options', [SimpegDataPenghargaanAdmController::class, 'getPegawaiOptions']);
+            Route::get('filter-options', [SimpegDataPenghargaanAdmController::class, 'getFilterOptions']);
+            Route::get('form-options', [SimpegDataPenghargaanAdmController::class, 'getFormOptions']);
+            Route::get('statistics', [SimpegDataPenghargaanAdmController::class, 'getStatistics']);
+            Route::get('export', [SimpegDataPenghargaanAdmController::class, 'export']);
+            Route::post('validate-duplicate', [SimpegDataPenghargaanAdmController::class, 'validateDuplicate']);
+            // Kemudian apiResource untuk Penghargaan Operasional
+               Route::get('/{id}', [SimpegDataPenghargaanAdmController::class, 'show']);
+             Route::delete('/{id}', [SimpegDataPenghargaanAdmController::class, 'destroy']);
+            Route::apiResource('/', SimpegDataPenghargaanAdmController::class);
+        });
+
+
+        // --- RUTE SPESIFIK UNTUK VALIDASI PENGHARGAAN (ADMIN PENUNJANG/VALIDASI) ---
+        Route::prefix('validasi-penghargaan')->group(function () {
+            // Rute kustom/statis untuk Validasi Penghargaan harus di atas apiResource
+            Route::patch('batch/approve', [SimpegDataPenghargaanValidasiController::class, 'batchApprove']);
+            Route::patch('batch/reject', [SimpegDataPenghargaanValidasiController::class, 'batchReject']);
+            Route::patch('batch/tangguhkan', [SimpegDataPenghargaanValidasiController::class, 'batchTangguhkan']);
+            // Jika admin validasi diizinkan menghapus data (meskipun mungkin tidak disarankan)
+            // Route::delete('batch/delete', [SimpegDataPenghargaanValidasiController::class, 'batchDelete']); 
+            Route::get('filter-options', [SimpegDataPenghargaanValidasiController::class, 'getFilterOptions']);
+            Route::get('/{id}', [SimpegDataPenghargaanValidasiController::class, 'show']);
+            // Rute single action (approve, reject, tangguhkan)
+            // Ini harus di atas apiResource karena /{id} akan menangkap semuanya
+            Route::patch('{id}/approve', [SimpegDataPenghargaanValidasiController::class, 'approve']);
+            Route::patch('{id}/reject', [SimpegDataPenghargaanValidasiController::class, 'reject']);
+            Route::patch('{id}/tangguhkan', [SimpegDataPenghargaanValidasiController::class, 'tangguhkan']);
+
+            // Kemudian apiResource untuk Validasi Penghargaan
+            // Karena store/update/destroy mungkin tidak diizinkan, gunakan only(['index', 'show'])
+            Route::apiResource('/', SimpegDataPenghargaanValidasiController::class)->only(['index', 'show']);
+        });
+        
+        Route::patch('dataorganisasi/batch/approve', [SimpegDataOrganisasiAdminController::class, 'batchApprove']);
+        Route::patch('dataorganisasi/batch/reject', [SimpegDataOrganisasiAdminController::class, 'batchReject']);
+        Route::delete('dataorganisasi/batch/delete', [SimpegDataOrganisasiAdminController::class, 'batchDelete']);
+        Route::get('dataorganisasi/statistics', [SimpegDataOrganisasiAdminController::class, 'getStatusStatistics']);
+        Route::get('dataorganisasi/filter-options', [SimpegDataOrganisasiAdminController::class, 'getFilterOptions']);
+        Route::patch('dataorganisasi/bulk-fix-existing', [SimpegDataOrganisasiAdminController::class, 'bulkFixExistingData']);
+        
+       
+        Route::patch('dataorganisasi/{id}/approve', [SimpegDataOrganisasiAdminController::class, 'approve']);
+        Route::patch('dataorganisasi/{id}/reject', [SimpegDataOrganisasiAdminController::class, 'reject']);
+
+        Route::apiResource('dataorganisasi', SimpegDataOrganisasiAdminController::class);
 
     Route::prefix('datakemampuanbahasa')->group(function () {
     // Define specific routes first
@@ -164,6 +405,7 @@ Route::middleware('auth:api')->group(function () {
     Route::patch('{id}/approve', [SimpegDataKemampuanBahasaAdminController::class, 'approve']);
     Route::patch('{id}/reject', [SimpegDataKemampuanBahasaAdminController::class, 'reject']);
 });
+
         Route::prefix('validasi-cuti')->group(function () {
     // List monitoring pengajuan cuti
     Route::get('/', [AdminMonitoringValidasiCutiController::class, 'index']);
@@ -184,44 +426,36 @@ Route::middleware('auth:api')->group(function () {
     // Statistics
     Route::get('/statistics/dashboard', [AdminMonitoringValidasiCutiController::class, 'getStatistics']);
 });
- Route::prefix('validasi-izin')->group(function () {
-        // List monitoring pengajuan izin
-        Route::get('/', [AdminMonitoringValidasiIzinController::class, 'index']);
-        
-        // Detail pengajuan izin
-        Route::get('/{id}', [AdminMonitoringValidasiIzinController::class, 'show']);
-        
-        // Approve pengajuan
-        Route::patch('/{id}/approve', [AdminMonitoringValidasiIzinController::class, 'approvePengajuan']);
-        
-        // Reject/Batalkan pengajuan
-        Route::patch('/{id}/reject', [AdminMonitoringValidasiIzinController::class, 'rejectPengajuan']);
-        
-        // Batch actions
-        Route::patch('/batch/approve', [AdminMonitoringValidasiIzinController::class, 'batchApprove']);
-        Route::patch('/batch/reject', [AdminMonitoringValidasiIzinController::class, 'batchReject']);
-        
-        // Statistics
-        Route::get('/statistics/dashboard', [AdminMonitoringValidasiIzinController::class, 'getStatistics']);
-    });
+
+
+ Route::patch('validasi-izin/batch/approve', [AdminMonitoringValidasiIzinController::class, 'batchApprove']);
+    Route::patch('validasi-izin/batch/reject', [AdminMonitoringValidasiIzinController::class, 'batchReject']);
+
+    // Contoh rute khusus yang mungkin punya konflik ID jika diletakkan setelah {id}
+    Route::get('validasi-izin/belum-diajukan', [AdminMonitoringValidasiIzinController::class, 'getPegawaiBelumMengajukan']);
+    Route::patch('validasi-izin/remind/{id}', [AdminMonitoringValidasiIzinController::class, 'remindPegawai']); // Jika Anda memiliki method ini
+    Route::post('validasi-izin/create-for-pegawai/{id}', [AdminMonitoringValidasiIzinController::class, 'createIzinForPegawai']); // Jika Anda memiliki method ini
+    
+    // Rute untuk mendapatkan statistik
+    Route::get('validasi-izin/statistics', [AdminMonitoringValidasiIzinController::class, 'getStatistics']);
+
+    // Rute untuk approve/reject single berdasarkan ID
+    Route::patch('validasi-izin/{id}/approve', [AdminMonitoringValidasiIzinController::class, 'approvePengajuan']);
+    Route::patch('validasi-izin/{id}/reject', [AdminMonitoringValidasiIzinController::class, 'rejectPengajuan']);
+
+    // Rute utama (index dan show). Pastikan ini diletakkan paling akhir untuk 'validasi-izin'
+    // Jika Anda TIDAK menggunakan Route::apiResource dan hanya ingin index dan show:
+    Route::get('validasi-izin', [AdminMonitoringValidasiIzinController::class, 'index']);
+    Route::get('validasi-izin/{id}', [AdminMonitoringValidasiIzinController::class, 'show']);
         // Di routes/api.php
 
-Route::prefix('monitoring')->group(function () {
-    // Monitoring utama
-    Route::get('/hubungan-kerja', [MonitoringHubunganKerjaController::class, 'index']);
+ Route::get('monitoring/hubungan-kerja/filter-options', [MonitoringHubunganKerjaController::class, 'getFilterOptions']); // Specific filter route
+    Route::get('monitoring/hubungan-kerja/{id}/download', [MonitoringHubunganKerjaController::class, 'downloadFile']); // Download specific file
+    Route::get('monitoring/hubungan-kerja/pegawai/{pegawaiId}', [MonitoringHubunganKerjaController::class, 'getRiwayatByPegawai']); // Get all history for a specific employee
+    Route::get('monitoring/hubungan-kerja/{id}', [MonitoringHubunganKerjaController::class, 'show']); // Detail of a single monitoring record
+    Route::get('monitoring/hubungan-kerja', [MonitoringHubunganKerjaController::class, 'index']); // Main index route
+
     
-    // Detail hubungan kerja (menampilkan detail + semua riwayat pegawai)
-    Route::get('/hubungan-kerja/{id}', [MonitoringHubunganKerjaController::class, 'show']);
-    
-    // Riwayat hubungan kerja berdasarkan pegawai
-    Route::get('/hubungan-kerja/pegawai/{pegawaiId}', [MonitoringHubunganKerjaController::class, 'getRiwayatByPegawai']);
-    
-    // Download file dokumen
-    Route::get('/hubungan-kerja/{id}/download', [MonitoringHubunganKerjaController::class, 'downloadFile']);
-    
-    // Export (untuk implementasi nanti)
-    Route::get('/hubungan-kerja/export', [MonitoringHubunganKerjaController::class, 'export']);
-});
         Route::controller(InputPresensiController::class)->prefix('input-presensi')->group(function () {
             
             // Main CRUD Operations
@@ -262,12 +496,40 @@ Route::prefix('monitoring')->group(function () {
     });
 
           Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index']);
-   Route::group(['prefix' => 'evaluasi-kinerja'], function() {
-    Route::get('/pegawai/{id}', [EvaluasiKinerjaController::class, 'show'])->name('evaluasi-kinerja.show');
-    Route::get('/create', [EvaluasiKinerjaController::class, 'create'])->name('evaluasi-kinerja.create');
-    Route::get('/{id}/edit', [EvaluasiKinerjaController::class, 'edit'])->name('evaluasi-kinerja.edit');
-    Route::get('/evaluation/{id}', [EvaluasiKinerjaController::class, 'showEvaluation'])->name('evaluasi-kinerja.evaluation.show');
-});
+Route::prefix('evaluasi-kinerja')->group(function () {
+        
+        /**
+         * GET /api/evaluasi-kinerja
+         * Mendapatkan daftar pegawai yang dapat dievaluasi oleh penilai yang sedang login.
+         * Query Params: ?search=... & per_page=...
+         */
+        Route::get('/', [EvaluasiKinerjaController::class, 'index']);
+
+        /**
+         * POST /api/evaluasi-kinerja
+         * Menyimpan data evaluasi kinerja baru untuk seorang pegawai.
+         * Body akan divalidasi berdasarkan jenis pegawai (dosen/tendik).
+         */
+        Route::post('/', [EvaluasiKinerjaController::class, 'store']);
+
+        /**
+         * GET /api/evaluasi-kinerja/{pegawaiId}
+         * Menampilkan detail informasi seorang pegawai dan riwayat evaluasinya.
+         */
+        Route::get('/{pegawaiId}', [EvaluasiKinerjaController::class, 'show']);
+
+        /**
+         * PUT /api/evaluasi-kinerja/{id}
+         * Memperbarui data evaluasi kinerja yang sudah ada berdasarkan ID evaluasi.
+         */
+        Route::put('/{id}', [EvaluasiKinerjaController::class, 'update']);
+
+        /**
+         * DELETE /api/evaluasi-kinerja/{id}
+         * Menghapus data evaluasi kinerja berdasarkan ID evaluasi.
+         */
+        Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy']);
+    });
 
 
         Route::prefix('pegawai/riwayat-diklat')->group(function () {
@@ -439,50 +701,50 @@ Route::prefix('monitoring')->group(function () {
         Route::prefix('datapenghargaan')->group(function () {
             // === CRUD Operations ===
 
-            // List all penghargaan dengan filter dan search
-            Route::get('/', [SimpegDataPenghargaanAdmController::class, 'index']);
+            // // List all penghargaan dengan filter dan search
+            // Route::get('/', [SimpegDataPenghargaanAdmController::class, 'index']);
 
-            // Create new penghargaan
-            Route::post('/', [SimpegDataPenghargaanAdmController::class, 'store']);
+            // // Create new penghargaan
+            // Route::post('/', [SimpegDataPenghargaanAdmController::class, 'store']);
 
-            // Get detail penghargaan
-            Route::get('/{id}', [SimpegDataPenghargaanAdmController::class, 'show']);
+            // // Get detail penghargaan
+            // Route::get('/{id}', [SimpegDataPenghargaanAdmController::class, 'show']);
 
-            // Update penghargaan
-            Route::put('/{id}', [SimpegDataPenghargaanAdmController::class, 'update']);
-            Route::patch('/{id}', [SimpegDataPenghargaanAdmController::class, 'update']); // Alternative method
+            // // Update penghargaan
+            // Route::put('/{id}', [SimpegDataPenghargaanAdmController::class, 'update']);
+            // Route::patch('/{id}', [SimpegDataPenghargaanAdmController::class, 'update']); // Alternative method
 
-            // Delete single penghargaan
-            Route::delete('/{id}', [SimpegDataPenghargaanAdmController::class, 'destroy']);
+            // // Delete single penghargaan
+            // Route::delete('/{id}', [SimpegDataPenghargaanAdmController::class, 'destroy']);
 
-            // === Batch Operations ===
+            // // === Batch Operations ===
 
-            // Batch delete penghargaan
-            Route::delete('/batch/delete', [SimpegDataPenghargaanAdmController::class, 'batchDelete']);
+            // // Batch delete penghargaan
+            // Route::delete('/batch/delete', [SimpegDataPenghargaanAdmController::class, 'batchDelete']);
 
-            // === Form & Options ===
+            // // === Form & Options ===
 
-            // Get form options untuk dropdown create/edit form
-            Route::get('/form/options', [SimpegDataPenghargaanAdmController::class, 'getFormOptions']);
+            // // Get form options untuk dropdown create/edit form
+            // Route::get('/form/options', [SimpegDataPenghargaanAdmController::class, 'getFormOptions']);
 
-            // Get pegawai options untuk dropdown pegawai
-            Route::get('/pegawai/options', [SimpegDataPenghargaanAdmController::class, 'getPegawaiOptions']);
+            // // Get pegawai options untuk dropdown pegawai
+            // Route::get('/pegawai/options', [SimpegDataPenghargaanAdmController::class, 'getPegawaiOptions']);
 
-            // Get filter options untuk dropdown filter
-            Route::get('/filters/options', [SimpegDataPenghargaanAdmController::class, 'getFilterOptions']);
+            // // Get filter options untuk dropdown filter
+            // Route::get('/filters/options', [SimpegDataPenghargaanAdmController::class, 'getFilterOptions']);
 
-            // === Validation & Utilities ===
+            // // === Validation & Utilities ===
 
-            // Validate duplicate data
-            Route::post('/validate/duplicate', [SimpegDataPenghargaanAdmController::class, 'validateDuplicate']);
+            // // Validate duplicate data
+            // Route::post('/validate/duplicate', [SimpegDataPenghargaanAdmController::class, 'validateDuplicate']);
 
-            // === Reports & Analytics ===
+            // // === Reports & Analytics ===
 
-            // Get statistics untuk dashboard
-            Route::get('/statistics/summary', [SimpegDataPenghargaanAdmController::class, 'getStatistics']);
+            // // Get statistics untuk dashboard
+            // Route::get('/statistics/summary', [SimpegDataPenghargaanAdmController::class, 'getStatistics']);
 
-            // Export data penghargaan
-            Route::post('/export', [SimpegDataPenghargaanAdmController::class, 'export']);
+            // // Export data penghargaan
+            // Route::post('/export', [SimpegDataPenghargaanAdmController::class, 'export']);
         });
         Route::get('pegawai/info-pendidikan/{pegawaiId}', [SimpegRiwayatPendidikanController::class, 'getPegawaiWithPendidikan']);
         Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchPegawai']);
@@ -657,83 +919,40 @@ Route::prefix('monitoring')->group(function () {
         });
 
         
-        Route::group(['prefix' => 'evaluasi-kinerja'], function() {
-                
-                // GET /api/dosen/evaluasi-kinerja
-                // Mendapatkan daftar pegawai yang bisa dievaluasi (INDEX)
-                Route::get('/', [EvaluasiKinerjaController::class, 'index'])
-                    ->name('evaluasi-kinerja.index');
-                
-                // GET /api/dosen/evaluasi-kinerja/pegawai/{id}
-                // Mendapatkan detail pegawai untuk evaluasi (SHOW PEGAWAI)
-                Route::get('/pegawai/{id}', [EvaluasiKinerjaController::class, 'show'])
-                    ->name('evaluasi-kinerja.show')
-                    ->where('id', '[0-9]+');
-                
-                // GET /api/dosen/evaluasi-kinerja/create
-                // Form data untuk create evaluasi baru (akan redirect ke index dengan parameter)
-                Route::get('/create', function(Request $request) {
-                    return redirect()->route('evaluasi-kinerja.index', $request->all());
-                })->name('evaluasi-kinerja.create');
-                
-                // GET /api/dosen/evaluasi-kinerja/{id}/edit
-                // Form data untuk edit evaluasi (akan redirect ke show evaluation)
-                Route::get('/{id}/edit', function($id) {
-                    return redirect()->route('evaluasi-kinerja.evaluation.show', $id);
-                })->name('evaluasi-kinerja.edit')->where('id', '[0-9]+');
-                
-                // GET /api/dosen/evaluasi-kinerja/evaluation/{id}
-                // Mendapatkan detail evaluasi kinerja (alias untuk show dengan evaluation)
-                Route::get('/evaluation/{id}', function($id) {
-                    $controller = new EvaluasiKinerjaController();
-                    // Untuk sementara redirect ke show pegawai, atau bisa dibuat method baru jika diperlukan
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Untuk detail evaluasi, gunakan endpoint show pegawai atau implementasikan method showEvaluation',
-                        'redirect_to' => url("/api/dosen/evaluasi-kinerja/periode?evaluation_id={$id}")
-                    ]);
-                })->name('evaluasi-kinerja.evaluation.show')->where('id', '[0-9]+');
-                
-                // POST /api/dosen/evaluasi-kinerja
-                // Menambahkan evaluasi kinerja baru (STORE)
-                Route::post('/', [EvaluasiKinerjaController::class, 'store'])
-                    ->name('evaluasi-kinerja.store');
-                
-                // PUT /api/dosen/evaluasi-kinerja/{id}
-                // Mengupdate evaluasi kinerja (UPDATE)
-                Route::put('/{id}', [EvaluasiKinerjaController::class, 'update'])
-                    ->name('evaluasi-kinerja.update')
-                    ->where('id', '[0-9]+');
-                
-                // PATCH /api/dosen/evaluasi-kinerja/{id}
-                // Mengupdate evaluasi kinerja secara partial (PATCH)
-                Route::patch('/{id}', [EvaluasiKinerjaController::class, 'update'])
-                    ->name('evaluasi-kinerja.patch')
-                    ->where('id', '[0-9]+');
-                
-                // DELETE /api/dosen/evaluasi-kinerja/{id}
-                // Menghapus evaluasi kinerja (DESTROY)
-                Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy'])
-                    ->name('evaluasi-kinerja.destroy')
-                    ->where('id', '[0-9]+');
-                
-                // ==================== ADDITIONAL UTILITY ROUTES ====================
-                
-                // GET /api/dosen/evaluasi-kinerja/debug
-                // Debug hierarki dan statistik (untuk testing)
-                Route::get('/debug', [EvaluasiKinerjaController::class, 'debugHierarki'])
-                    ->name('evaluasi-kinerja.debug');
-                
-                // GET /api/dosen/evaluasi-kinerja/periode
-                // Mendapatkan evaluasi berdasarkan periode
-                Route::get('/periode', [EvaluasiKinerjaController::class, 'getEvaluasiByPeriode'])
-                    ->name('evaluasi-kinerja.periode');
-                
-                // GET /api/dosen/evaluasi-kinerja/export
-                // Export data pegawai untuk laporan
-                Route::get('/export', [EvaluasiKinerjaController::class, 'exportPegawaiList'])
-                    ->name('evaluasi-kinerja.export');
-            });
+     Route::prefix('evaluasi-kinerja')->group(function () {
+        
+        /**
+         * GET /api/evaluasi-kinerja
+         * Mendapatkan daftar pegawai yang dapat dievaluasi oleh penilai yang sedang login.
+         * Query Params: ?search=... & per_page=...
+         */
+        Route::get('/', [EvaluasiKinerjaController::class, 'index']);
+
+        /**
+         * POST /api/evaluasi-kinerja
+         * Menyimpan data evaluasi kinerja baru untuk seorang pegawai.
+         * Body akan divalidasi berdasarkan jenis pegawai (dosen/tendik).
+         */
+        Route::post('/', [EvaluasiKinerjaController::class, 'store']);
+
+        /**
+         * GET /api/evaluasi-kinerja/{pegawaiId}
+         * Menampilkan detail informasi seorang pegawai dan riwayat evaluasinya.
+         */
+        Route::get('/{pegawaiId}', [EvaluasiKinerjaController::class, 'show']);
+
+        /**
+         * PUT /api/evaluasi-kinerja/{id}
+         * Memperbarui data evaluasi kinerja yang sudah ada berdasarkan ID evaluasi.
+         */
+        Route::put('/{id}', [EvaluasiKinerjaController::class, 'update']);
+
+        /**
+         * DELETE /api/evaluasi-kinerja/{id}
+         * Menghapus data evaluasi kinerja berdasarkan ID evaluasi.
+         */
+        Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy']);
+    });
         Route::prefix('absensi')->group(function () {
 
             // Get status absensi hari ini
@@ -816,6 +1035,42 @@ Route::prefix('monitoring')->group(function () {
             Route::get('/available-actions', [SimpegDataAnakController::class, 'getAvailableActions']);
         });
 
+        Route::prefix('pendidikanformaldosen')->group(function () {
+        // ========================================
+        // STATIC ROUTES (HARUS DI ATAS!)
+        // ========================================
+        
+        // Configuration & Statistics Routes
+        Route::get('/config/system', [SimpegPendidikanFormalDosenController::class, 'getSystemConfig']);
+        Route::get('/statistics/status', [SimpegPendidikanFormalDosenController::class, 'getStatusStatistics']);
+        Route::get('/filter-options', [SimpegPendidikanFormalDosenController::class, 'getFilterOptions']);
+        Route::get('/available-actions', [SimpegPendidikanFormalDosenController::class, 'getAvailableActions']);
+        
+        // Utility Routes
+        Route::patch('/fix-existing-data', [SimpegPendidikanFormalDosenController::class, 'fixExistingData']);
+        Route::patch('/bulk-fix-existing-data', [SimpegPendidikanFormalDosenController::class, 'bulkFixExistingData']);
+        
+        // ========================================
+        // BATCH OPERATIONS ROUTES (HARUS SEBELUM {id} ROUTES!)
+        // ========================================
+        Route::delete('/batch/delete', [SimpegPendidikanFormalDosenController::class, 'batchDelete']);
+        Route::patch('/batch/submit', [SimpegPendidikanFormalDosenController::class, 'batchSubmitDrafts']);
+        Route::patch('/batch/status', [SimpegPendidikanFormalDosenController::class, 'batchUpdateStatus']);
+        
+        // ========================================
+        // CRUD OPERATIONS (PARAMETER ROUTES DI BAWAH!)
+        // ========================================
+        Route::get('/', [SimpegPendidikanFormalDosenController::class, 'index']);
+        Route::post('/', [SimpegPendidikanFormalDosenController::class, 'store']);
+        Route::get('/{id}', [SimpegPendidikanFormalDosenController::class, 'show']);
+        Route::put('/{id}', [SimpegPendidikanFormalDosenController::class, 'update']);
+        Route::delete('/{id}', [SimpegPendidikanFormalDosenController::class, 'destroy']);
+        
+        // ========================================
+        // STATUS PENGAJUAN ROUTES (DENGAN {id} DI BAWAH!)
+        // ========================================
+        Route::patch('/{id}/submit', [SimpegPendidikanFormalDosenController::class, 'submitDraft']);
+    });
 
         Route::prefix('pengajuan-izin-dosen')->group(function () {
                 // 1. BATCH OPERATIONS - HARUS PALING ATASAdd commentMore actions

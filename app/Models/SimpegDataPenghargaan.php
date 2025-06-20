@@ -25,7 +25,8 @@ class SimpegDataPenghargaan extends Model
         'status_pengajuan', // Ditambahkan
         'tgl_diajukan',     // Ditambahkan
         'tgl_disetujui',    // Ditambahkan
-        'tgl_ditolak'       // Ditambahkan
+        'tgl_ditolak',     // Ditambahkan
+           'tgl_ditangguhkan',
     ];
 
     protected $casts = [
@@ -33,7 +34,8 @@ class SimpegDataPenghargaan extends Model
         'tanggal_penghargaan' => 'date',
         'tgl_diajukan' => 'datetime',  // Ditambahkan
         'tgl_disetujui' => 'datetime', // Ditambahkan
-        'tgl_ditolak' => 'datetime'   // Ditambahkan
+        'tgl_ditolak' => 'datetime',  // Ditambahkan
+         'tgl_ditangguhkan' => 'datetime' 
     ];
 
     // Relasi ke tabel pegawai

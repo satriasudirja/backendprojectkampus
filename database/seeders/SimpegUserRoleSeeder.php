@@ -17,11 +17,6 @@ class SimpegUserRoleSeeder extends Seeder
 
         DB::table('simpeg_users_roles')->insert([
             [
-                'nama' => 'Admin',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
                 'nama' => 'Dosen',
                 'created_at' => $now,
                 'updated_at' => $now,

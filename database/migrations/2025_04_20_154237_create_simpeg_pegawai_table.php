@@ -92,6 +92,12 @@ return new class extends Migration
             $table->string('file_tanda_tangan', 100)->nullable();
             
             // Audit trail
+             $table->boolean('is_admin')->default(false);
+
+
+
+
+             
             $table->string('modified_by', 30)->nullable();
             $table->timestamp('modified_dt')->nullable();
             

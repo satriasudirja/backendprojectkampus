@@ -31,6 +31,7 @@ return new class extends Migration
             $table->timestamp('tgl_diajukan')->nullable();
             $table->timestamp('tgl_disetujui')->nullable();
             $table->timestamp('tgl_ditolak')->nullable();
+             $table->timestamp('tgl_ditangguhkan')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

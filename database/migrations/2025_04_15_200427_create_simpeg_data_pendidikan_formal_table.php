@@ -49,6 +49,7 @@ return new class extends Migration
              $table->string('status_pengajuan')->nullable();
                $table->date('tanggal_diajukan')->nullable();
                  $table->date('tanggal_disetujui')->nullable();
+                  $table->date('tanggal_ditolak')->nullable();
                   $table->string('dibuat_oleh')->nullable();
             $table->timestamps();
              $table->softDeletes();
