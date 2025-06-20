@@ -5,18 +5,21 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\SimpegBerita;
 use App\Models\SimpegJabatanAkademik;
+use App\Models\SimpegUnitKerja; // Pastikan ini diimport untuk penggunaan di index filter
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Validator; // <-- PASTIKAN BARIS INI ADA UNTUK KONSISTENSI
+use Illuminate\Support\Facades\Validator;
 
 class SimpegBeritaController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
@@ -24,12 +27,16 @@ class SimpegBeritaController extends Controller
 
         // Filter berdasarkan judul
         if ($request->has('judul')) {
-            $berita->where('judul', 'like', '%' . $request->judul . '%');
+            $berita->where('judul', 'ilike', '%' . $request->judul . '%'); // Using ilike for PostgreSQL
         }
 
-        // Filter berdasarkan unit kerja (jika unit_kerja_id adalah JSON)
+        // Filter berdasarkan unit kerja (jika unit_kerja_id adalah JSONB di database)
         if ($request->has('unit_kerja_id')) {
-            $berita->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([$request->unit_kerja_id])]);
+            $unitKerjaIds = $request->unit_kerja_id;
+            if (!is_array($unitKerjaIds)) {
+                $unitKerjaIds = [$unitKerjaIds]; // Bungkus dalam array jika single string
+            }
+            $berita->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode($unitKerjaIds)]);
         }
 
         // Filter berdasarkan tanggal posting
@@ -43,13 +50,19 @@ class SimpegBeritaController extends Controller
 
         // Filter berdasarkan prioritas
         if ($request->has('prioritas')) {
-            $berita->where('prioritas', $request->prioritas);
+            // Prioritas harus boolean, pastikan nilai dari request di-cast
+            $berita->where('prioritas', (bool)$request->prioritas);
         }
 
         // Filter berdasarkan jabatan akademik
+        // Asumsi relasi many-to-many antara berita dan jabatan akademik melalui tabel pivot
         if ($request->has('jabatan_akademik_id')) {
-            $berita->whereHas('jabatanAkademik', function($query) use ($request) {
-                $query->where('jabatan_akademik_id', $request->jabatan_akademik_id);
+            $jabatanAkademikIds = $request->jabatan_akademik_id;
+            if (!is_array($jabatanAkademikIds)) {
+                $jabatanAkademikIds = [$jabatanAkademikIds];
+            }
+            $berita->whereHas('jabatanAkademik', function($query) use ($jabatanAkademikIds) {
+                $query->whereIn('simpeg_jabatan_akademik.id', $jabatanAkademikIds);
             });
         }
 
@@ -74,129 +87,11 @@ class SimpegBeritaController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     * @param Request $request
+     * @return \Illuminate->Http->JsonResponse
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'unit_kerja_id' => 'required|array',
-            'unit_kerja_id.*' => 'required|integer', // Tidak validasi ke tabel unit_kerja
-            'judul' => 'required|string|max:100',
-            'konten' => 'nullable|string',
-            'tgl_posting' => 'required|date',
-            'tgl_expired' => 'nullable|date|after_or_equal:tgl_posting',
-            'prioritas' => 'required|boolean',
-            'gambar_berita' => 'nullable|image|max:2048', // Max 2MB
-            'file_berita' => 'nullable|file|max:5120', // Max 5MB
-            'jabatan_akademik_id' => 'required|array',
-            'jabatan_akademik_id.*' => 'required|integer|exists:simpeg_jabatan_akademik,id',
-        ]);
-
-        DB::beginTransaction();
-        try {
-            // Upload gambar berita jika ada
-            $gambarBeritaPath = null;
-            if ($request->hasFile('gambar_berita')) {
-                $gambarBeritaPath = $request->file('gambar_berita')
-                    ->store('berita/gambar', 'public');
-            }
-
-            // Upload file berita jika ada
-            $fileBeritaPath = null;
-            if ($request->hasFile('file_berita')) {
-                $fileBeritaPath = $request->file('file_berita')
-                    ->store('berita/file', 'public');
-            }
-
-            // Buat slug dari judul
-            $slug = Str::slug($request->judul);
-            $originalSlug = $slug;
-            $count = 1;
-
-            // Pastikan slug unik
-            while (SimpegBerita::where('slug', $slug)->exists()) {
-                $slug = $originalSlug . '-' . $count++;
-            }
-
-            // Buat berita
-            $berita = SimpegBerita::create([
-                'unit_kerja_id' => $request->unit_kerja_id,
-                'judul' => $request->judul,
-                'konten' => $request->konten,
-                'slug' => $slug,
-                'tgl_posting' => $request->tgl_posting,
-                'tgl_expired' => $request->tgl_expired,
-                'prioritas' => $request->prioritas,
-                'gambar_berita' => $gambarBeritaPath,
-                'file_berita' => $fileBeritaPath,
-            ]);
-
-            // Simpan relasi dengan jabatan akademik
-            $berita->jabatanAkademik()->attach($request->jabatan_akademik_id);
-
-            // Log aktivitas
-            ActivityLogger::log('create', $berita, $berita->toArray());
-
-            DB::commit();
-
-            // Load relasi untuk response
-            $berita->load('jabatanAkademik');
-
-            return response()->json([
-                'success' => true,
-                'data' => $berita,
-                'message' => 'Berita berhasil ditambahkan'
-            ], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            // Hapus file yang sudah diupload jika ada error
-            if ($gambarBeritaPath && Storage::disk('public')->exists($gambarBeritaPath)) {
-                Storage::disk('public')->delete($gambarBeritaPath);
-            }
-            
-            if ($fileBeritaPath && Storage::disk('public')->exists($fileBeritaPath)) {
-                Storage::disk('public')->delete($fileBeritaPath);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menambahkan berita: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Request $request, $id)
-    {
-        $berita = SimpegBerita::with('jabatanAkademik')->find($id);
-
-        if (!$berita) {
-            return response()->json(['success' => false, 'message' => 'Berita tidak ditemukan'], 404);
-        }
-
-        $prefix = $request->segment(2);
-
-        return response()->json([
-            'success' => true,
-            'data' => $berita,
-            'update_url' => url("/api/{$prefix}/berita/" . $berita->id),
-            'delete_url' => url("/api/{$prefix}/berita/" . $berita->id),
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
- public function update(Request $request, $id)
-    {
-        $berita = SimpegBerita::find($id);
-
-        if (!$berita) {
-            return response()->json(['success' => false, 'message' => 'Berita tidak ditemukan'], 404);
-        }
-
         $validator = Validator::make($request->all(), [
             'unit_kerja_id' => 'required|array',
             'unit_kerja_id.*' => 'required|integer', // Tidak validasi ke tabel unit_kerja
@@ -221,22 +116,154 @@ class SimpegBeritaController extends Controller
 
         $validatedData = $validator->validated();
 
-        // --- MULAI PERUBAHAN UTAMA DI SINI ---
-        // Lakukan JSON encode untuk field array sebelum disimpan ke DB (karena DB adalah TEXT)
-        if (isset($validatedData['unit_kerja_id']) && is_array($validatedData['unit_kerja_id'])) {
-            $validatedData['unit_kerja_id'] = json_encode($validatedData['unit_kerja_id']);
-        }
-        // Jika jabatan_akademik_id juga disimpan sebagai JSON string di kolom TEXT,
-        // lakukan encode juga di sini. (Saat ini disimpan di tabel pivot, jadi tidak perlu)
-        // if (isset($validatedData['jabatan_akademik_id']) && is_array($validatedData['jabatan_akademik_id'])) {
-        //     $validatedData['jabatan_akademik_id'] = json_encode($validatedData['jabatan_akademik_id']);
-        // }
-        // --- AKHIR PERUBAHAN UTAMA ---
-
-
         DB::beginTransaction();
         try {
-            $old = $berita->getOriginal();
+            // Upload gambar berita jika ada
+            $gambarBeritaPath = null;
+            if ($request->hasFile('gambar_berita')) {
+                $gambarBeritaPath = $request->file('gambar_berita')
+                    ->store('berita/gambar', 'public');
+            }
+
+            // Upload file berita jika ada
+            $fileBeritaPath = null;
+            if ($request->hasFile('file_berita')) {
+                $fileBeritaPath = $request->file('file_berita')
+                    ->store('berita/file', 'public');
+            }
+
+            // Buat slug dari judul
+            $slug = Str::slug($validatedData['judul']);
+            $originalSlug = $slug;
+            $count = 1;
+
+            // Pastikan slug unik
+            while (SimpegBerita::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count++;
+            }
+
+            // Encode unit_kerja_id array to JSON string before saving to database
+            $validatedData['unit_kerja_id'] = json_encode($validatedData['unit_kerja_id']);
+
+            // Create berita
+            $berita = SimpegBerita::create([
+                'unit_kerja_id' => $validatedData['unit_kerja_id'], // Now it's a JSON string
+                'judul' => $validatedData['judul'],
+                'konten' => $validatedData['konten'],
+                'slug' => $slug,
+                'tgl_posting' => $validatedData['tgl_posting'],
+                'tgl_expired' => $validatedData['tgl_expired'],
+                'prioritas' => $validatedData['prioritas'],
+                'gambar_berita' => $gambarBeritaPath,
+                'file_berita' => $fileBeritaPath,
+            ]);
+
+            // Simpan relasi many-to-many dengan jabatan akademik
+            $berita->jabatanAkademik()->attach($validatedData['jabatan_akademik_id']);
+
+            // Log aktivitas
+            ActivityLogger::log('create', $berita, $berita->toArray());
+
+            DB::commit();
+
+            // Load relasi untuk response
+            $berita->load('jabatanAkademik');
+
+            return response()->json([
+                'success' => true,
+                'data' => $berita,
+                'message' => 'Berita berhasil ditambahkan'
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            if ($gambarBeritaPath && Storage::disk('public')->exists($gambarBeritaPath)) {
+                Storage::disk('public')->delete($gambarBeritaPath);
+            }
+            
+            if ($fileBeritaPath && Storage::disk('public')->exists($fileBeritaPath)) {
+                Storage::disk('public')->delete($fileBeritaPath);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan berita: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate->Http->JsonResponse
+     */
+    public function show(Request $request, $id)
+    {
+        $berita = SimpegBerita::with('jabatanAkademik')->find($id);
+
+        if (!$berita) {
+            return response()->json(['success' => false, 'message' => 'Berita tidak ditemukan'], 404);
+        }
+
+        $prefix = $request->segment(2);
+
+        return response()->json([
+            'success' => true,
+            'data' => $berita,
+            'update_url' => url("/api/{$prefix}/berita/" . $berita->id),
+            'delete_url' => url("/api/{$prefix}/berita/" . $berita->id),
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate->Http->JsonResponse
+     */
+    public function update(Request $request, $id)
+    {
+        $berita = SimpegBerita::find($id);
+
+        if (!$berita) {
+            return response()->json(['success' => false, 'message' => 'Berita tidak ditemukan'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'unit_kerja_id' => 'required|array',
+            'unit_kerja_id.*' => 'required|integer',
+            'judul' => 'required|string|max:100',
+            'konten' => 'nullable|string',
+            'tgl_posting' => 'required|date',
+            'tgl_expired' => 'nullable|date|after_or_equal:tgl_posting',
+            'prioritas' => 'required|boolean',
+            'gambar_berita' => 'nullable|image|max:2048',
+            'file_berita' => 'nullable|file|max:5120',
+            'jabatan_akademik_id' => 'required|array',
+            'jabatan_akademik_id.*' => 'required|integer|exists:simpeg_jabatan_akademik,id',
+            'gambar_berita_clear' => 'nullable|boolean', // Added for clear flag
+            'file_berita_clear' => 'nullable|boolean', // Added for clear flag
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $validatedData = $validator->validated();
+
+        // Encode unit_kerja_id array to JSON string before saving to database
+        if (isset($validatedData['unit_kerja_id'])) {
+            $validatedData['unit_kerja_id'] = json_encode($validatedData['unit_kerja_id']);
+        }
+        
+        DB::beginTransaction();
+        try {
+            $old = $berita->toArray(); // Capture original state as array for comparison
 
             // Handle gambar_berita update
             if ($request->hasFile('gambar_berita')) {
@@ -264,7 +291,6 @@ class SimpegBeritaController extends Controller
                 $berita->file_berita = null;
             }
 
-
             // Update slug if title changed (using validated data)
             if ($berita->judul !== $validatedData['judul']) {
                 $slug = Str::slug($validatedData['judul']);
@@ -276,27 +302,29 @@ class SimpegBeritaController extends Controller
                 $berita->slug = $slug;
             }
 
-            // Fill the model with ALL validated data (which now includes encoded unit_kerja_id)
-            // But still exclude files and _method as they are handled separately.
-            $berita->fill($validatedData); // <-- PAKAI $validatedData LANGSUNG
+            // Fill the model with validated data, excluding file fields and clear flags
+            // FIX: Use array_diff_key atau unset untuk menghapus kunci yang tidak perlu dari validatedData
+            $dataToFill = $validatedData;
+            unset(
+                $dataToFill['gambar_berita'],
+                $dataToFill['file_berita'],
+                $dataToFill['gambar_berita_clear'],
+                $dataToFill['file_berita_clear'],
+                $dataToFill['jabatan_akademik_id'] // Ini ditangani oleh sync()
+            );
+
+            $berita->fill($dataToFill); // Fill data yang sudah bersih
             
-            // Hapus field yang tidak disimpan langsung atau ditangani terpisah dari fill()
-            unset($berita->gambar_berita, $berita->file_berita, $berita->jabatan_akademik_id); // Ini sudah ditangani
-            // Juga, hapus _method dan clear flags jika ada di validatedData
-            // if (isset($berita['_method'])) unset($berita['_method']);
-            // if (isset($berita['gambar_berita_clear'])) unset($berita['gambar_berita_clear']);
-            // if (isset($berita['file_berita_clear'])) unset($berita['file_berita_clear']);
-
-
             $berita->save(); // Save all changes to the database
 
-            // Sync relation with jabatan akademik (using validated data - which is still an array here)
-            $berita->jabatanAkademik()->sync($request->jabatan_akademik_id); // Gunakan $request->jabatan_akademik_id
-                                                                           // karena $validatedData['jabatan_akademik_id']
-                                                                           // sudah dimodifikasi di atas jika di-encode
-
+            // Sync relation with jabatan akademik
+            $berita->jabatanAkademik()->sync($validatedData['jabatan_akademik_id']);
+            
             // Log changes
-            $changes = array_diff_assoc($berita->toArray(), $old);
+            // FIX: Use array_diff_assoc dengan toArray() untuk perbandingan yang benar
+            // atau cukup ambil fresh() jika logging hanya butuh current state setelah update.
+            $currentData = $berita->fresh()->toArray(); // Get the fresh state after saving
+            $changes = array_diff_assoc($currentData, $old); // Compare old array with new array
             ActivityLogger::log('update', $berita, $changes);
 
             DB::commit();
@@ -311,6 +339,15 @@ class SimpegBeritaController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            // Hapus file yang sudah diupload jika ada error (perlu dicek keberadaan path yang baru)
+            if (isset($berita->gambar_berita) && Storage::disk('public')->exists($berita->gambar_berita)) {
+                Storage::disk('public')->delete($berita->gambar_berita);
+            }
+            if (isset($berita->file_berita) && Storage::disk('public')->exists($berita->file_berita)) {
+                Storage::disk('public')->delete($berita->file_berita);
+            }
+
             \Log::error('Error updating berita: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             return response()->json([
                 'success' => false,
@@ -321,6 +358,8 @@ class SimpegBeritaController extends Controller
 
     /**
      * Remove the specified resource from storage (soft delete).
+     * @param int $id
+     * @return \Illuminate->Http->JsonResponse
      */
     public function destroy($id)
     {
@@ -332,12 +371,10 @@ class SimpegBeritaController extends Controller
 
         DB::beginTransaction();
         try {
-            $beritaData = $berita->toArray();
+            $beritaData = $berita->toArray(); // Capture data before soft delete
             
-            // Soft delete berita (data masih ada di database, hanya ditandai dihapus)
-            $berita->delete();
+            $berita->delete(); // Soft delete
 
-            // Log aktivitas
             ActivityLogger::log('delete', $berita, $beritaData);
 
             DB::commit();
@@ -357,22 +394,21 @@ class SimpegBeritaController extends Controller
 
     /**
      * Menampilkan daftar berita yang sudah dihapus (trash).
+     * @param Request $request
+     * @return \Illuminate->Http->JsonResponse
      */
     public function trash(Request $request)
     {
         $berita = SimpegBerita::onlyTrashed();
 
-        // Filter berdasarkan judul
         if ($request->has('judul')) {
-            $berita->where('judul', 'like', '%' . $request->judul . '%');
+            $berita->where('judul', 'ilike', '%' . $request->judul . '%');
         }
 
-        // Load relasi jabatan akademik
         $berita->with('jabatanAkademik');
 
         $berita = $berita->paginate(10);
 
-        // Tambahkan URL untuk restore dan force delete
         $prefix = $request->segment(2);
         $berita->getCollection()->transform(function ($item) use ($prefix) {
             $item->restore_url = url("/api/{$prefix}/berita/{$item->id}/restore");
@@ -388,6 +424,8 @@ class SimpegBeritaController extends Controller
 
     /**
      * Memulihkan berita yang sudah dihapus.
+     * @param int $id
+     * @return \Illuminate->Http->JsonResponse
      */
     public function restore($id)
     {
@@ -399,10 +437,8 @@ class SimpegBeritaController extends Controller
 
         $berita->restore();
         
-        // Load relasi untuk response
         $berita->load('jabatanAkademik');
 
-        // Log aktivitas
         ActivityLogger::log('restore', $berita, $berita->toArray());
 
         return response()->json([
@@ -414,6 +450,8 @@ class SimpegBeritaController extends Controller
 
     /**
      * Menghapus berita secara permanen dari database.
+     * @param int $id
+     * @return \Illuminate->Http->JsonResponse
      */
     public function forceDelete($id)
     {
@@ -427,7 +465,6 @@ class SimpegBeritaController extends Controller
         try {
             $beritaData = $berita->toArray();
             
-            // Hapus gambar dan file terkait
             if ($berita->gambar_berita && Storage::disk('public')->exists($berita->gambar_berita)) {
                 Storage::disk('public')->delete($berita->gambar_berita);
             }
@@ -436,13 +473,10 @@ class SimpegBeritaController extends Controller
                 Storage::disk('public')->delete($berita->file_berita);
             }
             
-            // Hapus relasi dengan jabatan akademik
             $berita->jabatanAkademik()->detach();
             
-            // Hapus berita secara permanen
             $berita->forceDelete();
 
-            // Log aktivitas
             ActivityLogger::log('force_delete', $berita, $beritaData);
 
             DB::commit();

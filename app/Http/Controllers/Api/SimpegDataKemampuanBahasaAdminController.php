@@ -551,7 +551,7 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function batchDelete(Request $request)
+  public function batchDelete(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
@@ -612,18 +612,17 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
             ], $deletedCount > 0 ? 207 : 422);
         }
     }
-
     /**
      * Batch approve data kemampuan bahasa.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function batchApprove(Request $request)
+  public function batchApprove(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer'
+            'ids.*' => 'required|integer|exists:simpeg_data_kemampuan_bahasa,id'
         ]);
 
         if ($validator->fails()) {
@@ -633,20 +632,51 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
             ], 422);
         }
 
-        $updatedCount = SimpegDataKemampuanBahasa::whereIn('id', $request->ids)
-            ->where('status_pengajuan', 'diajukan')
-            ->update([
-                'status_pengajuan' => 'disetujui',
-                'tgl_disetujui' => now(),
-                'tgl_ditolak' => null,
-            ]);
+        // --- Perbaikan Utama untuk batchApprove ---
+        $dataToProcess = SimpegDataKemampuanBahasa::whereIn('id', $request->ids)
+                                                ->whereIn('status_pengajuan', ['draft', 'diajukan', 'ditolak']) // Status yang bisa diapprove
+                                                ->get();
 
-        ActivityLogger::log('admin_batch_approve_kemampuan_bahasa', null, ['ids' => $request->ids, 'updated_count' => $updatedCount]);
+        if ($dataToProcess->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada data kemampuan bahasa yang memenuhi syarat untuk disetujui.'
+            ], 404);
+        }
+
+        $updatedCount = 0;
+        $approvedIds = [];
+        DB::beginTransaction(); // Mulai transaksi untuk operasi batch
+        try {
+            foreach ($dataToProcess as $item) {
+                $oldData = $item->getOriginal();
+                $item->update([
+                    'status_pengajuan' => 'disetujui',
+                    'tgl_disetujui' => now(),
+                    'tgl_diajukan' => $item->tgl_diajukan ?? now(), // Pertahankan tgl_diajukan jika ada, jika tidak set sekarang
+                    'tgl_ditolak' => null,
+                    'keterangan' => null, // Set keterangan null jika disetujui
+                ]);
+                ActivityLogger::log('admin_approve_data_kemampuan_bahasa', $item, $oldData); // Kirim objek $item
+                $updatedCount++;
+                $approvedIds[] = $item->id;
+            }
+            DB::commit(); // Commit transaksi
+        } catch (\Exception $e) {
+            DB::rollBack(); // Rollback jika ada error
+            \Log::error('Error during batch approve kemampuan bahasa: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menyetujui data secara batch: ' . $e->getMessage()
+            ], 500);
+        }
+        // --- Akhir Perbaikan Utama ---
 
         return response()->json([
             'success' => true,
             'message' => "Berhasil menyetujui {$updatedCount} data kemampuan bahasa",
-            'updated_count' => $updatedCount
+            'updated_count' => $updatedCount,
+            'approved_ids' => $approvedIds
         ]);
     }
 
@@ -656,11 +686,11 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function batchReject(Request $request)
+  public function batchReject(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer',
+            'ids.*' => 'required|integer|exists:simpeg_data_kemampuan_bahasa,id',
             'keterangan' => 'nullable|string|max:500',
         ]);
 
@@ -671,21 +701,51 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
             ], 422);
         }
 
-        $updatedCount = SimpegDataKemampuanBahasa::whereIn('id', $request->ids)
-            ->whereIn('status_pengajuan', ['diajukan', 'disetujui'])
-            ->update([
-                'status_pengajuan' => 'ditolak',
-                'tgl_ditolak' => now(),
-                'tgl_disetujui' => null,
-                'keterangan' => $request->keterangan,
-            ]);
+        // --- Perbaikan Utama untuk batchReject ---
+        $dataToProcess = SimpegDataKemampuanBahasa::whereIn('id', $request->ids)
+                                                ->whereIn('status_pengajuan', ['draft', 'diajukan', 'disetujui']) // Status yang bisa ditolak
+                                                ->get();
 
-        ActivityLogger::log('admin_batch_reject_kemampuan_bahasa', null, ['ids' => $request->ids, 'updated_count' => $updatedCount, 'keterangan' => $request->keterangan]);
+        if ($dataToProcess->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada data kemampuan bahasa yang memenuhi syarat untuk ditolak.'
+            ], 404);
+        }
+
+        $updatedCount = 0;
+        $rejectedIds = [];
+        DB::beginTransaction(); // Mulai transaksi untuk operasi batch
+        try {
+            foreach ($dataToProcess as $item) {
+                $oldData = $item->getOriginal();
+                $item->update([
+                    'status_pengajuan' => 'ditolak',
+                    'tgl_ditolak' => now(),
+                    'tgl_diajukan' => null, // Hilangkan tgl diajukan jika ditolak
+                    'tgl_disetujui' => null, // Hilangkan tgl disetujui jika ditolak
+                    'keterangan' => $request->keterangan,
+                ]);
+                ActivityLogger::log('admin_reject_data_kemampuan_bahasa', $item, $oldData); // Kirim objek $item
+                $updatedCount++;
+                $rejectedIds[] = $item->id;
+            }
+            DB::commit(); // Commit transaksi
+        } catch (\Exception $e) {
+            DB::rollBack(); // Rollback jika ada error
+            \Log::error('Error during batch reject kemampuan bahasa: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menolak data secara batch: ' . $e->getMessage()
+            ], 500);
+        }
+        // --- Akhir Perbaikan Utama ---
 
         return response()->json([
             'success' => true,
             'message' => "Berhasil menolak {$updatedCount} data kemampuan bahasa",
-            'updated_count' => $updatedCount
+            'updated_count' => $updatedCount,
+            'rejected_ids' => $rejectedIds
         ]);
     }
 

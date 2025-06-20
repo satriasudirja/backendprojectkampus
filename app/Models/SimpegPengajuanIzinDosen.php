@@ -25,26 +25,28 @@ class SimpegPengajuanIzinDosen extends Model
         'tgl_diajukan',
         'tgl_disetujui',
         'tgl_ditolak',
-        'approved_by',
-        'keterangan'
+        'approved_by', // ✅ Dikonfirmasi ada
+        'keterangan'   // ✅ Dikonfirmasi ada
     ];
     
     protected $casts = [
-        'tgl_mulai' => 'date:Y-m-d',      // ← UBAH INI
-        'tgl_selesai' => 'date:Y-m-d',    // ← UBAH INI 
+        'tgl_mulai' => 'date:Y-m-d',
+        'tgl_selesai' => 'date:Y-m-d',
         'jumlah_izin' => 'integer',
-        'jenis_izin_id' => 'integer', // ✅ TAMBAHKAN INI
+        'jenis_izin_id' => 'integer',
         'pegawai_id' => 'integer',
         'tgl_diajukan' => 'datetime',
         'tgl_disetujui' => 'datetime',
         'tgl_ditolak' => 'datetime'
     ];
     
-    /**
-     * Boot the model.
-     */
-  
-    
+    // Konstan status pengajuan
+    const STATUS_DRAFT = 'draft';
+    const STATUS_DIAJUKAN = 'diajukan';
+    const STATUS_DISETUJUI = 'disetujui';
+    const STATUS_DITOLAK = 'ditolak';
+    const STATUS_DITANGGUHKAN = 'ditangguhkan'; // Jika ada status ini
+
     /**
      * Get the pegawai that owns the izin record.
      */
@@ -66,7 +68,7 @@ class SimpegPengajuanIzinDosen extends Model
      */
     public function approver()
     {
-        return $this->belongsTo(SimpegPegawai::class, 'approved_by');
+        return $this->belongsTo(SimpegPegawai::class, 'approved_by'); // Sesuai dengan approved_by
     }
     
     /**
@@ -100,7 +102,7 @@ class SimpegPengajuanIzinDosen extends Model
     {
         return $query->where('status_pengajuan', 'ditolak');
     }
-    
+
     /**
      * Scope a query to only include records for current year.
      */
@@ -117,7 +119,6 @@ class SimpegPengajuanIzinDosen extends Model
         if (!$this->file_pendukung) {
             return null;
         }
-        
         return 'public/pegawai/izin/' . $this->file_pendukung;
     }
     
@@ -129,7 +130,6 @@ class SimpegPengajuanIzinDosen extends Model
         if (!$this->file_pendukung) {
             return null;
         }
-        
         return url('storage/pegawai/izin/' . $this->file_pendukung);
     }
     
@@ -163,5 +163,20 @@ class SimpegPengajuanIzinDosen extends Model
     public function getCanPrintAttribute()
     {
         return $this->status_pengajuan === 'disetujui';
+    }
+
+    // Metode boot() untuk set default values
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->status_pengajuan)) {
+                $model->status_pengajuan = self::STATUS_DRAFT;
+            }
+            // Asumsi tgl_diajukan diset saat dibuat jika langsung disetujui, atau diajukan
+            if ($model->status_pengajuan === self::STATUS_DIAJUKAN || $model->status_pengajuan === self::STATUS_DISETUJUI) {
+                $model->tgl_diajukan = $model->tgl_diajukan ?? Carbon::now();
+            }
+        });
     }
 }

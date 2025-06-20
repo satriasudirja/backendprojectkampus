@@ -4,14 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder; // Import untuk type-hinting scope
+use Carbon\Carbon;
 
 class SimpegDataPenghargaanAdm extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'simpeg_data_penghargaan';
+    protected $table = 'simpeg_data_penghargaan'; // Asumsi nama tabelnya ini
 
-    protected $primaryKey = 'id';
     protected $fillable = [
         'pegawai_id',
         'jenis_penghargaan',
@@ -19,67 +21,97 @@ class SimpegDataPenghargaanAdm extends Model
         'no_sk',
         'tanggal_sk',
         'tanggal_penghargaan',
-        'keterangan'
+        'keterangan',
+        'file_penghargaan',
+        'status_pengajuan',
+        'tgl_diajukan',
+        'tgl_disetujui',
+        'tgl_ditolak',
+        'tgl_ditangguhkan', // <--- HARUS ADA DI DB dan Model
+        // 'keterangan_penolakan', // <--- Pastikan ini sudah dihapus di DB dan Model jika tidak digunakan
     ];
 
     protected $casts = [
         'tanggal_sk' => 'date',
-        'tanggal_penghargaan' => 'date'
+        'tanggal_penghargaan' => 'date',
+        'tgl_diajukan' => 'datetime',
+        'tgl_disetujui' => 'datetime',
+        'tgl_ditolak' => 'datetime',
+        'tgl_ditangguhkan' => 'datetime', // <--- HARUS ADA DI DB dan Model
     ];
 
-    // Relasi ke tabel pegawai dengan eager loading untuk optimasi
+    // Relasi ke pegawai
     public function pegawai()
     {
-        return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
+        return $this->belongsTo(SimpegPegawai::class, 'pegawai_id', 'id');
     }
 
-    // Scope untuk filter berdasarkan unit kerja
-    public function scopeFilterByUnitKerja($query, $unitKerjaId)
+    // --- SCOPE UNTUK FILTERING ---
+
+    public function scopeFilterByUnitKerja(Builder $query, $unitKerjaId)
     {
-        if ($unitKerjaId && $unitKerjaId != 'semua') {
-            return $query->whereHas('pegawai.unitKerja', function($q) use ($unitKerjaId) {
-                $q->where('kode_unit', $unitKerjaId);
+        if (!$unitKerjaId || $unitKerjaId === 'semua') {
+            return $query;
+        }
+        
+        // Asumsi getAllChildIdsRecursively ada di SimpegUnitKerja model sebagai static method
+        // Pastikan SimpegUnitKerja di-import di sini jika diperlukan
+        $unitKerjaTarget = \App\Models\SimpegUnitKerja::find($unitKerjaId); 
+
+        if ($unitKerjaTarget) {
+            // Asumsi getAllChildIdsRecursively ada di SimpegUnitKerja model
+            $unitIdsInScope = \App\Models\SimpegUnitKerja::getAllChildIdsRecursively($unitKerjaTarget);
+            $unitIdsInScope[] = $unitKerjaTarget->id; 
+
+            return $query->whereHas('pegawai', function ($q) use ($unitIdsInScope) {
+                $q->whereIn('unit_kerja_id', $unitIdsInScope);
             });
         }
         return $query;
     }
 
-    // Scope untuk filter berdasarkan jabatan fungsional
-    public function scopeFilterByJabatanFungsional($query, $jabatanFungsionalId)
+    public function scopeFilterByJabatanFungsional(Builder $query, $jabatanFungsionalId)
     {
-        if ($jabatanFungsionalId && $jabatanFungsionalId != 'semua') {
-            return $query->whereHas('pegawai.jabatanAkademik.jabatanFungsional', function($q) use ($jabatanFungsionalId) {
-                $q->where('id', $jabatanFungsionalId);
-            });
+        if (!$jabatanFungsionalId || $jabatanFungsionalId === 'semua') {
+            return $query;
         }
-        return $query;
+
+        return $query->whereHas('pegawai.dataJabatanFungsional', function ($q) use ($jabatanFungsionalId) {
+            $q->where('jabatan_fungsional_id', $jabatanFungsionalId);
+        });
     }
 
-    // Scope untuk filter berdasarkan jenis penghargaan
-    public function scopeFilterByJenisPenghargaan($query, $jenisPenghargaan)
+    public function scopeFilterByJenisPenghargaan(Builder $query, $jenisPenghargaan)
     {
-        if ($jenisPenghargaan && $jenisPenghargaan != 'semua') {
-            return $query->where('jenis_penghargaan', $jenisPenghargaan);
+        if (!$jenisPenghargaan || $jenisPenghargaan === 'semua') {
+            return $query;
         }
-        return $query;
+        return $query->where('jenis_penghargaan', $jenisPenghargaan);
     }
 
-    // Scope untuk pencarian global
-    public function scopeGlobalSearch($query, $search)
+    public function scopeGlobalSearch(Builder $query, $search)
     {
-        if ($search) {
-            return $query->where(function($q) use ($search) {
-                $q->where('jenis_penghargaan', 'like', '%'.$search.'%')
-                  ->orWhere('nama_penghargaan', 'like', '%'.$search.'%')
-                  ->orWhere('no_sk', 'like', '%'.$search.'%')
-                  ->orWhere('tanggal_sk', 'like', '%'.$search.'%')
-                  ->orWhere('tanggal_penghargaan', 'like', '%'.$search.'%')
-                  ->orWhere('keterangan', 'like', '%'.$search.'%')
-                  ->orWhereHas('pegawai', function($query) use ($search) {
-                      $query->where('nip', 'like', '%'.$search.'%')
-                            ->orWhere('nama', 'like', '%'.$search.'%');
-                  });
-            });
+        if (!$search) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($search) {
+            $q->where('jenis_penghargaan', 'like', '%' . $search . '%')
+              ->orWhere('nama_penghargaan', 'like', '%' . $search . '%')
+              ->orWhere('no_sk', 'like', '%' . $search . '%')
+              ->orWhere('keterangan', 'like', '%' . $search . '%')
+              ->orWhereHas('pegawai', function ($q2) use ($search) {
+                  $q2->where('nip', 'like', '%' . $search . '%')
+                     ->orWhere('nama', 'like', '%' . $search . '%');
+              });
+        });
+    }
+    
+    // <--- INI ADALAH SCOPE YANG HILANG DAN PERLU DITAMBAHKAN --->
+    public function scopeByStatus(Builder $query, $status)
+    {
+        if ($status && $status != 'semua') {
+            return $query->where('status_pengajuan', $status);
         }
         return $query;
     }

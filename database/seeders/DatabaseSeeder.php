@@ -95,13 +95,13 @@ class DatabaseSeeder extends Seeder
             SimpegJabatanFungsionalSeeder::class,
             SimpegDataJabatanFungsionalSeeder::class,
             SimpegDataJabatanStrukturalSeeder::class,
-            SimpegPegawaiAdminSeeder::class,
+            // SimpegPegawaiAdminSeeder::class,
             SimpegMediaPublikasiSeeder::class,
             SimpegJenisKehadiranSeeder::class,
             SimpegJenisIzinSeeder::class,
             SimpegAgamaSeeder::class,
             SimpegGolonganDarahSeeder::class,
-
+            SimpegEvaluasiKinerjaSeeder::class
 
         ]);
     }

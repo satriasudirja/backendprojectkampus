@@ -78,7 +78,8 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
-        $role = $user->jabatanAkademik->role;
+        
+        // Log login activity
         \DB::table('simpeg_login_logs')->insert([
             'pegawai_id' => $user->id,
             'ip_address' => request()->ip(),
@@ -86,10 +87,21 @@ class AuthController extends Controller
             'logged_in_at' => now(),
         ]);
 
-        return $this->respondWithToken($token, $user, $role);
+        return $this->respondWithToken($token, $user);
     }
-    protected function respondWithToken($token, $user, $role)
+
+    /**
+     * Get the token array structure.
+     *
+     * @param  string $token
+     * @param  \App\Models\SimpegPegawai $user
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function respondWithToken($token, $user)
     {
+        // Tentukan role berdasarkan flag is_admin
+        $roleName = $user->is_admin ? 'Admin' : ($user->jabatanAkademik->role->nama ?? 'Pegawai');
+
         return response()->json([
             'success' => true,
             'access_token' => $token,
@@ -101,15 +113,15 @@ class AuthController extends Controller
                 'nama' => $user->nama,
                 'email' => $user->email_pribadi,
             ],
-            'role' => $role->nama,
-            'jabatan' => $user->jabatanAkademik->jabatan_akademik,
+            'role' => $roleName,
+            'jabatan' => $user->jabatanAkademik->jabatan_akademik ?? '-',
         ]);
     }
 
     public function me()
     {
         $user = Auth::user();
-        $role = $user->jabatanAkademik->role;
+        $roleName = $user->is_admin ? 'Admin' : ($user->jabatanAkademik->role->nama ?? 'Pegawai');
         
         return response()->json([
             'success' => true,
@@ -120,25 +132,31 @@ class AuthController extends Controller
                     'nama' => $user->nama,
                     'email' => $user->email_pribadi,
                 ],
-                'role' => $role->nama,
-                'jabatan' => $user->jabatanAkademik->jabatan_akademik,
+                'role' => $roleName,
+                'jabatan' => $user->jabatanAkademik->jabatan_akademik ?? '-',
             ]
         ]);
     }
     
     public function logout()
     {
-        $user = Auth::user();  // Mendapatkan user yang sedang login
-        $log_id = \DB::table('simpeg_login_logs')
-            ->where('pegawai_id', $user->id)
-            ->whereNull('logged_out_at')  // Pastikan belum ada waktu logout
-            ->value('id');
-    
-        // Update waktu logout di login log
-        \DB::table('simpeg_login_logs')
-            ->where('id', $log_id)
-            ->update(['logged_out_at' => now()]);
-    
+        $user = Auth::user(); // Mendapatkan user yang sedang login
+        
+        if ($user) {
+            $log_id = \DB::table('simpeg_login_logs')
+                ->where('pegawai_id', $user->id)
+                ->whereNull('logged_out_at') // Pastikan belum ada waktu logout
+                ->orderBy('logged_in_at', 'desc')
+                ->value('id');
+        
+            // Update waktu logout di login log
+            if ($log_id) {
+                \DB::table('simpeg_login_logs')
+                    ->where('id', $log_id)
+                    ->update(['logged_out_at' => now()]);
+            }
+        }
+        
         // Logout JWT
         Auth::logout();
     
@@ -151,20 +169,19 @@ class AuthController extends Controller
     public function refresh()
     {
         $user = Auth::user();
-        $role = $user->jabatanAkademik->role;
         $newToken = Auth::refresh();
         
-        return $this->respondWithToken($newToken, $user, $role);
+        return $this->respondWithToken($newToken, $user);
     }
 
     public function getMenu()
     {
         $user = Auth::user();
-        $role = $user->jabatanAkademik->role;
+        $roleName = $user->is_admin ? 'Admin' : ($user->jabatanAkademik->role->nama ?? 'Pegawai');
         
         $menus = [];
         
-        switch ($role->nama) {
+        switch ($roleName) {
             case 'Admin':
                 $menus = [
                     ['name' => 'Dashboard', 'path' => '/admin/dashboard', 'icon' => 'mdi-view-dashboard'],
