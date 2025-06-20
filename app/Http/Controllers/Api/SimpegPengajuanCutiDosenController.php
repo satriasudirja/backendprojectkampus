@@ -8,6 +8,7 @@ use App\Models\SimpegDaftarCuti;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegPegawai;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Services\ActivityLogger;
@@ -351,39 +352,36 @@ class SimpegPengajuanCutiDosenController extends Controller
     // Generate nomor cuti
     private function generateNoUrutCuti($jenisCutiId)
     {
-        try {
-            $jenisCuti = SimpegDaftarCuti::find($jenisCutiId);
-            if (!$jenisCuti) {
-                return 'CT/TEMP/' . time();
-            }
+        $jenisCuti = SimpegDaftarCuti::find($jenisCutiId);
+        
+        if (!$jenisCuti) {
+            return 'CT/TEMP/' . date('Y') . '/' . Str::random(6);
+        }
 
-            $today = now();
-            $year = $today->format('Y');
-            $month = $today->format('m');
-            
-            // Format for cuti number based on format_nomor_surat or default
-            $format = $jenisCuti->format_nomor_surat ?? 'CT/{kode}/{no}/{bulan}/{tahun}';
-            
-            // Count existing records for this type of cuti in the current year
-            $count = SimpegCutiRecord::where('jenis_cuti_id', $jenisCutiId)
+        $today = now();
+        $year = $today->format('Y');
+        $month = $today->format('m');
+        
+        // Hitung jumlah cuti jenis ini di tahun berjalan
+        $count = SimpegCutiRecord::where('jenis_cuti_id', $jenisCutiId)
                 ->whereYear('created_at', $year)
                 ->count() + 1;
-            
-            // Format the sequence number with leading zeros
-            $sequenceNumber = str_pad($count, 3, '0', STR_PAD_LEFT);
-            
-            // Replace placeholders in the format
-            $noUrutCuti = str_replace(
-                ['{no}', '{kode}', '{tahun}', '{bulan}'],
-                [$sequenceNumber, $jenisCuti->kode ?? 'CT', $year, $month],
-                $format
-            );
-            
-            return $noUrutCuti;
-        } catch (\Exception $e) {
-            // Fallback jika ada error
-            return 'CT/TEMP/' . time();
-        }
+
+        // Format default jika tidak ada template
+        $format = $jenisCuti->format_nomor_surat ?? 'CT/{kode}/{no}/{tahun}';
+        
+        // Ganti placeholder
+            return str_replace(
+            ['{{no}}', '{{kode}}', '{{tahun}}', '{{bulan}}', '{{urutan}}'],
+            [
+                str_pad($count, 3, '0', STR_PAD_LEFT),
+                $jenisCuti->kode ?? 'CT',
+                $year,
+                $month,
+                $count
+            ],
+            $format
+        );
     }
 
     // Calculate jumlah cuti (days between two dates)
@@ -504,6 +502,7 @@ class SimpegPengajuanCutiDosenController extends Controller
         }
     }
 
+    
     // Update data cuti dengan validasi status
  // Replace your update method with this fixed version
 public function update(Request $request, $id)
@@ -673,6 +672,59 @@ public function update(Request $request, $id)
         ], 500);
     }
 }
+
+    public function getRemainingCuti()
+{
+    $user = auth()->user(); // pastikan pakai autentikasi
+    $pegawaiId = $user->pegawai_id;
+
+    // ambil total cuti dari jenis cuti
+    $standarCuti = 12; // misalnya default 12, atau bisa dari DB
+
+    // ambil total cuti yang sudah diambil user ini dari tabel pengajuan cuti
+    $cutiTerpakai = SimpegCutiRecord::where('pegawai_id', $pegawaiId)
+                    ->where('status_pengajuan', 'disetujui') // hanya yang disetujui
+                    ->sum('jumlah_cuti');
+
+    $sisaCuti = max(0, $standarCuti - $cutiTerpakai);
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'pegawai_id' => $pegawaiId,
+            'standar_cuti' => $standarCuti,
+            'terpakai' => $cutiTerpakai,
+            'sisa_cuti' => $sisaCuti,
+        ]
+    ]);
+}
+
+public function getAvailableActions()
+{
+    $user = auth()->user(); // Pastikan user terautentikasi
+    $role = $user->role ?? 'pegawai';
+
+    $actions = [];
+
+    if ($role === 'admin') {
+        $actions = [
+            'approve', 'reject', 'delete', 'edit'
+            // 'print' dihapus
+        ];
+    } elseif ($role === 'pegawai') {
+        $actions = [
+            'edit', 'submit'
+            // 'print' dihapus
+        ];
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => $actions,
+    ]);
+}
+
+
 
     // Delete data cuti
     public function destroy($id)

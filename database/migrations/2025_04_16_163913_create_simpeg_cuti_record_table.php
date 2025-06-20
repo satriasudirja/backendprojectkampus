@@ -17,9 +17,9 @@ return new class extends Migration
             $table->integer('jenis_cuti_id');
             $table->string('no_urut_cuti', 50);
             $table->date('tgl_mulai');
-             $table->date('tgl_diajukan');
-              $table->date('tgl_disetujui');
-               $table->date('tgl_ditolak');
+             $table->date('tgl_diajukan')->nullable();
+              $table->date('tgl_disetujui')->nullable();
+               $table->date('tgl_ditolak')->nullable();
             $table->date('tgl_selesai');
             $table->integer('jumlah_cuti');
             $table->string('alasan_cuti', 255);

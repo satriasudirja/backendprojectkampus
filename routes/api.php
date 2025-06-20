@@ -1144,28 +1144,26 @@ Route::prefix('monitoring')->group(function () {
 
         // Pengajuan Cuti Dosen Routes
         Route::prefix('pengajuan-cuti-dosen')->group(function () {
-            Route::get('/', [SimpegPengajuanCutiDosenController::class, 'index']);
-            Route::get('/{id}', [SimpegPengajuanCutiDosenController::class, 'show']);
-            Route::post('/', [SimpegPengajuanCutiDosenController::class, 'store']);
-            Route::put('/{id}', [SimpegPengajuanCutiDosenController::class, 'update']);
-            Route::delete('/{id}', [SimpegPengajuanCutiDosenController::class, 'destroy']);
+        Route::get('/filter-options', [SimpegPengajuanCutiDosenController::class, 'getFilterOptions']);
+        Route::get('/available-actions', [SimpegPengajuanCutiDosenController::class, 'getAvailableActions']);
+        Route::get('/remaining-cuti', [SimpegPengajuanCutiDosenController::class, 'getRemainingCuti']);
+        Route::get('/config/system', [SimpegPengajuanCutiDosenController::class, 'getSystemConfig']);
+        Route::get('/statistics/status', [SimpegPengajuanCutiDosenController::class, 'getStatusStatistics']);
 
-            // Status Pengajuan Routes
-            Route::patch('/{id}/submit', [SimpegPengajuanCutiDosenController::class, 'submitDraft']);
-            Route::get('/{id}/print', [SimpegPengajuanCutiDosenController::class, 'printCuti']);
+        Route::get('/', [SimpegPengajuanCutiDosenController::class, 'index']);
+        Route::post('/', [SimpegPengajuanCutiDosenController::class, 'store']);
+        
+        Route::delete('/batch/delete', [SimpegPengajuanCutiDosenController::class, 'batchDelete']);
+        Route::patch('/batch/submit', [SimpegPengajuanCutiDosenController::class, 'batchSubmitDrafts']);
+        Route::patch('/batch/status', [SimpegPengajuanCutiDosenController::class, 'batchUpdateStatus']);
+        
+        Route::get('/{id}', [SimpegPengajuanCutiDosenController::class, 'show']);
+        Route::put('/{id}', [SimpegPengajuanCutiDosenController::class, 'update']);
+        Route::delete('/{id}', [SimpegPengajuanCutiDosenController::class, 'destroy']);
+        Route::patch('/{id}/submit', [SimpegPengajuanCutiDosenController::class, 'submitDraft']);
+        Route::get('/{id}/print', [SimpegPengajuanCutiDosenController::class, 'printCuti']);
+    });
 
-            // Batch Operations Routes
-            Route::delete('/batch/delete', [SimpegPengajuanCutiDosenController::class, 'batchDelete']);
-            Route::patch('/batch/submit', [SimpegPengajuanCutiDosenController::class, 'batchSubmitDrafts']);
-            Route::patch('/batch/status', [SimpegPengajuanCutiDosenController::class, 'batchUpdateStatus']);
-
-            // Configuration & Statistics Routes
-            Route::get('/config/system', [SimpegPengajuanCutiDosenController::class, 'getSystemConfig']);
-            Route::get('/statistics/status', [SimpegPengajuanCutiDosenController::class, 'getStatusStatistics']);
-            Route::get('/filter-options', [SimpegPengajuanCutiDosenController::class, 'getFilterOptions']);
-            Route::get('/available-actions', [SimpegPengajuanCutiDosenController::class, 'getAvailableActions']);
-            Route::get('/remaining-cuti', [SimpegPengajuanCutiDosenController::class, 'getRemainingCuti']);
-        });
 
         // Data Orang Tua Routes
         Route::prefix('orangtua')->middleware('auth:api')->group(function () {
@@ -1927,28 +1925,26 @@ Route::prefix('monitoring')->group(function () {
 
             // Pengajuan Cuti Dosen Routes
             Route::prefix('pengajuan-cuti-dosen')->group(function () {
-                Route::get('/', [SimpegPengajuanCutiDosenController::class, 'index']);
-                Route::get('/{id}', [SimpegPengajuanCutiDosenController::class, 'show']);
-                Route::post('/', [SimpegPengajuanCutiDosenController::class, 'store']);
-                Route::put('/{id}', [SimpegPengajuanCutiDosenController::class, 'update']);
-                Route::delete('/{id}', [SimpegPengajuanCutiDosenController::class, 'destroy']);
+            Route::get('/filter-options', [SimpegPengajuanCutiDosenController::class, 'getFilterOptions']);
+            Route::get('/available-actions', [SimpegPengajuanCutiDosenController::class, 'getAvailableActions']);
+            Route::get('/remaining-cuti', [SimpegPengajuanCutiDosenController::class, 'getRemainingCuti']);
+            Route::get('/config/system', [SimpegPengajuanCutiDosenController::class, 'getSystemConfig']);
+            Route::get('/statistics/status', [SimpegPengajuanCutiDosenController::class, 'getStatusStatistics']);
 
-                // Status Pengajuan Routes
-                Route::patch('/{id}/submit', [SimpegPengajuanCutiDosenController::class, 'submitDraft']);
-                Route::get('/{id}/print', [SimpegPengajuanCutiDosenController::class, 'printCuti']);
+            Route::get('/', [SimpegPengajuanCutiDosenController::class, 'index']);
+            Route::post('/', [SimpegPengajuanCutiDosenController::class, 'store']);
+            
+            Route::delete('/batch/delete', [SimpegPengajuanCutiDosenController::class, 'batchDelete']);
+            Route::patch('/batch/submit', [SimpegPengajuanCutiDosenController::class, 'batchSubmitDrafts']);
+            Route::patch('/batch/status', [SimpegPengajuanCutiDosenController::class, 'batchUpdateStatus']);
+            
+            Route::get('/{id}', [SimpegPengajuanCutiDosenController::class, 'show']);
+            Route::put('/{id}', [SimpegPengajuanCutiDosenController::class, 'update']);
+            Route::delete('/{id}', [SimpegPengajuanCutiDosenController::class, 'destroy']);
+            Route::patch('/{id}/submit', [SimpegPengajuanCutiDosenController::class, 'submitDraft']);
+            Route::get('/{id}/print', [SimpegPengajuanCutiDosenController::class, 'printCuti']);
+        });
 
-                // Batch Operations Routes
-                Route::delete('/batch/delete', [SimpegPengajuanCutiDosenController::class, 'batchDelete']);
-                Route::patch('/batch/submit', [SimpegPengajuanCutiDosenController::class, 'batchSubmitDrafts']);
-                Route::patch('/batch/status', [SimpegPengajuanCutiDosenController::class, 'batchUpdateStatus']);
-
-                // Configuration & Statistics Routes
-                Route::get('/config/system', [SimpegPengajuanCutiDosenController::class, 'getSystemConfig']);
-                Route::get('/statistics/status', [SimpegPengajuanCutiDosenController::class, 'getStatusStatistics']);
-                Route::get('/filter-options', [SimpegPengajuanCutiDosenController::class, 'getFilterOptions']);
-                Route::get('/available-actions', [SimpegPengajuanCutiDosenController::class, 'getAvailableActions']);
-                Route::get('/remaining-cuti', [SimpegPengajuanCutiDosenController::class, 'getRemainingCuti']);
-            });
 
            
         });

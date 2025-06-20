@@ -37,9 +37,9 @@ class SimpegCutiRecord extends Model
 
     protected $casts = [
         'tgl_mulai' => 'date',
-        'tgl_sclesai' => 'date',
+        'tgl_selesai' => 'date',
         'jumlah_cuti' => 'integer',
-         'tgl_diajukan' => 'date',
+        'tgl_diajukan' => 'date',
         'tgl_disetujui' => 'date',
         'tgl_ditolak'=> 'date',
     ];
