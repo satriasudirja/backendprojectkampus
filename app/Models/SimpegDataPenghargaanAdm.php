@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder; // Import untuk type-hinting scope
 use Carbon\Carbon;
@@ -48,6 +49,28 @@ class SimpegDataPenghargaanAdm extends Model
 
     // --- SCOPE UNTUK FILTERING ---
 
+    public function dokumenPendukung()
+    {
+        return $this->morphMany(SimpegDataPendukung::class, 'pendukungable');
+    }
+
+    // Accessor untuk mendapatkan URL file pendukung
+    public function getFilePendukungUrlAttribute()
+    {
+        if ($this->file_pendukung) {
+            return url('storage/pegawai/tes/dokumen/' . $this->file_pendukung);
+        }
+        return null;
+    }
+
+    // Accessor untuk cek apakah file pendukung exists
+    public function getFilePendukungExistsAttribute()
+    {
+        if ($this->file_pendukung) {
+            return Storage::exists('public/pegawai/tes/dokumen/' . $this->file_pendukung);
+        }
+        return false;
+    }
     public function scopeFilterByUnitKerja(Builder $query, $unitKerjaId)
     {
         if (!$unitKerjaId || $unitKerjaId === 'semua') {

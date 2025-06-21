@@ -25,9 +25,9 @@ return new class extends Migration
             $table->year('tahun');
             $table->unsignedBigInteger('bahasa_id');
             $table->string('nama_lembaga', 100)->nullable();
-            $table->enum('kemampuan_mendengar', ['Sangat Baik', 'Baik', 'Cukup', 'Kurang'])->nullable();
-            $table->enum('kemampuan_bicara', ['Sangat Baik', 'Baik', 'Cukup', 'Kurang'])->nullable();
-            $table->enum('kemampuan_menulis', ['Sangat Baik', 'Baik', 'Cukup', 'Kurang'])->nullable();
+            $table->integer('kemampuan_mendengar')->nullable();
+            $table->integer('kemampuan_bicara')->nullable();
+            $table->integer('kemampuan_menulis')->nullable();
             $table->string('file_pendukung', 255)->nullable();
             $table->enum('status_pengajuan', ['draft', 'diajukan', 'disetujui', 'ditolak'])->default('draft');
             $table->date('tgl_input')->nullable();

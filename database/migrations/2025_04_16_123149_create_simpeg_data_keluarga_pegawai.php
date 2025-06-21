@@ -36,6 +36,8 @@ return new class extends Migration
             // Data khusus anak
             $table->string('pekerjaan_anak', 50)->nullable();
             
+            $table->string('keterangan')->nullable();
+            
             // Data pasangan
             $table->string('nama_pasangan', 100)->nullable();
             $table->boolean('pasangan_berkerja_dalam_satu_instansi')->default(false)->nullable();

@@ -106,17 +106,19 @@ class PegawaiController extends Controller
                     'detail_url' => url("/api/{$prefix}/pegawai/" . $item->id),
                     'delete_url' => url("/api/{$prefix}/pegawai/" . $item->id),
                     'update_status_url' => url("/api/{$prefix}/pegawai/update-status/" . $item->id),
-                    'riwayat' => [
-                        'unit_kerja' => url("/api/{$prefix}/pegawai/riwayat-unit-kerja/" . $item->id),
-                        'pendidikan' => url("/api/{$prefix}/pegawai/info-pendidikan/" . $item->id),
-                        'pangkat' => url("/api/{$prefix}/pegawai/riwayat-pangkat/" . $item->id),
-                        'akademik' => url("/api/{$prefix}/pegawai/riwayat-jabatan-akademik/" . $item->id),
-                        'fungsional' => url("/api/{$prefix}/pegawai/riwayat-fungsional/" . $item->id),
-                        'jenjang_fungsional' => url("/api/{$prefix}/pegawai/riwayat-jenjang-fungsional/" . $item->id),
-                        'jabatan_struktural' => url("/api/{$prefix}/pegawai/riwayat-jabatan-struktural/" . $item->id),
-                        'hubungan_kerja' => url("/api/{$prefix}/pegawai/riwayat-hubungan-kerja/" . $item->id),
-                        'rekap_kehadiran' => url("/api/{$prefix}/pegawai/riwayat-kehadiran/" . $item->id)
-                    ]
+                  'riwayat' => [
+    'riwayat_pendidikan' => url("/api/pegawai/$item->id/riwayat-pendidikan-formal"),
+    'riwayat_pekerjaan' => url("/api/pegawai/$item->id/riwayat-pekerjaan"),
+    'riwayat_diklat' => url("/api/pegawai/$item->id/riwayat-diklat"),
+    'riwayat_pangkat' => url("/api/pegawai/$item->id/riwayat-pangkat"),
+    'riwayat_jabatan_struktural' => url("/api/pegawai/$item->id/riwayat-jabatan-struktural"),
+    'riwayat_jabatan_akademik' => url("/api/pegawai/$item->id/riwayat-jabatan-akademik"),
+    'riwayat_hubungan_kerja' => url("/api/pegawai/$item->id/riwayat-hubungan-kerja"),
+    'riwayat_data_orang_tua' => url("/api/pegawai/$item->id/riwayat-data-orang-tua"),
+    'riwayat_data_pasangan' => url("/api/pegawai/$item->id/riwayat-data-pasangan"),
+    'riwayat_data_anak' => url("/api/pegawai/$item->id/riwayat-data-anak"),
+    'rekap_kehadiran' => url("/api/pegawai/$item->id/rekap-kehadiran") // Tambahkan jika ada route-nya
+]
                 ]
             ];
         });

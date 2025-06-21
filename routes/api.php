@@ -126,9 +126,27 @@ use App\Http\Controllers\Api\SimpegDataJabatanAkademikAdminController;
 use App\Http\Controllers\Api\SimpegDataJabatanFungsionalAdminController;
 use App\Http\Controllers\Api\SimpegDataJabatanStrukturalAdminController; 
 use App\Http\Controllers\Api\SimpegDataPangkatAdminController;
-
+use App\Http\Controllers\Api\AdminSimpegDataAnakController;
 use App\Http\Controllers\Api\SimpegPendidikanFormalDosenController;
-
+use App\Http\Controllers\Api\AdminSimpegDataPasanganController;
+use App\Http\Controllers\Api\AdminSimpegDataOrangTuaController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatPangkatController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatJabatanAkademikController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatJabatanStrukturalController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatHubunganKerjaController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatPresensiController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatDiklatController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatPendidikanFormalController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatPekerjaanController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatSertifikasiController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatTesController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatPenghargaanController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatOrganisasiController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatKemampuanBahasaController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatPelanggaranController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatCutiController;
+use App\Http\Controllers\Api\AdminSimpegRiwayatIzinController;
+use App\Http\Controllers\Api\DashboardDosenController;
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -150,6 +168,315 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+
+         Route::get('/pegawai/search', [AdminSimpegDataAnakController::class, 'searchPegawai'])
+        ->name('admin.pegawai.search');
+
+
+
+        Route::prefix('/pegawai/{pegawai_id}/riwayat-presensi')->group(function () {
+    
+    // Endpoint utama untuk rekap bulanan
+    Route::get('/', [AdminSimpegRiwayatPresensiController::class, 'getMonthlySummary'])
+        ->name('admin.pegawai.presensi.summary');
+
+    // Endpoint untuk detail harian per bulan
+    Route::get('/detail', [AdminSimpegRiwayatPresensiController::class, 'getDailyDetail'])
+        ->name('admin.pegawai.presensi.daily-detail');
+
+    // Endpoint untuk koreksi/update data presensi harian
+    Route::post('/{record_id}', [AdminSimpegRiwayatPresensiController::class, 'update'])
+        ->name('admin.pegawai.presensi.update');
+});
+
+
+
+
+        
+    // CRUD untuk Riwayat Data Anak milik seorang pegawai
+    Route::prefix('/pegawai/{pegawai_id}')->group(function () {
+        Route::get('/riwayat-izin', [AdminSimpegRiwayatIzinController::class, 'index'])
+        ->name('admin.pegawai.izin.index');
+
+    Route::post('/riwayat-izin', [AdminSimpegRiwayatIzinController::class, 'store'])
+        ->name('admin.pegawai.izin.store');
+
+    Route::get('/riwayat-izin/{riwayat_id}', [AdminSimpegRiwayatIzinController::class, 'show'])
+        ->name('admin.pegawai.izin.show');
+
+    Route::post('/riwayat-izin/{riwayat_id}', [AdminSimpegRiwayatIzinController::class, 'update'])
+        ->name('admin.pegawai.izin.update');
+
+    Route::delete('/riwayat-izin/{riwayat_id}', [AdminSimpegRiwayatIzinController::class, 'destroy'])
+        ->name('admin.pegawai.izin.destroy');
+         Route::get('/riwayat-cuti', [AdminSimpegRiwayatCutiController::class, 'index'])
+        ->name('admin.pegawai.cuti.index');
+
+    Route::post('/riwayat-cuti', [AdminSimpegRiwayatCutiController::class, 'store'])
+        ->name('admin.pegawai.cuti.store');
+
+    Route::get('/riwayat-cuti/{riwayat_id}', [AdminSimpegRiwayatCutiController::class, 'show'])
+        ->name('admin.pegawai.cuti.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-cuti/{riwayat_id}', [AdminSimpegRiwayatCutiController::class, 'update'])
+        ->name('admin.pegawai.cuti.update');
+
+    Route::delete('/riwayat-cuti/{riwayat_id}', [AdminSimpegRiwayatCutiController::class, 'destroy'])
+        ->name('admin.pegawai.cuti.destroy');
+
+            Route::get('/riwayat-pelanggaran', [AdminSimpegRiwayatPelanggaranController::class, 'index'])
+        ->name('admin.pegawai.pelanggaran.index');
+
+    Route::post('/riwayat-pelanggaran', [AdminSimpegRiwayatPelanggaranController::class, 'store'])
+        ->name('admin.pegawai.pelanggaran.store');
+
+    Route::get('/riwayat-pelanggaran/{riwayat_id}', [AdminSimpegRiwayatPelanggaranController::class, 'show'])
+        ->name('admin.pegawai.pelanggaran.show');
+
+    Route::post('/riwayat-pelanggaran/{riwayat_id}', [AdminSimpegRiwayatPelanggaranController::class, 'update'])
+        ->name('admin.pegawai.pelanggaran.update');
+
+    Route::delete('/riwayat-pelanggaran/{riwayat_id}', [AdminSimpegRiwayatPelanggaranController::class, 'destroy'])
+        ->name('admin.pegawai.pelanggaran.destroy');
+
+         Route::get('/riwayat-kemampuan-bahasa', [AdminSimpegRiwayatKemampuanBahasaController::class, 'index'])
+        ->name('admin.pegawai.kemampuan-bahasa.index');
+
+    Route::post('/riwayat-kemampuan-bahasa', [AdminSimpegRiwayatKemampuanBahasaController::class, 'store'])
+        ->name('admin.pegawai.kemampuan-bahasa.store');
+
+    Route::get('/riwayat-kemampuan-bahasa/{riwayat_id}', [AdminSimpegRiwayatKemampuanBahasaController::class, 'show'])
+        ->name('admin.pegawai.kemampuan-bahasa.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-kemampuan-bahasa/{riwayat_id}', [AdminSimpegRiwayatKemampuanBahasaController::class, 'update'])
+        ->name('admin.pegawai.kemampuan-bahasa.update');
+
+    Route::delete('/riwayat-kemampuan-bahasa/{riwayat_id}', [AdminSimpegRiwayatKemampuanBahasaController::class, 'destroy'])
+        ->name('admin.pegawai.kemampuan-bahasa.destroy');
+         Route::get('/riwayat-organisasi', [AdminSimpegRiwayatOrganisasiController::class, 'index'])
+        ->name('admin.pegawai.organisasi.index');
+
+    Route::post('/riwayat-organisasi', [AdminSimpegRiwayatOrganisasiController::class, 'store'])
+        ->name('admin.pegawai.organisasi.store');
+
+    Route::get('/riwayat-organisasi/{riwayat_id}', [AdminSimpegRiwayatOrganisasiController::class, 'show'])
+        ->name('admin.pegawai.organisasi.show');
+
+    Route::post('/riwayat-organisasi/{riwayat_id}', [AdminSimpegRiwayatOrganisasiController::class, 'update'])
+        ->name('admin.pegawai.organisasi.update');
+
+    Route::delete('/riwayat-organisasi/{riwayat_id}', [AdminSimpegRiwayatOrganisasiController::class, 'destroy'])
+        ->name('admin.pegawai.organisasi.destroy');
+
+         Route::get('/riwayat-penghargaan', [AdminSimpegRiwayatPenghargaanController::class, 'index'])
+        ->name('admin.pegawai.penghargaan.index');
+
+    Route::post('/riwayat-penghargaan', [AdminSimpegRiwayatPenghargaanController::class, 'store'])
+        ->name('admin.pegawai.penghargaan.store');
+
+    Route::get('/riwayat-penghargaan/{riwayat_id}', [AdminSimpegRiwayatPenghargaanController::class, 'show'])
+        ->name('admin.pegawai.penghargaan.show');
+
+    Route::post('/riwayat-penghargaan/{riwayat_id}', [AdminSimpegRiwayatPenghargaanController::class, 'update'])
+        ->name('admin.pegawai.penghargaan.update');
+
+    Route::delete('/riwayat-penghargaan/{riwayat_id}', [AdminSimpegRiwayatPenghargaanController::class, 'destroy'])
+        ->name('admin.pegawai.penghargaan.destroy');
+
+
+         Route::get('/riwayat-tes', [AdminSimpegRiwayatTesController::class, 'index'])
+        ->name('admin.pegawai.tes.index');
+
+    Route::post('/riwayat-tes', [AdminSimpegRiwayatTesController::class, 'store'])
+        ->name('admin.pegawai.tes.store');
+
+    Route::get('/riwayat-tes/{riwayat_id}', [AdminSimpegRiwayatTesController::class, 'show'])
+        ->name('admin.pegawai.tes.show');
+
+    Route::post('/riwayat-tes/{riwayat_id}', [AdminSimpegRiwayatTesController::class, 'update'])
+        ->name('admin.pegawai.tes.update');
+
+    Route::delete('/riwayat-tes/{riwayat_id}', [AdminSimpegRiwayatTesController::class, 'destroy'])
+        ->name('admin.pegawai.tes.destroy');
+        Route::get('/riwayat-sertifikasi', [AdminSimpegRiwayatSertifikasiController::class, 'index'])
+        ->name('admin.pegawai.sertifikasi.index');
+
+    Route::post('/riwayat-sertifikasi', [AdminSimpegRiwayatSertifikasiController::class, 'store'])
+        ->name('admin.pegawai.sertifikasi.store');
+
+    Route::get('/riwayat-sertifikasi/{riwayat_id}', [AdminSimpegRiwayatSertifikasiController::class, 'show'])
+        ->name('admin.pegawai.sertifikasi.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-sertifikasi/{riwayat_id}', [AdminSimpegRiwayatSertifikasiController::class, 'update'])
+        ->name('admin.pegawai.sertifikasi.update');
+
+    Route::delete('/riwayat-sertifikasi/{riwayat_id}', [AdminSimpegRiwayatSertifikasiController::class, 'destroy'])
+        ->name('admin.pegawai.sertifikasi.destroy');
+
+         Route::get('/riwayat-pekerjaan', [AdminSimpegRiwayatPekerjaanController::class, 'index'])
+        ->name('admin.pegawai.pekerjaan.index');
+
+    Route::post('/riwayat-pekerjaan', [AdminSimpegRiwayatPekerjaanController::class, 'store'])
+        ->name('admin.pegawai.pekerjaan.store');
+
+    Route::get('/riwayat-pekerjaan/{riwayat_id}', [AdminSimpegRiwayatPekerjaanController::class, 'show'])
+        ->name('admin.pegawai.pekerjaan.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-pekerjaan/{riwayat_id}', [AdminSimpegRiwayatPekerjaanController::class, 'update'])
+        ->name('admin.pegawai.pekerjaan.update');
+
+    Route::delete('/riwayat-pekerjaan/{riwayat_id}', [AdminSimpegRiwayatPekerjaanController::class, 'destroy'])
+        ->name('admin.pegawai.pekerjaan.destroy');
+
+         Route::get('/riwayat-pendidikan-formal', [AdminSimpegRiwayatPendidikanFormalController::class, 'index'])
+        ->name('admin.pegawai.pendidikan-formal.index');
+
+    Route::post('/riwayat-pendidikan-formal', [AdminSimpegRiwayatPendidikanFormalController::class, 'store'])
+        ->name('admin.pegawai.pendidikan-formal.store');
+
+    Route::get('/riwayat-pendidikan-formal/{riwayat_id}', [AdminSimpegRiwayatPendidikanFormalController::class, 'show'])
+        ->name('admin.pegawai.pendidikan-formal.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-pendidikan-formal/{riwayat_id}', [AdminSimpegRiwayatPendidikanFormalController::class, 'update'])
+        ->name('admin.pegawai.pendidikan-formal.update');
+
+    Route::delete('/riwayat-pendidikan-formal/{riwayat_id}', [AdminSimpegRiwayatPendidikanFormalController::class, 'destroy'])
+        ->name('admin.pegawai.pendidikan-formal.destroy');
+         Route::get('/riwayat-diklat', [AdminSimpegRiwayatDiklatController::class, 'index'])
+        ->name('admin.pegawai.diklat.index');
+
+    Route::post('/riwayat-diklat', [AdminSimpegRiwayatDiklatController::class, 'store'])
+        ->name('admin.pegawai.diklat.store');
+
+    Route::get('/riwayat-diklat/{riwayat_id}', [AdminSimpegRiwayatDiklatController::class, 'show'])
+        ->name('admin.pegawai.diklat.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-diklat/{riwayat_id}', [AdminSimpegRiwayatDiklatController::class, 'update'])
+        ->name('admin.pegawai.diklat.update');
+
+    Route::delete('/riwayat-diklat/{riwayat_id}', [AdminSimpegRiwayatDiklatController::class, 'destroy'])
+        ->name('admin.pegawai.diklat.destroy');
+
+         Route::get('/riwayat-hubungan-kerja', [AdminSimpegRiwayatHubunganKerjaController::class, 'index'])
+        ->name('admin.pegawai.hubungan-kerja.index');
+
+    Route::post('/riwayat-hubungan-kerja', [AdminSimpegRiwayatHubunganKerjaController::class, 'store'])
+        ->name('admin.pegawai.hubungan-kerja.store');
+
+    Route::get('/riwayat-hubungan-kerja/{riwayat_id}', [AdminSimpegRiwayatHubunganKerjaController::class, 'show'])
+        ->name('admin.pegawai.hubungan-kerja.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-hubungan-kerja/{riwayat_id}', [AdminSimpegRiwayatHubunganKerjaController::class, 'update'])
+        ->name('admin.pegawai.hubungan-kerja.update');
+
+    Route::delete('/riwayat-hubungan-kerja/{riwayat_id}', [AdminSimpegRiwayatHubunganKerjaController::class, 'destroy'])
+        ->name('admin.pegawai.hubungan-kerja.destroy');
+
+         Route::get('/riwayat-jabatan-struktural', [AdminSimpegRiwayatJabatanStrukturalController::class, 'index'])
+        ->name('admin.pegawai.jabatan-struktural.index');
+
+    Route::post('/riwayat-jabatan-struktural', [AdminSimpegRiwayatJabatanStrukturalController::class, 'store'])
+        ->name('admin.pegawai.jabatan-struktural.store');
+
+    Route::get('/riwayat-jabatan-struktural/{riwayat_id}', [AdminSimpegRiwayatJabatanStrukturalController::class, 'show'])
+        ->name('admin.pegawai.jabatan-struktural.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-jabatan-struktural/{riwayat_id}', [AdminSimpegRiwayatJabatanStrukturalController::class, 'update'])
+        ->name('admin.pegawai.jabatan-struktural.update');
+
+    Route::delete('/riwayat-jabatan-struktural/{riwayat_id}', [AdminSimpegRiwayatJabatanStrukturalController::class, 'destroy'])
+        ->name('admin.pegawai.jabatan-struktural.destroy');
+
+           Route::get('/riwayat-jabatan-akademik', [AdminSimpegRiwayatJabatanAkademikController::class, 'index'])
+        ->name('admin.pegawai.jabatan-akademik.index');
+
+    Route::post('/riwayat-jabatan-akademik', [AdminSimpegRiwayatJabatanAkademikController::class, 'store'])
+        ->name('admin.pegawai.jabatan-akademik.store');
+
+    Route::get('/riwayat-jabatan-akademik/{riwayat_id}', [AdminSimpegRiwayatJabatanAkademikController::class, 'show'])
+        ->name('admin.pegawai.jabatan-akademik.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-jabatan-akademik/{riwayat_id}', [AdminSimpegRiwayatJabatanAkademikController::class, 'update'])
+        ->name('admin.pegawai.jabatan-akademik.update');
+
+    Route::delete('/riwayat-jabatan-akademik/{riwayat_id}', [AdminSimpegRiwayatJabatanAkademikController::class, 'destroy'])
+        ->name('admin.pegawai.jabatan-akademik.destroy');
+
+        Route::get('/riwayat-pangkat', [AdminSimpegRiwayatPangkatController::class, 'index'])
+        ->name('admin.pegawai.pangkat.index');
+
+    Route::post('/riwayat-pangkat', [AdminSimpegRiwayatPangkatController::class, 'store'])
+        ->name('admin.pegawai.pangkat.store');
+
+    Route::get('/riwayat-pangkat/{pangkat_id}', [AdminSimpegRiwayatPangkatController::class, 'show'])
+        ->name('admin.pegawai.pangkat.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-pangkat/{pangkat_id}', [AdminSimpegRiwayatPangkatController::class, 'update'])
+        ->name('admin.pegawai.pangkat.update');
+
+    Route::delete('/riwayat-pangkat/{pangkat_id}', [AdminSimpegRiwayatPangkatController::class, 'destroy'])
+        ->name('admin.pegawai.pangkat.destroy');
+
+        Route::get('/riwayat-data-orang-tua', [AdminSimpegDataOrangTuaController::class, 'index'])
+        ->name('admin.pegawai.orangtua.index');
+
+    Route::post('/riwayat-data-orang-tua', [AdminSimpegDataOrangTuaController::class, 'store'])
+        ->name('admin.pegawai.orangtua.store');
+
+    Route::get('/riwayat-data-orang-tua/{orangtua_id}', [AdminSimpegDataOrangTuaController::class, 'show'])
+        ->name('admin.pegawai.orangtua.show');
+
+    // Menggunakan POST untuk update
+    Route::post('/riwayat-data-orang-tua/{orangtua_id}', [AdminSimpegDataOrangTuaController::class, 'update'])
+        ->name('admin.pegawai.orangtua.update');
+
+    Route::delete('/riwayat-data-orang-tua/{orangtua_id}', [AdminSimpegDataOrangTuaController::class, 'destroy'])
+        ->name('admin.pegawai.orangtua.destroy');
+            // CRUD untuk Riwayat Data Pasanga
+            // n milik seorang pegawai
+    Route::get('/riwayat-data-pasangan', [AdminSimpegDataPasanganController::class, 'index'])
+        ->name('admin.pegawai.pasangan.index');
+
+    Route::post('/riwayat-data-pasangan', [AdminSimpegDataPasanganController::class, 'store'])
+        ->name('admin.pegawai.pasangan.store');
+
+    Route::get('/riwayat-data-pasangan/{pasangan_id}', [AdminSimpegDataPasanganController::class, 'show'])
+        ->name('admin.pegawai.pasangan.show');
+
+    // Menggunakan POST untuk update agar bisa handle multipart/form-data
+    Route::post('/riwayat-data-pasangan/{pasangan_id}', [AdminSimpegDataPasanganController::class, 'update'])
+        ->name('admin.pegawai.pasangan.update');
+
+    Route::delete('/riwayat-data-pasangan/{pasangan_id}', [AdminSimpegDataPasanganController::class, 'destroy'])
+        ->name('admin.pegawai.pasangan.destroy');
+
+
+        Route::get('/riwayat-data-anak', [AdminSimpegDataAnakController::class, 'index'])
+            ->name('admin.pegawai.anak.index');
+
+        Route::post('/riwayat-data-anak', [AdminSimpegDataAnakController::class, 'store'])
+            ->name('admin.pegawai.anak.store');
+
+        Route::get('/riwayat-data-anak/{anak_id}', [AdminSimpegDataAnakController::class, 'show'])
+            ->name('admin.pegawai.anak.show');
+
+        // Menggunakan POST untuk update agar bisa handle multipart/form-data
+        Route::post('/riwayat-data-anak/{anak_id}', [AdminSimpegDataAnakController::class, 'update'])
+            ->name('admin.pegawai.anak.update');
+
+        Route::delete('/riwayat-data-anak/{anak_id}', [AdminSimpegDataAnakController::class, 'destroy'])
+            ->name('admin.pegawai.anak.destroy');
+    });
         
          Route::get('datapangkatadm/filter-options', [SimpegDataPangkatAdminController::class, 'getFilterOptions']);
     Route::get('datapangkatadm/form-options', [SimpegDataPangkatAdminController::class, 'getFormOptions']);
@@ -893,8 +1220,13 @@ Route::prefix('evaluasi-kinerja')->group(function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
 
+        Route::prefix('dosen-dashboard')->group(function () {
+    // Endpoint utama untuk mengambil semua data dashboard
+    Route::get('/', [DashboardDosenController::class, 'getDashboardData'])->name('dosen.dashboard.data');
 
-        // Berita Routes untuk Dosen
+    // Endpoint untuk mengambil detail riwayat hadir
+    Route::get('/riwayat-hadir', [DashboardDosenController::class, 'getRiwayatHadir'])->name('dosen.dashboard.riwayat-hadir');
+        });
         Route::prefix('berita')->group(function () {
             // ========================================
             // CONFIGURATION & STATISTICS ROUTES (HARUS PALING ATAS!)
