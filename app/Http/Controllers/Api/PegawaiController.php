@@ -12,6 +12,7 @@ use App\Models\HubunganKerja;
 use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class PegawaiController extends Controller
 {
@@ -168,7 +169,8 @@ class PegawaiController extends Controller
             'dataJabatanFungsional',
             'dataJabatanStruktural',
             'absensiRecord'
-        ])->find($id);
+      ])->find($id);
+
 
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan'], 404);
@@ -870,36 +872,57 @@ class PegawaiController extends Controller
         ]);
     }
 
-    public function rekapKehadiran($id)
-    {
-        $pegawai = SimpegPegawai::find($id);
+  public function rekapKehadiran($id)
+{
+    // Gunakan findOrFail untuk otomatis 404 jika pegawai target tidak ada
+    $pegawai = SimpegPegawai::findOrFail($id);
 
-        if (!$pegawai) {
-            return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan'], 404);
-        }
+    // Ambil pengguna yang sedang login
+    $authenticatedUser = Auth::user();
 
-        $rekap = $pegawai->absensiRecord()
-            ->select(
-                DB::raw('YEAR(tanggal) as tahun'),
-                DB::raw('MONTH(tanggal) as bulan'),
-                DB::raw('COUNT(*) as total_kehadiran'),
-                DB::raw('SUM(CASE WHEN status = "hadir" THEN 1 ELSE 0 END) as hadir'),
-                DB::raw('SUM(CASE WHEN status = "sakit" THEN 1 ELSE 0 END) as sakit'),
-                DB::raw('SUM(CASE WHEN status = "izin" THEN 1 ELSE 0 END) as izin'),
-                DB::raw('SUM(CASE WHEN status = "cuti" THEN 1 ELSE 0 END) as cuti'),
-                DB::raw('SUM(CASE WHEN status = "alpa" THEN 1 ELSE 0 END) as alpa')
-            )
-            ->groupBy('tahun', 'bulan')
-            ->orderBy('tahun', 'desc')
-            ->orderBy('bulan', 'desc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'pegawai' => $pegawai->only(['id', 'nip', 'nama']),
-                'rekap' => $rekap
-            ]
-        ]);
+    // Periksa apakah pengguna login
+    if (!$authenticatedUser) {
+        return response()->json(['success' => false, 'message' => 'Tidak ada pengguna yang terotentikasi.'], 401);
     }
+
+    // Ambil relasi pegawai dari pengguna yang login
+    $pegawaiYangLogin = $authenticatedUser->pegawai;
+
+    // PERBAIKAN: Periksa apakah pengguna yang login memiliki data pegawai
+    if (!$pegawaiYangLogin) {
+        return response()->json(['success' => false, 'message' => 'Data pegawai untuk pengguna yang login tidak ditemukan.'], 403);
+    }
+
+    // Otorisasi sekarang aman karena $pegawaiYangLogin sudah dipastikan tidak null
+    if (!$pegawaiYangLogin->hasRole('Admin') && $pegawaiYangLogin->id !== $pegawai->id) {
+        return response()->json(['success' => false, 'message' => 'Akses ditolak. Anda hanya dapat melihat rekap kehadiran Anda sendiri.'], 403);
+    }
+
+    // Ganti 'created_at' dengan nama kolom tanggal Anda yang sebenarnya di tabel simpeg_absensi_record
+    $namaKolomTanggal = 'created_at';
+
+    $rekap = $pegawai->absensiRecord()
+        ->select(
+            DB::raw("EXTRACT(YEAR FROM $namaKolomTanggal) as tahun"),
+            DB::raw("EXTRACT(MONTH FROM $namaKolomTanggal) as bulan"),
+            DB::raw("COUNT(*) as total_kehadiran"),
+            DB::raw("SUM(CASE WHEN status = 'hadir' THEN 1 ELSE 0 END) as hadir"),
+            DB::raw("SUM(CASE WHEN status = 'sakit' THEN 1 ELSE 0 END) as sakit"),
+            DB::raw("SUM(CASE WHEN status = 'izin' THEN 1 ELSE 0 END) as izin"),
+            DB::raw("SUM(CASE WHEN status = 'cuti' THEN 1 ELSE 0 END) as cuti"),
+            DB::raw("SUM(CASE WHEN status = 'alpa' THEN 1 ELSE 0 END) as alpa")
+        )
+        ->groupBy('tahun', 'bulan')
+        ->orderBy('tahun', 'desc')
+        ->orderBy('bulan', 'desc')
+        ->paginate(12);
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'pegawai' => $pegawai->only(['id', 'nip', 'nama']),
+            'rekap' => $rekap
+        ]
+    ]);
+}
 }
