@@ -90,7 +90,7 @@ return new class extends Migration
             $table->integer('tinggi_badan')->nullable();
             $table->integer('berat_badan')->nullable();
             $table->string('file_tanda_tangan', 100)->nullable();
-            
+              $table->string('file_foto')->nullable();
             // Audit trail
              $table->boolean('is_admin')->default(false);
 

@@ -81,7 +81,8 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
         'file_tanda_tangan',
         'nomor_polisi',          // Added
         'jenis_kendaraan',       // Added
-        'merk_kendaraan',        // Added
+        'merk_kendaraan', 
+        'file_foto',       // Added
         'modified_by',
         'modified_dt',
         
