@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SimpegJenisIzin;
+use App\Models\SimpegIzinRecord; // Ditambahkan untuk pengecekan relasi
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 
 class SimpegJenisIzinController extends Controller
@@ -100,12 +100,16 @@ class SimpegJenisIzinController extends Controller
     {
         $jenisIzin = SimpegJenisIzin::where('kode', $kode)->firstOrFail();
         
-        // Cek relasi sebelum menghapus
-        if ($jenisIzin->izinRecords()->exists()) { // Asumsi ada relasi `izinRecords()`
+        // PERBAIKAN: Cek relasi secara langsung ke tabel SimpegIzinRecord
+        // Ini untuk menghindari error jika relasi 'izinRecords' tidak ada di model.
+        // Asumsi foreign key di tabel simpeg_izin_records adalah 'jenis_izin_id'
+        $isUsed = SimpegIzinRecord::where('jenis_izin_id', $jenisIzin->id)->exists();
+        
+        if ($isUsed) {
             return response()->json(['success' => false, 'message' => 'Gagal menghapus: Jenis Izin ini sedang digunakan.'], 409);
         }
 
         $jenisIzin->delete();
-        return response()->json(['success' => true, 'message' => 'Jenis izin berhasil dihapus (soft delete)']);
+        return response()->json(['success' => true, 'message' => 'Jenis izin berhasil dihapus']);
     }
 }
