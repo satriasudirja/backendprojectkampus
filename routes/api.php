@@ -127,6 +127,7 @@ use App\Http\Controllers\Api\SimpegDataJabatanAkademikAdminController;
 use App\Http\Controllers\Api\SimpegDataJabatanFungsionalAdminController;
 use App\Http\Controllers\Api\SimpegDataJabatanStrukturalAdminController; 
 use App\Http\Controllers\Api\SimpegDataPangkatAdminController;
+use App\Http\Controllers\Api\SimpegRiwayatKehadiranDosenController;
 use App\Http\Controllers\Api\AdminSimpegDataAnakController;
 use App\Http\Controllers\Api\SimpegPendidikanFormalDosenController;
 use App\Http\Controllers\Api\AdminSimpegDataPasanganController;
@@ -1596,6 +1597,12 @@ Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index'
             Route::patch('/{id}/submit', [SimpegDataRiwayatTesController::class, 'submitDraft']);
         });
 
+
+        // Absensi Record Routes
+        Route::prefix('absensirecord')->group(function () {
+            Route::get('/', [SimpegRiwayatKehadiranDosenController::class, 'index']);
+            Route::get('/{id}', [SimpegRiwayatKehadiranDosenController::class, 'show']);
+        });
 
         // Data Sertifikasi Dosen Routes
         Route::prefix('datasertifikasidosen')->group(function () {
