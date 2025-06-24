@@ -1226,7 +1226,7 @@ Route::middleware('auth:api')->group(function () {
         });
 
 
-        
+
         Route::apiResource('agama', SimpegAgamaController::class);
 Route::apiResource('bahasa', SimpegBahasaController::class);
 Route::apiResource('bank', SimpegBankController::class);
@@ -1336,6 +1336,8 @@ Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index'
 
             // Endpoint untuk mengambil detail riwayat hadir
             Route::get('/riwayat-hadir', [DashboardDosenController::class, 'getRiwayatHadir'])->name('dosen.dashboard.riwayat-hadir');
+
+             Route::get('/evaluasi-kinerja-chart', [DashboardDosenController::class, 'getEvaluasiKinerjaChart']);
         });
 
 
