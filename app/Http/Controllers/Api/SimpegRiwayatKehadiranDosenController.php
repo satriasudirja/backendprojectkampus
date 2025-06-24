@@ -15,7 +15,7 @@ use Carbon\Carbon;
  * Controller untuk mengelola riwayat kehadiran dari sisi Dosen.
  * Dosen hanya dapat melihat data kehadirannya sendiri.
  */
-class DosenRiwayatKehadiranController extends Controller
+class SimpegRiwayatKehadiranDosenController extends Controller
 {
     /**
      * Menampilkan rekapitulasi presensi bulanan untuk dosen yang sedang login.
