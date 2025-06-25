@@ -24,7 +24,8 @@ return new class extends Migration
     {
         Schema::table('simpeg_jenis_izin', function (Blueprint $table) {
             //
-            $table->string('status_presensi', 20);
+            //
+            $table->string('status_presensi', 20); 
         });
     }
 };
