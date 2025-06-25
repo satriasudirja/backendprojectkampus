@@ -48,7 +48,7 @@ class SimpegJenisIzinController extends Controller
             'jenis_kehadiran_id' => 'required|integer|exists:simpeg_jenis_kehadiran,id',
             'kode' => 'required|string|max:5|unique:simpeg_jenis_izin,kode',
             'jenis_izin' => 'required|string|max:50',
-            'status_presensi' => 'required|string|max:20',
+            // 'status_presensi' => 'required|string|max:20',
             'izin_max' => 'required|string|max:3', // Sesuai migration
             'potong_cuti' => 'required|boolean',
         ]);
@@ -80,7 +80,7 @@ class SimpegJenisIzinController extends Controller
         $validator = Validator::make($request->all(), [
             'jenis_kehadiran_id' => 'sometimes|required|integer|exists:simpeg_jenis_kehadiran,id',
             'jenis_izin' => 'sometimes|required|string|max:50',
-            'status_presensi' => 'sometimes|required|string|max:20',
+            // 'status_presensi' => 'sometimes|required|string|max:20',
             'izin_max' => 'sometimes|required|string|max:3',
             'potong_cuti' => 'sometimes|required|boolean',
         ]);
