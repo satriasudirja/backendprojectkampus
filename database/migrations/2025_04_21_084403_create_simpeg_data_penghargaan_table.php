@@ -16,6 +16,7 @@ return new class extends Migration
 
             // Foreign key
             $table->unsignedBigInteger('pegawai_id');
+             $table->unsignedBigInteger('jenis_penghargaan_id');
 
             // Data penghargaan
             $table->string('jenis_penghargaan', 100)->nullable();
@@ -23,15 +24,16 @@ return new class extends Migration
             $table->string('no_sk', 100)->nullable();
             $table->date('tanggal_sk')->nullable();
             $table->date('tanggal_penghargaan')->nullable();  // Diperbaiki dari 'tanggai' ke 'tanggal'
+            $table->string('instansi_pemberi', 255)->nullable();
             $table->string('file_penghargaan', 255)->nullable(); // Gunakan panjang 255 (standar) untuk string file
             $table->string('keterangan', 255)->nullable();
 
             // --- Kolom tambahan untuk sistem pengajuan ---
+            $table->timestamp('tgl_input')->nullable();
             $table->string('status_pengajuan', 50)->default('draft');
             $table->timestamp('tgl_diajukan')->nullable();
             $table->timestamp('tgl_disetujui')->nullable();
             $table->timestamp('tgl_ditolak')->nullable();
-             $table->timestamp('tgl_ditangguhkan')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

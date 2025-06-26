@@ -26,7 +26,10 @@ class SimpegDataPenghargaan extends Model
         'tgl_diajukan',     // Ditambahkan
         'tgl_disetujui',    // Ditambahkan
         'tgl_ditolak',     // Ditambahkan
-           'tgl_ditangguhkan',
+        'tgl_ditangguhkan',
+        'tgl_input',
+        'instansi_pemberi',
+        'jenis_penghargaan_id',
     ];
 
     protected $casts = [
@@ -35,7 +38,7 @@ class SimpegDataPenghargaan extends Model
         'tgl_diajukan' => 'datetime',  // Ditambahkan
         'tgl_disetujui' => 'datetime', // Ditambahkan
         'tgl_ditolak' => 'datetime',  // Ditambahkan
-         'tgl_ditangguhkan' => 'datetime' 
+         'tgl_input' => 'datetime', // Ditambahkan
     ];
 
     // Relasi ke tabel pegawai
@@ -44,5 +47,20 @@ class SimpegDataPenghargaan extends Model
         return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
     }
     
+    public function jenisPenghargaan()
+    {
+        return $this->belongsTo(SimpegJenisPenghargaan::class, 'jenis_penghargaan_id');
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($penghargaan) {
+            if (empty($penghargaan->tgl_input)) {
+                $penghargaan->tgl_input = now();
+            }
+        });
+    }
     
 }
+
+
