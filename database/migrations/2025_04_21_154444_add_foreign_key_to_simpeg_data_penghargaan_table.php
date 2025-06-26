@@ -17,6 +17,9 @@ return new class extends Migration
                 ->references('id')->on('simpeg_pegawai')
                 ->onDelete('cascade');
 
+            $table->foreign('jenis_penghargaan_id')
+            ->references('id')->on('simpeg_jenis_penghargaan')
+            ->onDelete('cascade');
             
         });
     }
@@ -29,6 +32,8 @@ return new class extends Migration
         Schema::table('simpeg_data_penghargaan', function (Blueprint $table) {
             // Hapus foreign key pegawai_id
             $table->dropForeign(['pegawai_id']);
+            $table->dropForeign(['jenis_penghargaan_id']);
+            $table->dropColumn('jenis_penghargaan_id');
         });
     }
 };

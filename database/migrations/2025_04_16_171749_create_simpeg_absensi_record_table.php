@@ -24,6 +24,10 @@ return new class extends Migration
             $table->boolean('terlambat')->nullable();
             $table->boolean('pulang_awal')->nullable();
             $table->string('check_sum_absensi', 255);
+             $table->text('realisasi_kegiatan')->nullable();
+             $table->string('file_kegiatan')->nullable();
+             $table->string('status_kegiatan', 50)->default('draft')->nullable();
+             $table->text('keterangan_kegiatan')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

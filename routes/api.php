@@ -127,6 +127,7 @@ use App\Http\Controllers\Api\SimpegDataJabatanAkademikAdminController;
 use App\Http\Controllers\Api\SimpegDataJabatanFungsionalAdminController;
 use App\Http\Controllers\Api\SimpegDataJabatanStrukturalAdminController;
 use App\Http\Controllers\Api\SimpegDataPangkatAdminController;
+use App\Http\Controllers\Api\DosenRiwayatKehadiranController;
 use App\Http\Controllers\Api\AdminSimpegDataAnakController;
 use App\Http\Controllers\Api\SimpegPendidikanFormalDosenController;
 use App\Http\Controllers\Api\AdminSimpegDataPasanganController;
@@ -148,6 +149,11 @@ use App\Http\Controllers\Api\AdminSimpegRiwayatPelanggaranController;
 use App\Http\Controllers\Api\AdminSimpegRiwayatCutiController;
 use App\Http\Controllers\Api\AdminSimpegRiwayatIzinController;
 use App\Http\Controllers\Api\DashboardDosenController;
+use App\Http\Controllers\Api\SimpegPenghargaanDosenController;
+use App\Http\Controllers\Api\SimpegDataRiwayatPelanggaranController;
+use App\Http\Controllers\Api\SimpegKegiatanHarianDosenController;
+use App\Http\Controllers\Api\MonitoringRiwayatController; 
+
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -1596,6 +1602,102 @@ Route::middleware('auth:api')->group(function () {
             Route::patch('/{id}/submit', [SimpegDataRiwayatTesController::class, 'submitDraft']);
         });
 
+
+    Route::get('/monitoring/datariwayat', [MonitoringRiwayatController::class, 'index']);
+
+
+    // ========================================
+    // KEGIATAN HARIAN DOSEN ROUTES
+    // ========================================
+    Route::prefix('kegiatanhariandosen')->group(function () {
+        // Operasi CRUD & List
+        Route::get('/', [SimpegKegiatanHarianDosenController::class, 'index']);
+        Route::get('/{id}', [SimpegKegiatanHarianDosenController::class, 'show']);
+        
+        // Di sini kita menggunakan POST untuk update karena file upload lebih mudah ditangani
+        // Namun, secara RESTful, PUT/PATCH lebih tepat. Sesuaikan jika frontend bisa handle.
+        Route::post('/{id}', [SimpegKegiatanHarianDosenController::class, 'update']); 
+        
+        // Operasi Status
+        Route::patch('/{id}/submit', [SimpegKegiatanHarianDosenController::class, 'submit']);
+    });
+
+        // Data Riwayat Pelanggaran Dosen Routes
+    Route::prefix('riwayatpelanggarandosen')->controller(SimpegDataRiwayatPelanggaranController::class)->group(function () {
+        // ========================================
+        // STATIC & UTILITY ROUTES (Letakkan di atas)
+        // ========================================
+        Route::get('/jenis-pelanggaran/list', 'getJenisPelanggaran');
+
+        // ========================================
+        // BATCH OPERATIONS ROUTES (Sebelum route {id})
+        // ========================================
+        Route::delete('/batch/delete', 'batchDelete');
+        
+        // ========================================
+        // CRUD OPERATIONS (Route dengan parameter di bawah)
+        // ========================================
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        // Note: Gunakan method POST untuk update agar bisa mengirim file
+        Route::post('/{id}', 'update'); 
+        Route::delete('/{id}', 'destroy');
+    });
+
+
+        // Penghargaan Dosen Routes
+    Route::prefix('penghargaandosen')->group(function () {
+        // ========================================
+        // STATIC ROUTES (MUST BE ON TOP!)
+        // ========================================
+        
+        // Configuration & Statistics Routes
+        Route::get('/config/system', [SimpegPenghargaanDosenController::class, 'getSystemConfig']);
+        Route::get('/statistics/status', [SimpegPenghargaanDosenController::class, 'getStatusStatistics']);
+        Route::get('/filter-options', [SimpegPenghargaanDosenController::class, 'getFilterOptions']);
+        Route::get('/available-actions', [SimpegPenghargaanDosenController::class, 'getAvailableActions']);
+        
+        // Utility Routes
+        Route::get('/jenis-penghargaan/list', [SimpegPenghargaanDosenController::class, 'getJenisPenghargaan']);
+        Route::patch('/fix-existing-data', [SimpegPenghargaanDosenController::class, 'fixExistingData']);
+        
+        // ========================================
+        // BATCH OPERATIONS ROUTES (MUST BE BEFORE {id} ROUTES!)
+        // ========================================
+        Route::delete('/batch/delete', [SimpegPenghargaanDosenController::class, 'batchDelete']);
+        Route::patch('/batch/submit', [SimpegPenghargaanDosenController::class, 'batchSubmitDrafts']);
+        Route::patch('/batch/status', [SimpegPenghargaanDosenController::class, 'batchUpdateStatus']);
+        
+        // ========================================
+        // CRUD OPERATIONS (PARAMETER ROUTES BELOW!)
+        // ========================================
+        Route::get('/', [SimpegPenghargaanDosenController::class, 'index']);
+        Route::post('/', [SimpegPenghargaanDosenController::class, 'store']);
+        Route::get('/{id}', [SimpegPenghargaanDosenController::class, 'show']);
+        Route::put('/{id}', [SimpegPenghargaanDosenController::class, 'update']);
+        Route::delete('/{id}', [SimpegPenghargaanDosenController::class, 'destroy']);
+        
+        // ========================================
+        // STATUS PENGAJUAN ROUTES (WITH {id} BELOW!)
+        // ========================================
+        Route::patch('/{id}/submit', [SimpegPenghargaanDosenController::class, 'submitDraft']);
+    });
+
+
+        // ========================================
+        //      RIWAYAT KEHADIRAN DOSEN
+        // ========================================
+        Route::prefix('absensirecord')->name('dosen.absensirecord.')->group(function () {
+            
+            // Route untuk mendapatkan rekap bulanan (tampilan utama seperti di gambar)
+            // Contoh Panggilan: GET {{base_url_siakad}}/api/dosen/absensirecord?tahun=2025
+            Route::get('/', [DosenRiwayatKehadiranController::class, 'getMonthlySummary'])->name('summary');
+            
+            // Route untuk mendapatkan detail harian per bulan (ketika tombol aksi diklik)
+            // Contoh Panggilan: GET {{base_url_siakad}}/api/dosen/absensirecord/detail?tahun=2025&bulan=6
+            Route::get('/detail', [DosenRiwayatKehadiranController::class, 'getDailyDetail'])->name('detail');
+        });
 
         // Data Sertifikasi Dosen Routes
         Route::prefix('datasertifikasidosen')->group(function () {
