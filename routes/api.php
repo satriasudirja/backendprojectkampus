@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\SimpegDaftarJenisTestController;
 use App\Http\Controllers\Api\SimpegOutputPenelitianController;
 use App\Http\Controllers\Api\SimpegJenisJabatanStrukturalController;
 use App\Http\Controllers\Api\SimpegJabatanStrukturalController;
+use App\Http\Controllers\Api\SimpegJabatanFungsionalController;
 use App\Http\Controllers\Api\SimpegMasterPangkatController;
 use App\Http\Controllers\Api\SimpegMasterProdiPerguruanTinggiController;
 use App\Http\Controllers\Api\SimpegEselonController;
@@ -1186,6 +1187,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('jenis-test', SimpegDaftarJenisTestController::class);
         Route::apiResource('output-penelitian', SimpegOutputPenelitianController::class);
         Route::apiResource('jenis-jabatan-struktural', SimpegJenisJabatanStrukturalController::class);
+        Route::apiResource('jabatan-fungsional', SimpegJabatanFungsionalController::class);
         Route::apiResource('jabatan-struktural', SimpegJabatanStrukturalController::class);
         Route::apiResource('eselon', SimpegEselonController::class);
         Route::apiResource('univ-luar', SimpegUnivLuarController::class);
