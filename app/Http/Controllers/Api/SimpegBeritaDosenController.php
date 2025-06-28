@@ -16,8 +16,10 @@ use Illuminate\Support\Str;
 
 class SimpegBeritaDosenController extends Controller
 {
-    // Get all berita for logged in dosen
-    public function index(Request $request) 
+    /**
+     * Get all berita for logged in dosen
+     */
+    public function index(Request $request)
     {
         // Pastikan user sudah login
         if (!Auth::check()) {
@@ -27,26 +29,12 @@ class SimpegBeritaDosenController extends Controller
             ], 401);
         }
 
-        // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
+        // Eager load relasi yang diperlukan untuk dosen
         $dosen = Auth::user()->load([
-            'unitKerja',
-            'statusAktif', 
-            'jabatanAkademik',
-            'dataJabatanFungsional' => function($query) {
-                $query->with('jabatanFungsional')
-                      ->orderBy('tmt_jabatan', 'desc')
-                      ->limit(1);
-            },
-            'dataJabatanStruktural' => function($query) {
-                $query->with('jabatanStruktural.jenisJabatanStruktural')
-                      ->orderBy('tgl_mulai', 'desc')
-                      ->limit(1);
-            },
-            'dataPendidikanFormal' => function($query) {
-                $query->with('jenjangPendidikan')
-                      ->orderBy('jenjang_pendidikan_id', 'desc')
-                      ->limit(1);
-            }
+            'unitKerja', 'statusAktif', 'jabatanAkademik',
+            'dataJabatanFungsional' => fn($q) => $q->with('jabatanFungsional')->orderBy('tmt_jabatan', 'desc')->limit(1),
+            'dataJabatanStruktural' => fn($q) => $q->with('jabatanStruktural.jenisJabatanStruktural')->orderBy('tgl_mulai', 'desc')->limit(1),
+            'dataPendidikanFormal' => fn($q) => $q->with('jenjangPendidikan')->orderBy('jenjang_pendidikan_id', 'desc')->limit(1),
         ]);
 
         if (!$dosen) {
@@ -56,45 +44,62 @@ class SimpegBeritaDosenController extends Controller
             ], 404);
         }
 
-        $perPage = $request->per_page ?? 10;
-        $search = $request->search;
-        $unitKerja = $request->unit_kerja;
-        $prioritas = $request->prioritas;
-        $status = $request->status;
+        // --- PERBAIKAN: Ambil semua filter dari request ---
+        $perPage = $request->input('per_page', 10);
+        $search = $request->input('search');
+        $judul = $request->input('judul');
+        $unitKerjaFilter = $request->input('unit_kerja');
+        $jabatanAkademikFilter = $request->input('jabatan_akademik_id'); // Filter baru
+        $prioritas = $request->input('prioritas');
+        $status = $request->input('status');
+        $tglPostingFrom = $request->input('tgl_posting_from');
+        $tglPostingTo = $request->input('tgl_posting_to');
 
-        // Query berita yang relevan untuk dosen
+        // Query berita dasar yang relevan untuk dosen (berdasarkan unit kerja & jabatan miliknya atau berita umum)
         $query = SimpegBerita::with(['jabatanAkademik'])
-            ->where(function($q) use ($dosen) {
-                // Berita untuk unit kerja dosen (menggunakan ID integer)
+            ->where(function ($q) use ($dosen) {
+                // Berita untuk unit kerja dosen
                 if ($dosen->unit_kerja_id) {
-                    $q->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([(int)$dosen->unit_kerja_id])]);
+                    $q->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([(string)$dosen->unit_kerja_id])]);
                 }
-                
+
                 // Berita untuk jabatan akademik dosen
                 if ($dosen->jabatan_akademik_id) {
-                    $q->orWhereHas('jabatanAkademik', function($subQ) use ($dosen) {
+                    $q->orWhereHas('jabatanAkademik', function ($subQ) use ($dosen) {
                         $subQ->where('jabatan_akademik_id', $dosen->jabatan_akademik_id);
                     });
                 }
-                
-                // Berita yang tidak memiliki jabatan akademik spesifik (berita umum)
+
+                // Berita umum (untuk 'semua' unit atau tanpa jabatan spesifik)
+                $q->orWhereRaw("unit_kerja_id::jsonb @> '[\"semua\"]'::jsonb");
                 $q->orWhereDoesntHave('jabatanAkademik');
             });
 
-        // Filter by search
+        // --- APLIKASIKAN FILTER TAMBAHAN DARI REQUEST ---
+
+        // Filter by search (global)
         if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('judul', 'like', '%'.$search.'%')
-                  ->orWhere('konten', 'like', '%'.$search.'%')
-                  ->orWhere('slug', 'like', '%'.$search.'%');
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', '%' . $search . '%')
+                    ->orWhere('konten', 'like', '%' . $search . '%');
             });
         }
 
+        // Filter by judul
+        if ($judul) {
+            $query->where('judul', 'like', '%' . $judul . '%');
+        }
+        
         // Filter by unit kerja
-        if ($unitKerja && $unitKerja != 'semua') {
-            // Konversi ke integer jika berupa angka
-            $unitKerjaFilter = is_numeric($unitKerja) ? (int)$unitKerja : $unitKerja;
-            $query->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([$unitKerjaFilter])]);
+        if ($unitKerjaFilter && $unitKerjaFilter != 'semua') {
+            $query->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([(string)$unitKerjaFilter])]);
+        }
+
+        // PERBAIKAN: Tambahkan filter by Jabatan Akademik dari request
+        if ($jabatanAkademikFilter && $jabatanAkademikFilter != 'semua') {
+            $query->whereHas('jabatanAkademik', function ($q) use ($jabatanAkademikFilter) {
+                $q->where('simpeg_jabatan_akademik.id', $jabatanAkademikFilter);
+            });
         }
 
         // Filter by prioritas
@@ -102,33 +107,31 @@ class SimpegBeritaDosenController extends Controller
             $query->where('prioritas', (bool)$prioritas);
         }
 
+        // Filter tanggal posting
+        if ($tglPostingFrom && $tglPostingTo) {
+            $query->whereBetween('tgl_posting', [$tglPostingFrom, $tglPostingTo]);
+        } elseif ($tglPostingFrom) {
+            $query->where('tgl_posting', '>=', $tglPostingFrom);
+        } elseif ($tglPostingTo) {
+            $query->where('tgl_posting', '<=', $tglPostingTo);
+        }
+
         // Filter by status (active/expired)
         if ($status && $status != 'semua') {
             if ($status === 'active') {
-                $query->where(function($q) {
+                $query->where(function ($q) {
                     $q->whereNull('tgl_expired')
-                      ->orWhere('tgl_expired', '>=', now()->toDateString());
+                        ->orWhere('tgl_expired', '>=', now()->toDateString());
                 });
             } elseif ($status === 'expired') {
                 $query->where('tgl_expired', '<', now()->toDateString());
             }
         }
 
-        // Additional filters
-        if ($request->filled('judul')) {
-            $query->where('judul', 'like', '%'.$request->judul.'%');
-        }
-        if ($request->filled('tgl_posting')) {
-            $query->whereDate('tgl_posting', $request->tgl_posting);
-        }
-        if ($request->filled('tgl_expired')) {
-            $query->whereDate('tgl_expired', $request->tgl_expired);
-        }
-
         // Execute query dengan pagination
         $beritaList = $query->orderBy('prioritas', 'desc')
-                           ->orderBy('tgl_posting', 'desc')
-                           ->paginate($perPage);
+            ->orderBy('tgl_posting', 'desc')
+            ->paginate($perPage);
 
         // Transform the collection to include formatted data with action URLs
         $beritaList->getCollection()->transform(function ($item) {
@@ -173,7 +176,9 @@ class SimpegBeritaDosenController extends Controller
         ]);
     }
 
-    // Get detail berita
+    /**
+     * Get detail berita
+     */
     public function show($id)
     {
         $dosen = Auth::user();
@@ -196,7 +201,7 @@ class SimpegBeritaDosenController extends Controller
 
         // Check access permission
         $hasAccess = $this->checkBeritaAccess($berita, $dosen);
-        
+
         if (!$hasAccess) {
             return response()->json([
                 'success' => false,
@@ -216,7 +221,9 @@ class SimpegBeritaDosenController extends Controller
         ]);
     }
 
-    // Get status statistics untuk dashboard
+    /**
+     * Get status statistics untuk dashboard
+     */
     public function getStatusStatistics()
     {
         $dosen = Auth::user();
@@ -229,30 +236,25 @@ class SimpegBeritaDosenController extends Controller
         }
 
         // Get berita statistics for dosen
-        $query = SimpegBerita::where(function($q) use ($dosen) {
-            // Berita untuk unit kerja dosen (menggunakan ID integer)
+        $query = SimpegBerita::where(function ($q) use ($dosen) {
             if ($dosen->unit_kerja_id) {
-                $q->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([(int)$dosen->unit_kerja_id])]);
+                $q->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([(string)$dosen->unit_kerja_id])]);
             }
-            
-            // Berita untuk jabatan akademik dosen
             if ($dosen->jabatan_akademik_id) {
-                $q->orWhereHas('jabatanAkademik', function($subQ) use ($dosen) {
-                    $subQ->where('jabatan_akademik_id', $dosen->jabatan_akademik_id);
-                });
+                $q->orWhereHas('jabatanAkademik', fn($subQ) => $subQ->where('jabatan_akademik_id', $dosen->jabatan_akademik_id));
             }
-            
-            // Berita yang tidak memiliki jabatan akademik spesifik (berita umum)
+            $q->orWhereRaw("unit_kerja_id::jsonb @> '[\"semua\"]'::jsonb");
             $q->orWhereDoesntHave('jabatanAkademik');
         });
 
         $total = $query->count();
-        $prioritas = $query->where('prioritas', true)->count();
-        $active = $query->where(function($q) {
+        $prioritas = (clone $query)->where('prioritas', true)->count();
+        $active = (clone $query)->where(function ($q) {
             $q->whereNull('tgl_expired')
-              ->orWhere('tgl_expired', '>=', now()->toDateString());
+                ->orWhere('tgl_expired', '>=', now()->toDateString());
         })->count();
-        $expired = $query->where('tgl_expired', '<', now()->toDateString())->count();
+        $expired = (clone $query)->where('tgl_expired', '<', now()->toDateString())->count();
+
 
         $statistics = [
             'total' => $total,
@@ -268,16 +270,13 @@ class SimpegBeritaDosenController extends Controller
         ]);
     }
 
-    // Get filter options
+    /**
+     * Get filter options
+     */
     public function getFilterOptions()
     {
-        $dosen = Auth::user();
-
-        if (!$dosen) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
-            ], 404);
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
         return response()->json([
@@ -298,141 +297,69 @@ class SimpegBeritaDosenController extends Controller
         ]);
     }
 
-    // Get available actions
-    public function getAvailableActions()
-    {
-        return response()->json([
-            'success' => true,
-            'actions' => [
-                'single' => [
-                    [
-                        'key' => 'view',
-                        'label' => 'Lihat Detail',
-                        'icon' => 'eye',
-                        'color' => 'info'
-                    ],
-                    [
-                        'key' => 'download_file',
-                        'label' => 'Download File',
-                        'icon' => 'download',
-                        'color' => 'success',
-                        'condition' => 'has_file'
-                    ],
-                    [
-                        'key' => 'share',
-                        'label' => 'Bagikan',
-                        'icon' => 'share',
-                        'color' => 'primary'
-                    ]
-                ]
-            ]
-        ]);
-    }
-
-    // Get system configuration
-    public function getSystemConfig()
-    {
-        $config = [
-            'allow_download' => env('ALLOW_BERITA_DOWNLOAD', true),
-            'show_expired' => env('SHOW_EXPIRED_BERITA', true),
-            'max_file_size' => env('MAX_BERITA_FILE_SIZE', 5120), // KB
-            'allowed_file_types' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']
-        ];
-
-        return response()->json([
-            'success' => true,
-            'config' => $config
-        ]);
-    }
-
-    // Download berita file
+    /**
+     * Download berita file
+     */
     public function downloadFile($id)
     {
         $dosen = Auth::user();
 
         if (!$dosen) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $berita = SimpegBerita::find($id);
 
         if (!$berita) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Berita tidak ditemukan'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Berita tidak ditemukan'], 404);
         }
 
         // Check access permission
-        $hasAccess = $this->checkBeritaAccess($berita, $dosen);
-        
-        if (!$hasAccess) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses untuk mengunduh file ini'
-            ], 403);
+        if (!$this->checkBeritaAccess($berita, $dosen)) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki akses untuk mengunduh file ini'], 403);
         }
 
         if (!$berita->file_berita) {
-            return response()->json([
-                'success' => false,
-                'message' => 'File tidak tersedia'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'File tidak tersedia'], 404);
         }
 
         $filePath = 'public/berita/files/' . $berita->file_berita;
-        
-        if (!Storage::exists($filePath)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'File tidak ditemukan di server'
-            ], 404);
-        }
 
-        // Log download activity
-        ActivityLogger::log('download', $berita, [
-            'file_name' => $berita->file_berita,
-            'downloaded_by' => $dosen->id
-        ]);
+        if (!Storage::exists($filePath)) {
+            return response()->json(['success' => false, 'message' => 'File tidak ditemukan di server'], 404);
+        }
 
         return Storage::download($filePath, $berita->file_berita);
     }
+    
+    // --- Helper Methods ---
 
-    // Helper: Check berita access for dosen
-    private function checkBeritaAccess($berita, $dosen)
+    /**
+     * Helper: Check berita access for dosen
+     */
+    public function checkBeritaAccess($berita, $dosen)
     {
-        // Check if berita is for dosen's unit kerja
-        if (is_array($berita->unit_kerja_id)) {
-            // Convert dosen unit_kerja_id to integer for comparison
-            $dosenUnitId = (int)$dosen->unit_kerja_id;
-            
-            foreach ($berita->unit_kerja_id as $unitId) {
-                if ($unitId === 'semua' || (int)$unitId === $dosenUnitId) {
-                    return true;
-                }
-            }
-        } else {
-            // Handle single unit_kerja_id
-            if ((int)$berita->unit_kerja_id === (int)$dosen->unit_kerja_id) {
-                return true;
-            }
+        // Decode unit_kerja_id jika masih dalam bentuk string JSON
+        $targetUnitIds = is_array($berita->unit_kerja_id) ? $berita->unit_kerja_id : json_decode($berita->unit_kerja_id, true);
+
+        // Jika berita untuk semua unit, beri akses
+        if (is_array($targetUnitIds) && in_array('semua', $targetUnitIds)) {
+            return true;
         }
 
-        // Check if berita is for dosen's jabatan akademik
+        // Cek apakah unit kerja dosen ada di dalam target berita
+        if (is_array($targetUnitIds) && in_array((string)$dosen->unit_kerja_id, $targetUnitIds)) {
+            return true;
+        }
+        
+        // Cek apakah berita untuk jabatan akademik dosen
         if ($dosen->jabatan_akademik_id) {
-            $hasJabatanAccess = $berita->jabatanAkademik()
-                ->where('jabatan_akademik_id', $dosen->jabatan_akademik_id)
-                ->exists();
-            
-            if ($hasJabatanAccess) {
+            if ($berita->jabatanAkademik()->where('jabatan_akademik_id', $dosen->jabatan_akademik_id)->exists()) {
                 return true;
             }
         }
 
-        // Allow access if no specific jabatan akademik is set (berita umum)
+        // Beri akses jika berita ini umum (tidak ada target jabatan) dan dosen tidak memiliki unit kerja spesifik yang cocok di atas
         if ($berita->jabatanAkademik->isEmpty()) {
             return true;
         }
@@ -440,15 +367,17 @@ class SimpegBeritaDosenController extends Controller
         return false;
     }
 
-    // Helper: Get unit kerja options
-    private function getUnitKerjaOptions()
+    /**
+     * Helper: Get unit kerja options
+     */
+    public function getUnitKerjaOptions()
     {
         $unitKerjaList = SimpegUnitKerja::select('id', 'nama_unit')
             ->orderBy('nama_unit')
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
-                    'id' => (string)$item->id, // Convert to string for consistency
+                    'id' => (string)$item->id,
                     'nama' => $item->nama_unit
                 ];
             });
@@ -459,176 +388,97 @@ class SimpegBeritaDosenController extends Controller
         );
     }
 
-    // Helper: Format dosen info
+    /**
+     * Helper: Format dosen info
+     */
     private function formatDosenInfo($dosen)
     {
-        $jabatanAkademikNama = '-';
-        if ($dosen->jabatanAkademik) {
-            $jabatanAkademikNama = $dosen->jabatanAkademik->jabatan_akademik ?? '-';
-        }
-
-        $jabatanFungsionalNama = '-';
-        if ($dosen->dataJabatanFungsional && $dosen->dataJabatanFungsional->isNotEmpty()) {
-            $jabatanFungsional = $dosen->dataJabatanFungsional->first()->jabatanFungsional;
-            if ($jabatanFungsional) {
-                if (isset($jabatanFungsional->nama_jabatan_fungsional)) {
-                    $jabatanFungsionalNama = $jabatanFungsional->nama_jabatan_fungsional;
-                } elseif (isset($jabatanFungsional->nama)) {
-                    $jabatanFungsionalNama = $jabatanFungsional->nama;
-                }
-            }
-        }
-
-        $unitKerjaNama = 'Tidak Ada';
-        if ($dosen->unitKerja) {
-            $unitKerjaNama = $dosen->unitKerja->nama_unit;
-        } elseif ($dosen->unit_kerja_id) {
-            $unitKerja = SimpegUnitKerja::find($dosen->unit_kerja_id);
-            $unitKerjaNama = $unitKerja ? $unitKerja->nama_unit : 'Unit Kerja #' . $dosen->unit_kerja_id;
-        }
+        $jabatanAkademikNama = $dosen->jabatanAkademik->jabatan_akademik ?? '-';
+        $jabatanFungsionalNama = $dosen->dataJabatanFungsional->first()->jabatanFungsional->nama_jabatan_fungsional ?? '-';
+        $unitKerjaNama = $dosen->unitKerja->nama_unit ?? 'Tidak Ada';
 
         return [
             'id' => $dosen->id,
             'nip' => $dosen->nip ?? '-',
             'nama' => $dosen->nama ?? '-',
             'unit_kerja' => $unitKerjaNama,
-            'status' => $dosen->statusAktif ? $dosen->statusAktif->nama_status_aktif : '-',
+            'status' => $dosen->statusAktif->nama_status_aktif ?? '-',
             'jab_akademik' => $jabatanAkademikNama,
             'jab_fungsional' => $jabatanFungsionalNama
         ];
     }
 
-    // Helper: Format berita response
+    /**
+     * Helper: Format berita response
+     */
     protected function formatBerita($berita, $includeActions = true)
     {
-        // Determine status
         $isExpired = $berita->tgl_expired && $berita->tgl_expired < now()->toDateString();
         $status = $isExpired ? 'expired' : 'active';
         $statusInfo = $this->getStatusInfo($status);
-        
+
         // Get unit kerja names
         $unitKerjaNama = [];
-        if (is_array($berita->unit_kerja_id)) {
-            foreach ($berita->unit_kerja_id as $unitId) {
+        $unitKerjaIds = is_array($berita->unit_kerja_id) ? $berita->unit_kerja_id : json_decode($berita->unit_kerja_id, true);
+
+        if (is_array($unitKerjaIds)) {
+            foreach ($unitKerjaIds as $unitId) {
                 if ($unitId === 'semua') {
-                    $unitKerjaNama[] = 'Semua Unit';
+                    $unitKerjaNama[] = 'Semua Unit Kerja';
                 } else {
-                    // Handle both string and integer IDs
-                    $unitKerja = SimpegUnitKerja::where('id', $unitId)->first();
-                    if (!$unitKerja) {
-                        // Fallback to kode_unit if not found by ID
-                        $unitKerja = SimpegUnitKerja::where('kode_unit', $unitId)->first();
-                    }
-                    $unitKerjaNama[] = $unitKerja ? $unitKerja->nama_unit : "Unit #{$unitId}";
+                    // PERBAIKAN UTAMA: Atasi error "invalid text representation for type bigint"
+                    // dengan memastikan $unitId adalah integer sebelum query.
+                    $unitKerja = SimpegUnitKerja::find((int)$unitId);
+                    $unitKerjaNama[] = $unitKerja ? $unitKerja->nama_unit : "Unit Tidak Dikenal";
                 }
             }
-        } else {
-            // Handle single ID (backward compatibility)
-            $unitKerja = SimpegUnitKerja::where('id', $berita->unit_kerja_id)->first();
-            if (!$unitKerja) {
-                $unitKerja = SimpegUnitKerja::where('kode_unit', $berita->unit_kerja_id)->first();
-            }
-            $unitKerjaNama[] = $unitKerja ? $unitKerja->nama_unit : "Unit #{$berita->unit_kerja_id}";
         }
-        
-        // Get jabatan akademik names
+
         $jabatanAkademikNama = $berita->jabatanAkademik->pluck('jabatan_akademik')->toArray();
-        
+
         $data = [
             'id' => $berita->id,
             'judul' => $berita->judul,
             'konten' => $berita->konten,
             'slug' => $berita->slug,
-            'tgl_posting' => $berita->tgl_posting,
-            'tgl_expired' => $berita->tgl_expired,
+            'tgl_posting' => $berita->tgl_posting ? \Carbon\Carbon::parse($berita->tgl_posting)->isoFormat('D MMMM YYYY') : null,
+            'tgl_expired' => $berita->tgl_expired ? \Carbon\Carbon::parse($berita->tgl_expired)->isoFormat('D MMMM YYYY') : null,
             'prioritas' => $berita->prioritas,
             'prioritas_label' => $berita->prioritas ? 'Prioritas' : 'Normal',
             'unit_kerja' => implode(', ', $unitKerjaNama),
             'unit_kerja_array' => $unitKerjaNama,
-            'jabatan_akademik' => implode(', ', $jabatanAkademikNama),
+            'jabatan_akademik' => !empty($jabatanAkademikNama) ? implode(', ', $jabatanAkademikNama) : 'Semua Jabatan',
             'jabatan_akademik_array' => $jabatanAkademikNama,
             'status' => $status,
             'status_info' => $statusInfo,
             'has_gambar' => !empty($berita->gambar_berita),
             'has_file' => !empty($berita->file_berita),
-            'gambar_berita' => $berita->gambar_berita ? [
-                'nama_file' => $berita->gambar_berita,
-                'url' => url('storage/berita/images/'.$berita->gambar_berita)
-            ] : null,
-            'file_berita' => $berita->file_berita ? [
-                'nama_file' => $berita->file_berita,
-                'url' => url('storage/berita/files/'.$berita->file_berita),
-                'download_url' => url("/api/dosen/berita/{$berita->id}/download")
-            ] : null,
+            'gambar_berita_url' => $berita->gambar_berita ? url('storage/berita/images/' . $berita->gambar_berita) : null,
+            'file_berita_url' => $berita->file_berita ? url('storage/berita/files/' . $berita->file_berita) : null,
             'created_at' => $berita->created_at,
             'updated_at' => $berita->updated_at
         ];
 
-        // Add action URLs if requested
         if ($includeActions) {
             $data['aksi'] = [
                 'detail_url' => url("/api/dosen/berita/{$berita->id}"),
                 'download_url' => $berita->file_berita ? url("/api/dosen/berita/{$berita->id}/download") : null,
-            ];
-
-            $data['actions'] = [];
-            
-            // Always allow view
-            $data['actions']['view'] = [
-                'url' => $data['aksi']['detail_url'],
-                'method' => 'GET',
-                'label' => 'Lihat Detail',
-                'icon' => 'eye',
-                'color' => 'info'
-            ];
-            
-            // Allow download if file exists
-            if ($berita->file_berita) {
-                $data['actions']['download'] = [
-                    'url' => $data['aksi']['download_url'],
-                    'method' => 'GET',
-                    'label' => 'Download File',
-                    'icon' => 'download',
-                    'color' => 'success'
-                ];
-            }
-            
-            // Share action
-            $data['actions']['share'] = [
-                'url' => url("/berita/{$berita->slug}"),
-                'method' => 'GET',
-                'label' => 'Bagikan',
-                'icon' => 'share',
-                'color' => 'primary'
+                'share_url' => url("/berita/{$berita->slug}")
             ];
         }
 
         return $data;
     }
 
-    // Helper: Get status info
-    private function getStatusInfo($status)
+    /**
+     * Helper: Get status info
+     */
+    public function getStatusInfo($status)
     {
         $statusMap = [
-            'active' => [
-                'label' => 'Aktif',
-                'color' => 'success',
-                'icon' => 'check-circle',
-                'description' => 'Berita masih berlaku'
-            ],
-            'expired' => [
-                'label' => 'Expired',
-                'color' => 'danger',
-                'icon' => 'x-circle',
-                'description' => 'Berita sudah expired'
-            ]
+            'active' => ['label' => 'Aktif', 'color' => 'success', 'icon' => 'check-circle'],
+            'expired' => ['label' => 'Expired', 'color' => 'danger', 'icon' => 'x-circle']
         ];
-
-        return $statusMap[$status] ?? [
-            'label' => ucfirst($status),
-            'color' => 'secondary',
-            'icon' => 'circle',
-            'description' => ''
-        ];
+        return $statusMap[$status] ?? ['label' => ucfirst($status), 'color' => 'secondary', 'icon' => 'circle'];
     }
 }

@@ -1234,12 +1234,23 @@ Route::middleware('auth:api')->group(function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
 
-
+ Route::prefix('berita-pegawai')->group(function () {
+    
+        // 1. Letakkan route yang paling spesifik di bagian atas.
+        Route::get('/', [SimpegBeritaDosenController::class, 'index']);
+        Route::get('/statistik', [SimpegBeritaDosenController::class, 'getStatusStatistics']);
+        Route::get('/filter-options', [SimpegBeritaDosenController::class, 'getFilterOptions']);
+        
+        // 2. Letakkan route yang menggunakan parameter seperti {id} di bagian PALING BAWAH.
+        Route::get('/{id}', [SimpegBeritaDosenController::class, 'show'])->where('id', '[0-9]+');
+        Route::get('/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile'])->where('id', '[0-9]+');
+    
+    });
 
         Route::apiResource('agama', SimpegAgamaController::class);
 Route::apiResource('bahasa', SimpegBahasaController::class);
 Route::apiResource('bank', SimpegBankController::class);
-Route::apiResource('berita', SimpegBeritaController::class);
+// Route::apiResource('berita', SimpegBeritaController::class);
 Route::apiResource('eselon', SimpegEselonController::class);
 Route::apiResource('golongan-darah', SimpegGolonganDarahController::class);
 Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);
@@ -1365,26 +1376,7 @@ Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index'
 
 
 
-        Route::prefix('berita')->group(function () {
-            // ========================================
-            // CONFIGURATION & STATISTICS ROUTES (HARUS PALING ATAS!)
-            // ========================================
-            Route::get('/config/system', [SimpegBeritaDosenController::class, 'getSystemConfig']);
-            Route::get('/statistics/status', [SimpegBeritaDosenController::class, 'getStatusStatistics']);
-            Route::get('/filter-options', [SimpegBeritaDosenController::class, 'getFilterOptions']);
-            Route::get('/available-actions', [SimpegBeritaDosenController::class, 'getAvailableActions']);
-
-            // ========================================
-            // BASIC CRUD OPERATIONS (ROUTES TANPA PARAMETER)
-            // ========================================
-            Route::get('/', [SimpegBeritaDosenController::class, 'index']);
-
-            // ========================================
-            // ROUTES DENGAN PARAMETER {id} (HARUS PALING BAWAH!)
-            // ========================================
-            Route::get('/{id}', [SimpegBeritaDosenController::class, 'show']);
-            Route::get('/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile']);
-        });
+       
 
 
         Route::prefix('evaluasi-kinerja')->group(function () {
@@ -2456,26 +2448,7 @@ Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index'
 
         });
 
-        // Berita Routes untuk Dosen
-        Route::prefix('berita')->group(function () {
-            // Basic CRUD Operations
-            Route::get('/', [SimpegBeritaDosenController::class, 'index']);
-            Route::get('/{id}', [SimpegBeritaDosenController::class, 'show']);
-
-            // ========================================
-            // DOWNLOAD & FILE OPERATIONS
-            // ========================================
-            Route::get('/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile']);
-
-            // ========================================
-            // CONFIGURATION & STATISTICS ROUTES
-            // ========================================
-            Route::get('/config/system', [SimpegBeritaDosenController::class, 'getSystemConfig']);
-            Route::get('/statistics/status', [SimpegBeritaDosenController::class, 'getStatusStatistics']);
-            Route::get('/filter-options', [SimpegBeritaDosenController::class, 'getFilterOptions']);
-            Route::get('/available-actions', [SimpegBeritaDosenController::class, 'getAvailableActions']);
-        });
-
+ 
         // Data Organisasi Routes
         Route::prefix('dataorganisasi')->group(function () {
             // ========================================

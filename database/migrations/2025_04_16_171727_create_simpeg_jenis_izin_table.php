@@ -16,7 +16,8 @@ return new class extends Migration
             $table->integer('jenis_kehadiran_id');
             $table->string('kode', 5);
             $table->string('jenis_izin', 50);
-            $table->string('status_presensi', 20);
+            // $table->string('status_presensi', 20);
+            
             $table->string('izin_max', 3);
             $table->boolean('potong_cuti');
             $table->timestamps();
