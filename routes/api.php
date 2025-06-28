@@ -1234,32 +1234,44 @@ Route::middleware('auth:api')->group(function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
 
-
+ Route::prefix('berita-pegawai')->group(function () {
+    
+        // 1. Letakkan route yang paling spesifik di bagian atas.
+        Route::get('/', [SimpegBeritaDosenController::class, 'index']);
+        Route::get('/statistik', [SimpegBeritaDosenController::class, 'getStatusStatistics']);
+        Route::get('/filter-options', [SimpegBeritaDosenController::class, 'getFilterOptions']);
+        
+        // 2. Letakkan route yang menggunakan parameter seperti {id} di bagian PALING BAWAH.
+        Route::get('/{id}', [SimpegBeritaDosenController::class, 'show'])->where('id', '[0-9]+');
+        Route::get('/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile'])->where('id', '[0-9]+');
+    
+    });
 
         Route::apiResource('agama', SimpegAgamaController::class);
-        Route::apiResource('bahasa', SimpegBahasaController::class);
-        Route::apiResource('bank', SimpegBankController::class);
-        Route::apiResource('berita', SimpegBeritaController::class);
-        Route::apiResource('eselon', SimpegEselonController::class);
-        Route::apiResource('golongan-darah', SimpegGolonganDarahController::class);
-        Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);
-        Route::apiResource('jabatan-akademik', SimpegJabatanAkademikController::class);
-        Route::apiResource('jabatan-struktural', SimpegJabatanStrukturalController::class);
-        Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
-        Route::apiResource('jenjang-pendidikan', SimpegJenjangPendidikanController::class);
-        Route::apiResource('kategori-sertifikasi', SimpegKategoriSertifikasiController::class);
-        Route::apiResource('master-pangkat', SimpegMasterPangkatController::class);
-        Route::apiResource('master-prodi-perguruan-tinggi', SimpegMasterProdiPerguruanTinggiController::class);
-        Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
-        Route::apiResource('media-publikasi', SimpegMediaPublikasiController::class);
-        Route::apiResource('output-penelitian', SimpegOutputPenelitianController::class);
-        Route::apiResource('pekerjaan', SimpegPekerjaanController::class);
-        Route::apiResource('role', SimpegUserRoleController::class);
-        Route::apiResource('rumpun-bidang-ilmu', simpegRumpunBidangIlmuController::class);
-        Route::apiResource('status-aktif', SimpegStatusAktifController::class);
-        Route::apiResource('status-pernikahan', SimpegStatusPernikahanController::class);
-        Route::apiResource('suku', SimpegSukuController::class);
-        Route::apiResource('univ-luar', SimpegUnivLuarController::class);
+
+Route::apiResource('bahasa', SimpegBahasaController::class);
+Route::apiResource('bank', SimpegBankController::class);
+// Route::apiResource('berita', SimpegBeritaController::class);
+Route::apiResource('eselon', SimpegEselonController::class);
+Route::apiResource('golongan-darah', SimpegGolonganDarahController::class);
+Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);
+Route::apiResource('jabatan-akademik', SimpegJabatanAkademikController::class);
+Route::apiResource('jabatan-struktural', SimpegJabatanStrukturalController::class);
+Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
+Route::apiResource('jenjang-pendidikan', SimpegJenjangPendidikanController::class);
+Route::apiResource('kategori-sertifikasi', SimpegKategoriSertifikasiController::class);
+Route::apiResource('master-pangkat', SimpegMasterPangkatController::class);
+Route::apiResource('master-prodi-perguruan-tinggi', SimpegMasterProdiPerguruanTinggiController::class);
+Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
+Route::apiResource('media-publikasi', SimpegMediaPublikasiController::class);
+Route::apiResource('output-penelitian', SimpegOutputPenelitianController::class);
+Route::apiResource('pekerjaan', SimpegPekerjaanController::class);
+Route::apiResource('role', SimpegUserRoleController::class);
+Route::apiResource('rumpun-bidang-ilmu', simpegRumpunBidangIlmuController::class);
+Route::apiResource('status-aktif', SimpegStatusAktifController::class);
+Route::apiResource('status-pernikahan', SimpegStatusPernikahanController::class);
+Route::apiResource('suku', SimpegSukuController::class);
+Route::apiResource('univ-luar', SimpegUnivLuarController::class);
 
         Route::get('unit-kerja/dropdown', [SimpegUnitKerjaController::class, 'dropdown']);
         Route::apiResource('unit-kerja', SimpegUnitKerjaController::class);
@@ -1365,26 +1377,7 @@ Route::middleware('auth:api')->group(function () {
 
 
 
-        Route::prefix('berita')->group(function () {
-            // ========================================
-            // CONFIGURATION & STATISTICS ROUTES (HARUS PALING ATAS!)
-            // ========================================
-            Route::get('/config/system', [SimpegBeritaDosenController::class, 'getSystemConfig']);
-            Route::get('/statistics/status', [SimpegBeritaDosenController::class, 'getStatusStatistics']);
-            Route::get('/filter-options', [SimpegBeritaDosenController::class, 'getFilterOptions']);
-            Route::get('/available-actions', [SimpegBeritaDosenController::class, 'getAvailableActions']);
-
-            // ========================================
-            // BASIC CRUD OPERATIONS (ROUTES TANPA PARAMETER)
-            // ========================================
-            Route::get('/', [SimpegBeritaDosenController::class, 'index']);
-
-            // ========================================
-            // ROUTES DENGAN PARAMETER {id} (HARUS PALING BAWAH!)
-            // ========================================
-            Route::get('/{id}', [SimpegBeritaDosenController::class, 'show']);
-            Route::get('/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile']);
-        });
+       
 
 
         Route::prefix('evaluasi-kinerja')->group(function () {
@@ -2456,26 +2449,7 @@ Route::middleware('auth:api')->group(function () {
 
         });
 
-        // Berita Routes untuk Dosen
-        Route::prefix('berita')->group(function () {
-            // Basic CRUD Operations
-            Route::get('/', [SimpegBeritaDosenController::class, 'index']);
-            Route::get('/{id}', [SimpegBeritaDosenController::class, 'show']);
-
-            // ========================================
-            // DOWNLOAD & FILE OPERATIONS
-            // ========================================
-            Route::get('/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile']);
-
-            // ========================================
-            // CONFIGURATION & STATISTICS ROUTES
-            // ========================================
-            Route::get('/config/system', [SimpegBeritaDosenController::class, 'getSystemConfig']);
-            Route::get('/statistics/status', [SimpegBeritaDosenController::class, 'getStatusStatistics']);
-            Route::get('/filter-options', [SimpegBeritaDosenController::class, 'getFilterOptions']);
-            Route::get('/available-actions', [SimpegBeritaDosenController::class, 'getAvailableActions']);
-        });
-
+ 
         // Data Organisasi Routes
         Route::prefix('dataorganisasi')->group(function () {
             // ========================================
