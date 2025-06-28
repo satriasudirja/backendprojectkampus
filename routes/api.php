@@ -1248,6 +1248,7 @@ Route::middleware('auth:api')->group(function () {
     });
 
         Route::apiResource('agama', SimpegAgamaController::class);
+
 Route::apiResource('bahasa', SimpegBahasaController::class);
 Route::apiResource('bank', SimpegBankController::class);
 // Route::apiResource('berita', SimpegBeritaController::class);
@@ -1272,82 +1273,82 @@ Route::apiResource('status-pernikahan', SimpegStatusPernikahanController::class)
 Route::apiResource('suku', SimpegSukuController::class);
 Route::apiResource('univ-luar', SimpegUnivLuarController::class);
 
-Route::get('unit-kerja/dropdown', [SimpegUnitKerjaController::class, 'dropdown']);
-Route::apiResource('unit-kerja', SimpegUnitKerjaController::class);
+        Route::get('unit-kerja/dropdown', [SimpegUnitKerjaController::class, 'dropdown']);
+        Route::apiResource('unit-kerja', SimpegUnitKerjaController::class);
 
 
-// --- Jenis Data ---
-Route::apiResource('jenis-hari', SimpegJenisHariController::class);
-Route::apiResource('jenis-izin', SimpegJenisIzinController::class);
-Route::apiResource('jenis-jabatan-struktural', SimpegJenisJabatanStrukturalController::class);
-Route::apiResource('jenis-kehadiran', SimpegJenisKehadiranController::class);
-Route::apiResource('jenis-kenaikan-pangkat', SimpegJenisKenaikanPangkatController::class);
-Route::apiResource('jenis-luaran', SimpegDaftarJenisLuaranController::class);
-Route::apiResource('jenis-pelanggaran', SimpegJenisPelanggaranController::class);
-Route::apiResource('jenis-penghargaan', SimpegJenisPenghargaanController::class);
-Route::apiResource('jenis-pkm', DaftarJenisPkmController::class);
-Route::apiResource('jenis-publikasi', SimpegJenisPublikasiController::class);
-Route::apiResource('jenis-sk', SimpegDaftarJenisSkController::class);
-Route::apiResource('jenis-test', SimpegDaftarJenisTestController::class);
+        // --- Jenis Data ---
+        Route::apiResource('jenis-hari', SimpegJenisHariController::class);
+        Route::apiResource('jenis-izin', SimpegJenisIzinController::class);
+        Route::apiResource('jenis-jabatan-struktural', SimpegJenisJabatanStrukturalController::class);
+        Route::apiResource('jenis-kehadiran', SimpegJenisKehadiranController::class);
+        Route::apiResource('jenis-kenaikan-pangkat', SimpegJenisKenaikanPangkatController::class);
+        Route::apiResource('jenis-luaran', SimpegDaftarJenisLuaranController::class);
+        Route::apiResource('jenis-pelanggaran', SimpegJenisPelanggaranController::class);
+        Route::apiResource('jenis-penghargaan', SimpegJenisPenghargaanController::class);
+        Route::apiResource('jenis-pkm', DaftarJenisPkmController::class);
+        Route::apiResource('jenis-publikasi', SimpegJenisPublikasiController::class);
+        Route::apiResource('jenis-sk', SimpegDaftarJenisSkController::class);
+        Route::apiResource('jenis-test', SimpegDaftarJenisTestController::class);
 
 
-// --- Data Transaksional ---
-Route::apiResource('daftar-cuti', SimpegDaftarCutiController::class);
-Route::apiResource('data-riwayat-pekerjaan', SimpegDataRiwayatPekerjaanController::class);
-Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
+        // --- Data Transaksional ---
+        Route::apiResource('daftar-cuti', SimpegDaftarCutiController::class);
+        Route::apiResource('data-riwayat-pekerjaan', SimpegDataRiwayatPekerjaanController::class);
+        Route::apiResource('data-sertifikasi', SimpegDataSertifikasiController::class);
 
-// PENAMBAHAN BARU: Rute untuk Data Jabatan Fungsional
-Route::prefix('data-jabatan-fungsional')->controller(SimpegDataJabatanFungsionalController::class)->group(function () {
-    Route::get('/statistics', 'getStatusStatistics'); // Harus sebelum {id}
-    Route::post('/batch-update-status', 'batchUpdateStatus');
-    Route::post('/{id}/submit', 'submitDraft');
-    Route::get('/{id}/download', 'downloadFile');
-});
-Route::apiResource('data-jabatan-fungsional', SimpegDataJabatanFungsionalController::class)->except(['create', 'edit']);
-
-
-// --- Gaji ---
-Route::apiResource('gaji-detail', SimpegGajiDetailController::class);
-Route::apiResource('gaji-komponen', SimpegGajiKomponenController::class);
-Route::apiResource('gaji-tunjangan-khusus', SimpegGajiTunjanganKhususController::class);
-Route::apiResource('gaji-slip', SimpegGajiSlipController::class);
-Route::apiResource('gaji-lembur', SimpegGajiLemburController::class);
-Route::apiResource('gaji-periode', SimpegGajiPeriodeController::class);
+        // PENAMBAHAN BARU: Rute untuk Data Jabatan Fungsional
+        Route::prefix('data-jabatan-fungsional')->controller(SimpegDataJabatanFungsionalController::class)->group(function () {
+            Route::get('/statistics', 'getStatusStatistics'); // Harus sebelum {id}
+            Route::post('/batch-update-status', 'batchUpdateStatus');
+            Route::post('/{id}/submit', 'submitDraft');
+            Route::get('/{id}/download', 'downloadFile');
+        });
+        Route::apiResource('data-jabatan-fungsional', SimpegDataJabatanFungsionalController::class)->except(['create', 'edit']);
 
 
-// --- Route Groups ---
+        // --- Gaji ---
+        Route::apiResource('gaji-detail', SimpegGajiDetailController::class);
+        Route::apiResource('gaji-komponen', SimpegGajiKomponenController::class);
+        Route::apiResource('gaji-tunjangan-khusus', SimpegGajiTunjanganKhususController::class);
+        Route::apiResource('gaji-slip', SimpegGajiSlipController::class);
+        Route::apiResource('gaji-lembur', SimpegGajiLemburController::class);
+        Route::apiResource('gaji-periode', SimpegGajiPeriodeController::class);
 
-Route::prefix('pegawai')->middleware(['auth:api'])->group(function () {
-    Route::get('/', [SimpegDataDiklatController::class, 'index']);
-});
 
-Route::prefix('setting-kehadiran')->group(function () {
-    Route::get('/', [SimpegSettingKehadiranController::class, 'index']);
-    Route::post('/', [SimpegSettingKehadiranController::class, 'store']);
-    Route::get('/detail', [SimpegSettingKehadiranController::class, 'show']);
-    Route::get('/detail/{id}', [SimpegSettingKehadiranController::class, 'show']);
-    Route::post('/reset-default', [SimpegSettingKehadiranController::class, 'resetToDefault']);
-    Route::post('/test-coordinates', [SimpegSettingKehadiranController::class, 'testCoordinates']);
-    Route::get('/system-info', [SimpegSettingKehadiranController::class, 'getSystemInfo']);
-});
+        // --- Route Groups ---
 
-Route::prefix('datapelanggaran')->group(function () {
-    Route::get('/', [SimpegDataPelanggaranController::class, 'index']);
-    Route::post('/', [SimpegDataPelanggaranController::class, 'store']);
-    Route::get('/{id}', [SimpegDataPelanggaranController::class, 'show']);
-    Route::put('/{id}', [SimpegDataPelanggaranController::class, 'update']);
-    Route::delete('/{id}', [SimpegDataPelanggaranController::class, 'destroy']);
-    Route::delete('/batch/delete', [SimpegDataPelanggaranController::class, 'batchDelete']);
-    Route::get('/options/pegawai', [SimpegDataPelanggaranController::class, 'getPegawaiOptions']);
-    Route::get('/options/filter', [SimpegDataPelanggaranController::class, 'getFilterOptions']);
-    Route::get('/options/form', [SimpegDataPelanggaranController::class, 'getFormOptions']);
-    Route::get('/statistics/dashboard', [SimpegDataPelanggaranController::class, 'getStatistics']);
-    Route::get('/export/excel', [SimpegDataPelanggaranController::class, 'export']);
-    Route::post('/validate/duplicate', [SimpegDataPelanggaranController::class, 'validateDuplicate']);
-});
+        Route::prefix('pegawai')->middleware(['auth:api'])->group(function () {
+            Route::get('/', [SimpegDataDiklatController::class, 'index']);
+        });
 
-// --- Rute Lainnya (yang hanya muncul sekali) ---
-Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index']);
+        Route::prefix('setting-kehadiran')->group(function () {
+            Route::get('/', [SimpegSettingKehadiranController::class, 'index']);
+            Route::post('/', [SimpegSettingKehadiranController::class, 'store']);
+            Route::get('/detail', [SimpegSettingKehadiranController::class, 'show']);
+            Route::get('/detail/{id}', [SimpegSettingKehadiranController::class, 'show']);
+            Route::post('/reset-default', [SimpegSettingKehadiranController::class, 'resetToDefault']);
+            Route::post('/test-coordinates', [SimpegSettingKehadiranController::class, 'testCoordinates']);
+            Route::get('/system-info', [SimpegSettingKehadiranController::class, 'getSystemInfo']);
+        });
+
+        Route::prefix('datapelanggaran')->group(function () {
+            Route::get('/', [SimpegDataPelanggaranController::class, 'index']);
+            Route::post('/', [SimpegDataPelanggaranController::class, 'store']);
+            Route::get('/{id}', [SimpegDataPelanggaranController::class, 'show']);
+            Route::put('/{id}', [SimpegDataPelanggaranController::class, 'update']);
+            Route::delete('/{id}', [SimpegDataPelanggaranController::class, 'destroy']);
+            Route::delete('/batch/delete', [SimpegDataPelanggaranController::class, 'batchDelete']);
+            Route::get('/options/pegawai', [SimpegDataPelanggaranController::class, 'getPegawaiOptions']);
+            Route::get('/options/filter', [SimpegDataPelanggaranController::class, 'getFilterOptions']);
+            Route::get('/options/form', [SimpegDataPelanggaranController::class, 'getFormOptions']);
+            Route::get('/statistics/dashboard', [SimpegDataPelanggaranController::class, 'getStatistics']);
+            Route::get('/export/excel', [SimpegDataPelanggaranController::class, 'export']);
+            Route::post('/validate/duplicate', [SimpegDataPelanggaranController::class, 'validateDuplicate']);
+        });
+
+        // --- Rute Lainnya (yang hanya muncul sekali) ---
+        Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index']);
 
 
         Route::prefix('dosen-dashboard')->group(function () {
