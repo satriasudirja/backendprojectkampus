@@ -966,37 +966,64 @@ class SimpegDataHubunganKerjaAdminController extends Controller
             ['id' => 'ditolak', 'nama' => 'Ditolak'],
         ];
 
-        // Retrieve existing years for tgl_awal and tgl_akhir from the database
-        // FIX: Changed YEAR() to EXTRACT(YEAR FROM) for PostgreSQL compatibility
+        // // Retrieve existing years for tgl_awal and tgl_akhir from the database
+        // // FIX: Changed YEAR() to EXTRACT(YEAR FROM) for PostgreSQL compatibility
+        // $yearsTglAwal = SimpegDataHubunganKerja::distinct()
+        //                                        ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_awal)"))
+        //                                        ->filter()
+        //                                        ->sortDesc()
+        //                                        ->values()
+        //                                        ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
+        //                                        ->prepend(['id' => 'semua', 'nama' => 'Semua Tanggal Mulai'])
+        //                                        ->toArray();
+
+        // $yearsTglAkhir = SimpegDataHubunganKerja::distinct()
+        //                                         ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_akhir)"))
+        //                                         ->filter()
+        //                                         ->sortDesc()
+        //                                         ->values()
+        //                                         ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
+        //                                         ->prepend(['id' => 'semua', 'nama' => 'Semua Tanggal Selesai'])
+        //                                         ->toArray();
+
+        // // Assuming tgl_disetujui also exists and can be filtered by year
+        // $yearsTglDisetujui = SimpegDataHubunganKerja::whereNotNull('tgl_disetujui')
+        //                                             ->distinct()
+        //                                             ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_disetujui)"))
+        //                                             ->filter()
+        //                                             ->sortDesc()
+        //                                             ->values()
+        //                                             ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
+        //                                             ->prepend(['id' => 'semua', 'nama' => 'Semua Tgl Disetujui'])
+        //                                             ->toArray();
+
         $yearsTglAwal = SimpegDataHubunganKerja::distinct()
-                                               ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_awal)"))
-                                               ->filter()
-                                               ->sortDesc()
-                                               ->values()
-                                               ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
-                                               ->prepend(['id' => 'semua', 'nama' => 'Semua Tanggal Mulai'])
-                                               ->toArray();
+                                                    ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_awal) as year"))
+                                                    ->filter()
+                                                    ->sortDesc()
+                                                    ->values()
+                                                    ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
+                                                    ->prepend(['id' => 'semua', 'nama' => 'Semua Tanggal Mulai'])
+                                                    ->toArray();
 
         $yearsTglAkhir = SimpegDataHubunganKerja::distinct()
-                                                ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_akhir)"))
-                                                ->filter()
-                                                ->sortDesc()
-                                                ->values()
-                                                ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
-                                                ->prepend(['id' => 'semua', 'nama' => 'Semua Tanggal Selesai'])
-                                                ->toArray();
+                                                    ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_akhir) as year"))  
+                                                    ->filter()
+                                                    ->sortDesc()
+                                                    ->values()
+                                                    ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
+                                                    ->prepend(['id' => 'semua', 'nama' => 'Semua Tanggal Selesai'])
+                                                    ->toArray();
 
-        // Assuming tgl_disetujui also exists and can be filtered by year
         $yearsTglDisetujui = SimpegDataHubunganKerja::whereNotNull('tgl_disetujui')
                                                     ->distinct()
-                                                    ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_disetujui)"))
+                                                    ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_disetujui) as year"))  
                                                     ->filter()
                                                     ->sortDesc()
                                                     ->values()
                                                     ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
                                                     ->prepend(['id' => 'semua', 'nama' => 'Semua Tgl Disetujui'])
                                                     ->toArray();
-
 
         return response()->json([
             'success' => true,
