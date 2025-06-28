@@ -12,8 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('simpeg_jenis_izin', function (Blueprint $table) {
-            //
-            $table->dropColumn('status_presensi');
+            // Tambahkan kolom baru. Tipe 'string' bisa disesuaikan.
+            // ->after('jenis_izin') bersifat opsional, hanya untuk merapikan urutan kolom.
+            $table->string('status_presensi')->nullable()->after('jenis_izin');
         });
     }
 
@@ -23,10 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('simpeg_jenis_izin', function (Blueprint $table) {
-            //
-            //
-            //
-            $table->string('status_presensi', 20); 
+            $table->dropColumn('status_presensi');
         });
     }
 };

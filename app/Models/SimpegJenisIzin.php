@@ -15,7 +15,7 @@ class SimpegJenisIzin extends Model
         'jenis_kehadiran_id',
         'kode',
         'jenis_izin',
-        // 'status_presensi',
+        'status_presensi',
         'izin_max',
         'potong_cuti',
     ];
