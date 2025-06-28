@@ -1206,6 +1206,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('jenis-publikasi', SimpegJenisPublikasiController::class);
         Route::apiResource('jenis-kenaikan-pangkat', SimpegJenisKenaikanPangkatController::class);
         Route::apiResource('jenis-izin', SimpegJenisIzinController::class);
+        Route::get('dropdown/jenis-izin', [SimpegJenisIzinController::class, 'all']);
 
 
 

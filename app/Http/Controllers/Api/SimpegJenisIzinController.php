@@ -48,7 +48,7 @@ class SimpegJenisIzinController extends Controller
             'jenis_kehadiran_id' => 'required|integer|exists:simpeg_jenis_kehadiran,id',
             'kode' => 'required|string|max:5|unique:simpeg_jenis_izin,kode',
             'jenis_izin' => 'required|string|max:50',
-            // 'status_presensi' => 'required|string|max:20',
+            'status_presensi' => 'required|string|max:20',
             'izin_max' => 'required|string|max:3', // Sesuai migration
             'potong_cuti' => 'required|boolean',
         ]);
@@ -66,7 +66,11 @@ class SimpegJenisIzinController extends Controller
      */
     public function show($kode)
     {
-        $jenisIzin = SimpegJenisIzin::where('kode', $kode)->with('jenisKehadiran')->firstOrFail();
+         $jenisIzin = SimpegJenisIzin::where('kode', $kode)->with('jenisKehadiran')->first();
+
+    if (!$jenisIzin) {
+        return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
+    }
         return response()->json(['success' => true, 'data' => $jenisIzin]);
     }
 
@@ -75,7 +79,11 @@ class SimpegJenisIzinController extends Controller
      */
     public function update(Request $request, $kode)
     {
-        $jenisIzin = SimpegJenisIzin::where('kode', $kode)->firstOrFail();
+        $jenisIzin = SimpegJenisIzin::where('kode', $kode)->with('jenisKehadiran')->first();
+
+    if (!$jenisIzin) {
+        return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
+    }
 
         $validator = Validator::make($request->all(), [
             'jenis_kehadiran_id' => 'sometimes|required|integer|exists:simpeg_jenis_kehadiran,id',
@@ -98,7 +106,11 @@ class SimpegJenisIzinController extends Controller
      */
     public function destroy($kode)
     {
-        $jenisIzin = SimpegJenisIzin::where('kode', $kode)->firstOrFail();
+        $jenisIzin = SimpegJenisIzin::where('kode', $kode)->first();
+
+    if (!$jenisIzin) {
+        return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
+    }
         
         // PERBAIKAN: Cek relasi secara langsung ke tabel SimpegIzinRecord
         // Ini untuk menghindari error jika relasi 'izinRecords' tidak ada di model.
