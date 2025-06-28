@@ -1007,7 +1007,7 @@ class SimpegDataHubunganKerjaAdminController extends Controller
                                                     ->toArray();
 
         $yearsTglAkhir = SimpegDataHubunganKerja::distinct()
-                                                    ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_akhir) as year"))  // ✅ Added "as year"
+                                                    ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_akhir) as year"))  
                                                     ->filter()
                                                     ->sortDesc()
                                                     ->values()
@@ -1017,7 +1017,7 @@ class SimpegDataHubunganKerjaAdminController extends Controller
 
         $yearsTglDisetujui = SimpegDataHubunganKerja::whereNotNull('tgl_disetujui')
                                                     ->distinct()
-                                                    ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_disetujui) as year"))  // ✅ Added "as year"
+                                                    ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_disetujui) as year"))  
                                                     ->filter()
                                                     ->sortDesc()
                                                     ->values()
