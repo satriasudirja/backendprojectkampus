@@ -15,7 +15,8 @@ return new class extends Migration
             // Tambahkan kolom baru. Tipe 'string' bisa disesuaikan.
             // ->after('jenis_izin') bersifat opsional, hanya untuk merapikan urutan kolom.
             // $table->string('status_presensi')->nullable()->after('jenis_izin');
-            $table->dropColumn('status_presensi');
+            //
+            // $table->dropColumn('status_presensi');
         });
     }
 
@@ -26,7 +27,7 @@ return new class extends Migration
     {
         Schema::table('simpeg_jenis_izin', function (Blueprint $table) {
             // $table->dropColumn('status_presensi');
-            $table->string('status_presensi')->nullable();
+            // $table->string('status_presensi')->nullable();
         });
     }
 };
