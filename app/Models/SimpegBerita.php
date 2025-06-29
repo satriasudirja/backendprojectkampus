@@ -29,7 +29,7 @@ class SimpegBerita extends Model
         'tgl_posting' => 'date',
         'tgl_expired' => 'date',
         'prioritas' => 'boolean',
-        // 'unit_kerja_id' => 'array', // Tetap di sini, tapi akan di-override manual encode saat saving
+        'unit_kerja_id' => 'array', // Tetap di sini, tapi akan di-override manual encode saat saving
         'deleted_at' => 'datetime',
     ];
 

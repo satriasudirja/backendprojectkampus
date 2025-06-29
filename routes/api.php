@@ -154,6 +154,7 @@ use App\Http\Controllers\Api\SimpegPenghargaanDosenController;
 use App\Http\Controllers\Api\SimpegDataRiwayatPelanggaranController;
 use App\Http\Controllers\Api\SimpegKegiatanHarianDosenController;
 use App\Http\Controllers\Api\MonitoringRiwayatController; 
+use App\Http\Controllers\Api\SimpegBeritaPegawaiController;
 
 
 Route::prefix('auth')->group(function () {
@@ -1239,7 +1240,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('agama', SimpegAgamaController::class);
 Route::apiResource('bahasa', SimpegBahasaController::class);
 Route::apiResource('bank', SimpegBankController::class);
-Route::apiResource('berita', SimpegBeritaController::class);
+
 Route::apiResource('eselon', SimpegEselonController::class);
 Route::apiResource('golongan-darah', SimpegGolonganDarahController::class);
 Route::apiResource('hubungan-kerja', SimpegHubunganKerjaController::class);
@@ -1366,25 +1367,21 @@ Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index'
 
 
         Route::prefix('berita')->group(function () {
-            // ========================================
-            // CONFIGURATION & STATISTICS ROUTES (HARUS PALING ATAS!)
-            // ========================================
             Route::get('/config/system', [SimpegBeritaDosenController::class, 'getSystemConfig']);
             Route::get('/statistics/status', [SimpegBeritaDosenController::class, 'getStatusStatistics']);
             Route::get('/filter-options', [SimpegBeritaDosenController::class, 'getFilterOptions']);
             Route::get('/available-actions', [SimpegBeritaDosenController::class, 'getAvailableActions']);
-
-            // ========================================
-            // BASIC CRUD OPERATIONS (ROUTES TANPA PARAMETER)
-            // ========================================
             Route::get('/', [SimpegBeritaDosenController::class, 'index']);
-
-            // ========================================
-            // ROUTES DENGAN PARAMETER {id} (HARUS PALING BAWAH!)
-            // ========================================
-            Route::get('/{id}', [SimpegBeritaDosenController::class, 'show']);
-            Route::get('/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile']);
+            
+            Route::get('/detail/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile'])
+                ->where('id', '[0-9]+');
+            Route::get('/detail/{id}', [SimpegBeritaDosenController::class, 'show'])
+                ->where('id', '[0-9]+');
+                Route::get('/{id}', [SimpegBeritaDosenController::class, 'show'])
+                ->where('id', '[0-9]+');
         });
+
+        Route::apiResource('berita', SimpegBeritaController::class);
 
 
         Route::prefix('evaluasi-kinerja')->group(function () {
@@ -1607,6 +1604,29 @@ Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index'
 
 
     Route::get('/monitoring/datariwayat', [MonitoringRiwayatController::class, 'index']);
+    
+
+    /**
+     * Catatan: Urutan route PENTING.
+     * Route yang lebih spesifik (seperti 'statistik/dashb') harus didefinisikan
+     * SEBELUM route yang lebih dinamis (seperti '{id}').
+     */
+
+    // Endpoint 5: Get Statistik Dashboard
+    // URL: {{base_url_siakad}}api/dosen/berita-pegawai/statistik/dashb
+    Route::get('berita-pegawai/statistik/dashboard', [SimpegBeritaPegawaiController::class, 'getStatistik']);
+
+    // Endpoint 4: Get Daftar Unit Kerja
+    // URL: {{base_url_siakad}}api/dosen/berita-pegawai/unit-kerja/list
+    Route::get('berita-pegawai/unit-kerja/list', [SimpegBeritaPegawaiController::class, 'getUnitKerja']);
+
+    // Endpoint 1 & 2: Get Daftar Berita Pegawai (dengan atau tanpa filter)
+    // URL: {{base_url_siakad}}api/dosen/berita-pegawai?page=1&...
+    Route::get('berita-pegawai', [SimpegBeritaPegawaiController::class, 'index']);
+
+    // Endpoint 3: Get Detail Berita
+    // URL: {{base_url_siakad}}api/dosen/berita-pegawai/1
+    Route::get('berita-pegawai/{id}', [SimpegBeritaPegawaiController::class, 'show']);
 
 
     // ========================================
@@ -2458,22 +2478,29 @@ Route::get('/monitoring-presensi', [MonitoringPresensiController::class, 'index'
 
         // Berita Routes untuk Dosen
         Route::prefix('berita')->group(function () {
-            // Basic CRUD Operations
-            Route::get('/', [SimpegBeritaDosenController::class, 'index']);
-            Route::get('/{id}', [SimpegBeritaDosenController::class, 'show']);
-
             // ========================================
-            // DOWNLOAD & FILE OPERATIONS
-            // ========================================
-            Route::get('/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile']);
-
-            // ========================================
-            // CONFIGURATION & STATISTICS ROUTES
+            // CONFIGURATION & STATISTICS ROUTES (HARUS PALING ATAS!)
             // ========================================
             Route::get('/config/system', [SimpegBeritaDosenController::class, 'getSystemConfig']);
             Route::get('/statistics/status', [SimpegBeritaDosenController::class, 'getStatusStatistics']);
             Route::get('/filter-options', [SimpegBeritaDosenController::class, 'getFilterOptions']);
             Route::get('/available-actions', [SimpegBeritaDosenController::class, 'getAvailableActions']);
+
+            // ========================================
+            // BASIC CRUD OPERATIONS (ROUTES TANPA PARAMETER)
+            // ========================================
+            Route::get('/', [SimpegBeritaDosenController::class, 'index']);
+
+            // ========================================
+            // ROUTES DENGAN PARAMETER {id} (HARUS PALING BAWAH!)
+            // ========================================
+            Route::get('/detail/{id}/download', [SimpegBeritaDosenController::class, 'downloadFile'])
+        ->where('id', '[0-9]+');
+    Route::get('/detail/{id}', [SimpegBeritaDosenController::class, 'show'])
+        ->where('id', '[0-9]+');
+        Route::get('/{id}', [SimpegBeritaDosenController::class, 'show'])
+        ->where('id', '[0-9]+');
+            
         });
 
         // Data Organisasi Routes

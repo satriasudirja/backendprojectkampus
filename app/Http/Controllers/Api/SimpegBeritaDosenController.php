@@ -17,204 +17,244 @@ use Illuminate\Support\Str;
 class SimpegBeritaDosenController extends Controller
 {
     // Get all berita for logged in dosen
-    public function index(Request $request) 
-    {
-        // Pastikan user sudah login
-        if (!Auth::check()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized - Silakan login terlebih dahulu'
-            ], 401);
-        }
-
-        // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
-        $dosen = Auth::user()->load([
-            'unitKerja',
-            'statusAktif', 
-            'jabatanAkademik',
-            'dataJabatanFungsional' => function($query) {
-                $query->with('jabatanFungsional')
-                      ->orderBy('tmt_jabatan', 'desc')
-                      ->limit(1);
-            },
-            'dataJabatanStruktural' => function($query) {
-                $query->with('jabatanStruktural.jenisJabatanStruktural')
-                      ->orderBy('tgl_mulai', 'desc')
-                      ->limit(1);
-            },
-            'dataPendidikanFormal' => function($query) {
-                $query->with('jenjangPendidikan')
-                      ->orderBy('jenjang_pendidikan_id', 'desc')
-                      ->limit(1);
-            }
-        ]);
-
-        if (!$dosen) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data dosen tidak ditemukan atau belum login'
-            ], 404);
-        }
-
-        $perPage = $request->per_page ?? 10;
-        $search = $request->search;
-        $unitKerja = $request->unit_kerja;
-        $prioritas = $request->prioritas;
-        $status = $request->status;
-
-        // Query berita yang relevan untuk dosen
-        $query = SimpegBerita::with(['jabatanAkademik'])
-            ->where(function($q) use ($dosen) {
-                // Berita untuk unit kerja dosen (menggunakan ID integer)
-                if ($dosen->unit_kerja_id) {
-                    $q->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([(int)$dosen->unit_kerja_id])]);
-                }
-                
-                // Berita untuk jabatan akademik dosen
-                if ($dosen->jabatan_akademik_id) {
-                    $q->orWhereHas('jabatanAkademik', function($subQ) use ($dosen) {
-                        $subQ->where('jabatan_akademik_id', $dosen->jabatan_akademik_id);
-                    });
-                }
-                
-                // Berita yang tidak memiliki jabatan akademik spesifik (berita umum)
-                $q->orWhereDoesntHave('jabatanAkademik');
-            });
-
-        // Filter by search
-        if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('judul', 'like', '%'.$search.'%')
-                  ->orWhere('konten', 'like', '%'.$search.'%')
-                  ->orWhere('slug', 'like', '%'.$search.'%');
-            });
-        }
-
-        // Filter by unit kerja
-        if ($unitKerja && $unitKerja != 'semua') {
-            // Konversi ke integer jika berupa angka
-            $unitKerjaFilter = is_numeric($unitKerja) ? (int)$unitKerja : $unitKerja;
-            $query->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([$unitKerjaFilter])]);
-        }
-
-        // Filter by prioritas
-        if ($prioritas !== null && $prioritas !== 'semua') {
-            $query->where('prioritas', (bool)$prioritas);
-        }
-
-        // Filter by status (active/expired)
-        if ($status && $status != 'semua') {
-            if ($status === 'active') {
-                $query->where(function($q) {
-                    $q->whereNull('tgl_expired')
-                      ->orWhere('tgl_expired', '>=', now()->toDateString());
-                });
-            } elseif ($status === 'expired') {
-                $query->where('tgl_expired', '<', now()->toDateString());
-            }
-        }
-
-        // Additional filters
-        if ($request->filled('judul')) {
-            $query->where('judul', 'like', '%'.$request->judul.'%');
-        }
-        if ($request->filled('tgl_posting')) {
-            $query->whereDate('tgl_posting', $request->tgl_posting);
-        }
-        if ($request->filled('tgl_expired')) {
-            $query->whereDate('tgl_expired', $request->tgl_expired);
-        }
-
-        // Execute query dengan pagination
-        $beritaList = $query->orderBy('prioritas', 'desc')
-                           ->orderBy('tgl_posting', 'desc')
-                           ->paginate($perPage);
-
-        // Transform the collection to include formatted data with action URLs
-        $beritaList->getCollection()->transform(function ($item) {
-            return $this->formatBerita($item, true);
-        });
-
+   public function index(Request $request) 
+{
+    // Pastikan user sudah login
+    if (!Auth::check()) {
         return response()->json([
-            'success' => true,
-            'data' => $beritaList,
-            'empty_data' => $beritaList->isEmpty(),
-            'dosen_info' => $this->formatDosenInfo($dosen),
-            'filters' => [
-                'unit_kerja' => $this->getUnitKerjaOptions(),
-                'prioritas' => [
-                    ['id' => 'semua', 'nama' => 'Semua'],
-                    ['id' => '1', 'nama' => 'Prioritas'],
-                    ['id' => '0', 'nama' => 'Normal']
-                ],
-                'status' => [
-                    ['id' => 'semua', 'nama' => 'Semua'],
-                    ['id' => 'active', 'nama' => 'Aktif'],
-                    ['id' => 'expired', 'nama' => 'Expired']
-                ]
-            ],
-            'table_columns' => [
-                ['field' => 'unit_kerja', 'label' => 'Unit Kerja', 'sortable' => true, 'sortable_field' => 'unit_kerja_id'],
-                ['field' => 'judul', 'label' => 'Judul', 'sortable' => true, 'sortable_field' => 'judul'],
-                ['field' => 'tgl_posting', 'label' => 'Tgl. Posting', 'sortable' => true, 'sortable_field' => 'tgl_posting'],
-                ['field' => 'tgl_expired', 'label' => 'Tgl. Expired', 'sortable' => true, 'sortable_field' => 'tgl_expired'],
-                ['field' => 'prioritas', 'label' => 'Prioritas', 'sortable' => true, 'sortable_field' => 'prioritas'],
-                ['field' => 'aksi', 'label' => 'Aksi', 'sortable' => false]
-            ],
-            'table_rows_options' => [10, 25, 50, 100],
-            'pagination' => [
-                'current_page' => $beritaList->currentPage(),
-                'per_page' => $beritaList->perPage(),
-                'total' => $beritaList->total(),
-                'last_page' => $beritaList->lastPage(),
-                'from' => $beritaList->firstItem(),
-                'to' => $beritaList->lastItem()
-            ]
-        ]);
+            'success' => false,
+            'message' => 'Unauthorized - Silakan login terlebih dahulu'
+        ], 401);
     }
+
+    // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
+    $dosen = Auth::user()->load([
+        'unitKerja',
+        'statusAktif', 
+        'jabatanAkademik',
+        'dataJabatanFungsional' => function($query) {
+            $query->with('jabatanFungsional')
+                  ->orderBy('tmt_jabatan', 'desc')
+                  ->limit(1);
+        },
+        'dataJabatanStruktural' => function($query) {
+            $query->with('jabatanStruktural.jenisJabatanStruktural')
+                  ->orderBy('tgl_mulai', 'desc')
+                  ->limit(1);
+        },
+        'dataPendidikanFormal' => function($query) {
+            $query->with('jenjangPendidikan')
+                  ->orderBy('jenjang_pendidikan_id', 'desc')
+                  ->limit(1);
+        }
+    ]);
+
+    if (!$dosen) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data dosen tidak ditemukan atau belum login'
+        ], 404);
+    }
+
+    $perPage = $request->per_page ?? 10;
+    $search = $request->search;
+    $unitKerja = $request->unit_kerja;
+    $prioritas = $request->prioritas;
+    $status = $request->status;
+
+    // Debug: Log informasi dosen untuk troubleshooting
+    \Log::info('Dosen Info', [
+        'id' => $dosen->id,
+        'unit_kerja_id' => $dosen->unit_kerja_id,
+        'jabatan_akademik_id' => $dosen->jabatan_akademik_id
+    ]);
+
+    // Query berita yang relevan untuk dosen
+    $query = SimpegBerita::with(['jabatanAkademik']);
+
+    // **PERBAIKAN UTAMA**: Perbaiki logika WHERE dengan grouping yang tepat
+    $query->where(function($q) use ($dosen) {
+        // 1. Berita untuk unit kerja dosen (menggunakan ID integer)
+        if ($dosen->unit_kerja_id) {
+            $q->where(function($subQ) use ($dosen) {
+                // Coba beberapa format JSON yang mungkin
+                $subQ->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([(int)$dosen->unit_kerja_id])])
+                     ->orWhereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode(["{$dosen->unit_kerja_id}"])])
+                     ->orWhere('unit_kerja_id', 'like', '%"' . $dosen->unit_kerja_id . '"%');
+            });
+        }
+        
+        // 2. ATAU berita untuk jabatan akademik dosen
+        if ($dosen->jabatan_akademik_id) {
+            $q->orWhereHas('jabatanAkademik', function($subQ) use ($dosen) {
+                $subQ->where('jabatan_akademik_id', $dosen->jabatan_akademik_id);
+            });
+        }
+        
+        // 3. ATAU berita yang tidak memiliki jabatan akademik spesifik (berita umum)
+        $q->orWhereDoesntHave('jabatanAkademik');
+        
+        // 4. ATAU berita yang tidak memiliki unit kerja spesifik (berita universal)
+        $q->orWhereNull('unit_kerja_id')
+          ->orWhere('unit_kerja_id', '[]')
+          ->orWhere('unit_kerja_id', '');
+    });
+
+    // Filter by search
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('judul', 'like', '%'.$search.'%')
+              ->orWhere('konten', 'like', '%'.$search.'%')
+              ->orWhere('slug', 'like', '%'.$search.'%');
+        });
+    }
+
+    // Filter by unit kerja
+    if ($unitKerja && $unitKerja != 'semua') {
+        // Konversi ke integer jika berupa angka
+        $unitKerjaFilter = is_numeric($unitKerja) ? (int)$unitKerja : $unitKerja;
+        $query->where(function($q) use ($unitKerjaFilter) {
+            $q->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([$unitKerjaFilter])])
+              ->orWhereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode(["{$unitKerjaFilter}"])]);
+        });
+    }
+
+    // Filter by prioritas
+    if ($prioritas !== null && $prioritas !== 'semua') {
+        $query->where('prioritas', (bool)$prioritas);
+    }
+
+    // Filter by status (active/expired)
+    if ($status && $status != 'semua') {
+        if ($status === 'active') {
+            $query->where(function($q) {
+                $q->whereNull('tgl_expired')
+                  ->orWhere('tgl_expired', '>=', now()->toDateString());
+            });
+        } elseif ($status === 'expired') {
+            $query->where('tgl_expired', '<', now()->toDateString());
+        }
+    }
+
+    // Additional filters
+    if ($request->filled('judul')) {
+        $query->where('judul', 'like', '%'.$request->judul.'%');
+    }
+    if ($request->filled('tgl_posting')) {
+        $query->whereDate('tgl_posting', $request->tgl_posting);
+    }
+    if ($request->filled('tgl_expired')) {
+        $query->whereDate('tgl_expired', $request->tgl_expired);
+    }
+
+    // Debug: Log SQL query untuk troubleshooting
+    \Log::info('SQL Query', ['sql' => $query->toSql(), 'bindings' => $query->getBindings()]);
+
+    // Execute query dengan pagination
+    $beritaList = $query->orderBy('prioritas', 'desc')
+                       ->orderBy('tgl_posting', 'desc')
+                       ->paginate($perPage);
+
+    // Debug: Log hasil query
+    \Log::info('Query Results', ['count' => $beritaList->count(), 'total' => $beritaList->total()]);
+
+    // Transform the collection to include formatted data with action URLs
+    $beritaList->getCollection()->transform(function ($item) {
+        return $this->formatBerita($item, true);
+    });
+
+    return response()->json([
+        'success' => true,
+        'data' => $beritaList,
+        'empty_data' => $beritaList->isEmpty(),
+        'dosen_info' => $this->formatDosenInfo($dosen),
+        'filters' => [
+            'unit_kerja' => $this->getUnitKerjaOptions(),
+            'prioritas' => [
+                ['id' => 'semua', 'nama' => 'Semua'],
+                ['id' => '1', 'nama' => 'Prioritas'],
+                ['id' => '0', 'nama' => 'Normal']
+            ],
+            'status' => [
+                ['id' => 'semua', 'nama' => 'Semua'],
+                ['id' => 'active', 'nama' => 'Aktif'],
+                ['id' => 'expired', 'nama' => 'Expired']
+            ]
+        ],
+        'table_columns' => [
+            ['field' => 'unit_kerja', 'label' => 'Unit Kerja', 'sortable' => true, 'sortable_field' => 'unit_kerja_id'],
+            ['field' => 'judul', 'label' => 'Judul', 'sortable' => true, 'sortable_field' => 'judul'],
+            ['field' => 'tgl_posting', 'label' => 'Tgl. Posting', 'sortable' => true, 'sortable_field' => 'tgl_posting'],
+            ['field' => 'tgl_expired', 'label' => 'Tgl. Expired', 'sortable' => true, 'sortable_field' => 'tgl_expired'],
+            ['field' => 'prioritas', 'label' => 'Prioritas', 'sortable' => true, 'sortable_field' => 'prioritas'],
+            ['field' => 'aksi', 'label' => 'Aksi', 'sortable' => false]
+        ],
+        'table_rows_options' => [10, 25, 50, 100],
+        'pagination' => [
+            'current_page' => $beritaList->currentPage(),
+            'per_page' => $beritaList->perPage(),
+            'total' => $beritaList->total(),
+            'last_page' => $beritaList->lastPage(),
+            'from' => $beritaList->firstItem(),
+            'to' => $beritaList->lastItem()
+        ]
+    ]);
+}
 
     // Get detail berita
-    public function show($id)
-    {
-        $dosen = Auth::user();
+   public function show($id)
+{
+    $dosen = Auth::user();
 
-        if (!$dosen) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
-            ], 404);
-        }
-
-        $berita = SimpegBerita::with(['jabatanAkademik'])->find($id);
-
-        if (!$berita) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Berita tidak ditemukan'
-            ], 404);
-        }
-
-        // Check access permission
-        $hasAccess = $this->checkBeritaAccess($berita, $dosen);
-        
-        if (!$hasAccess) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses untuk melihat berita ini'
-            ], 403);
-        }
-
+    if (!$dosen) {
         return response()->json([
-            'success' => true,
-            'dosen' => $this->formatDosenInfo($dosen->load([
-                'unitKerja', 'statusAktif', 'jabatanAkademik',
-                'dataJabatanFungsional.jabatanFungsional',
-                'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
-                'dataPendidikanFormal.jenjangPendidikan'
-            ])),
-            'data' => $this->formatBerita($berita)
-        ]);
+            'success' => false,
+            'message' => 'Data dosen tidak ditemukan'
+        ], 404);
     }
+
+    // VALIDASI: pastikan ID adalah angka (mencegah error jika route salah tangkap)
+    if (!is_numeric($id)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Parameter ID berita tidak valid'
+        ], 400);
+    }
+
+    // Ambil berita berdasarkan ID
+    $berita = SimpegBerita::with(['jabatanAkademik'])->find($id);
+
+    if (!$berita) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Berita tidak ditemukan'
+        ], 404);
+    }
+
+    // Cek apakah dosen punya akses ke berita ini
+    $hasAccess = $this->checkBeritaAccess($berita, $dosen);
+
+    if (!$hasAccess) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Anda tidak memiliki akses untuk melihat berita ini'
+        ], 403);
+    }
+
+    return response()->json([
+        'success' => true,
+        'dosen' => $this->formatDosenInfo($dosen->load([
+            'unitKerja', 
+            'statusAktif', 
+            'jabatanAkademik',
+            'dataJabatanFungsional.jabatanFungsional',
+            'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+            'dataPendidikanFormal.jenjangPendidikan'
+        ])),
+        'data' => $this->formatBerita($berita)
+    ]);
+}
+
 
     // Get status statistics untuk dashboard
     public function getStatusStatistics()
@@ -544,9 +584,7 @@ class SimpegBeritaDosenController extends Controller
             'prioritas' => $berita->prioritas,
             'prioritas_label' => $berita->prioritas ? 'Prioritas' : 'Normal',
             'unit_kerja' => implode(', ', $unitKerjaNama),
-            'unit_kerja_array' => $unitKerjaNama,
             'jabatan_akademik' => implode(', ', $jabatanAkademikNama),
-            'jabatan_akademik_array' => $jabatanAkademikNama,
             'status' => $status,
             'status_info' => $statusInfo,
             'has_gambar' => !empty($berita->gambar_berita),
