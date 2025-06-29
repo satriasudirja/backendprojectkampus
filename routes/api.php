@@ -154,6 +154,9 @@ use App\Http\Controllers\Api\SimpegPenghargaanDosenController;
 use App\Http\Controllers\Api\SimpegDataRiwayatPelanggaranController;
 use App\Http\Controllers\Api\SimpegKegiatanHarianDosenController;
 use App\Http\Controllers\Api\MonitoringRiwayatController; 
+use App\Http\Controllers\Api\PayrollController;
+use App\Http\Controllers\Api\PayrollDosenController;
+
 
 
 Route::prefix('auth')->group(function () {
@@ -176,6 +179,21 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+
+
+        Route::prefix('payroll')->name('payroll.api.')->group(function () {
+    // Memicu pembuatan payroll
+    Route::post('/generate', [PayrollController::class, 'generate'])->name('generate');
+    
+    // Melihat daftar periode
+    Route::get('/periods', [PayrollController::class, 'indexPeriods'])->name('periods.index');
+    
+    // Melihat detail satu periode, menggunakan route model binding
+    Route::get('/periods/{periode}', [PayrollController::class, 'showPeriod'])->name('periods.show');
+    
+    // Melihat detail slip gaji berdasarkan ID slip-nya, menggunakan route model binding
+    Route::get('/slips/{slip}', [PayrollController::class, 'showSlip'])->name('slips.show');
+});
 
         Route::get('/pegawai/search', [AdminSimpegDataAnakController::class, 'searchPegawai'])
             ->name('admin.pegawai.search');
@@ -1233,6 +1251,19 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
+
+      Route::prefix('payroll')
+         ->controller(PayrollDosenController::class)
+         ->group(function () {
+
+        // Endpoint untuk melihat daftar slip gaji miliknya
+        // URL: GET /api/dosen/payroll/slips
+        Route::get('/slips', 'index')->name('slips.index');
+        
+        // Endpoint untuk melihat detail satu slip gaji miliknya
+        // URL: GET /api/dosen/payroll/slips/{slip}
+        Route::get('/slips/{slip}', 'show')->name('slips.show');
+    });
 
  Route::prefix('berita-pegawai')->group(function () {
     

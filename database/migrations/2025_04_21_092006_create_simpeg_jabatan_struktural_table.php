@@ -29,6 +29,7 @@ return new class extends Migration
             $table->boolean('aktif');
             $table->text('keterangan')->nullable();
             $table->string('parent_jabatan', 100)->nullable();
+            
             $table->timestamps();
         });
     }

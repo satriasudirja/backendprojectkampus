@@ -23,6 +23,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/a',
                 'angka_kredit' => '100',
                 'usia_pensiun' => 65,
+                'tunjangan' => 30000000,
                 'keterangan' => 'Jabatan fungsional dosen pemula',
             ],
             [
@@ -35,6 +36,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/b',
                 'angka_kredit' => '150',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Jabatan fungsional dosen pemula tingkat lanjut',
             ],
             [
@@ -47,6 +49,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/c',
                 'angka_kredit' => '200',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Jabatan fungsional dosen madya',
             ],
             [
@@ -59,6 +62,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/d',
                 'angka_kredit' => '300',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Jabatan fungsional dosen madya tingkat lanjut',
             ],
             [
@@ -71,6 +75,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'IV/a',
                 'angka_kredit' => '400',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Jabatan fungsional dosen senior',
             ],
             [
@@ -83,6 +88,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'IV/b',
                 'angka_kredit' => '550',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Jabatan fungsional dosen senior tingkat lanjut',
             ],
             [
@@ -95,6 +101,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'IV/c',
                 'angka_kredit' => '700',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Jabatan fungsional dosen senior tingkat utama',
             ],
             [
@@ -107,6 +114,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'IV/d',
                 'angka_kredit' => '850',
                 'usia_pensiun' => 70,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Jabatan fungsional dosen tertinggi',
             ],
             [
@@ -119,6 +127,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'IV/e',
                 'angka_kredit' => '1050',
                 'usia_pensiun' => 70,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Jabatan fungsional dosen tertinggi',
             ],
             [
@@ -131,6 +140,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/a',
                 'angka_kredit' => '100',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Dosen dari kalangan praktisi/industri',
             ],
             [
@@ -143,6 +153,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/a',
                 'angka_kredit' => '100',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Dosen dengan status tidak tetap',
             ],
             [
@@ -155,6 +166,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/a',
                 'angka_kredit' => '100',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Tenaga ahli atau spesialis dalam bidang tertentu',
             ],
             [
@@ -167,6 +179,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/a',
                 'angka_kredit' => '50',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Asisten yang membantu dosen dalam pengajaran',
             ],
             [
@@ -179,6 +192,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/a',
                 'angka_kredit' => '50',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Pengajar tutorial atau praktikum',
             ],
             [
@@ -191,6 +205,7 @@ class SimpegJabatanFungsionalSeeder extends Seeder
                 'pangkat' => 'III/a',
                 'angka_kredit' => '100',
                 'usia_pensiun' => 65,
+                  'tunjangan' => 30000000,
                 'keterangan' => 'Staf yang khusus melakukan penelitian',
             ],
         ];
