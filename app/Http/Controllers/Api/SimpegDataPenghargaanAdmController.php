@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\SimpegDataPenghargaanAdm;
 use App\Models\SimpegUnitKerja;
+use App\Models\SimpegJenisPenghargaan;
 use App\Models\SimpegJabatanFungsional;
 use App\Models\SimpegPegawai;
 use Illuminate\Http\Request;
@@ -147,7 +148,7 @@ class SimpegDataPenghargaanAdmController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jenis_penghargaan' => 'required|string|max:100',
+            'jenis_penghargaan_id' => 'required|integer|exists:simpeg_jenis_penghargaan,id',
             'nama_penghargaan' => 'required|string|max:255',
             'no_sk' => 'nullable|string|max:100',
             'tanggal_sk' => 'nullable|date',
@@ -168,6 +169,10 @@ class SimpegDataPenghargaanAdmController extends Controller
         try {
             $validatedData = $validator->validated();
             
+            if ($jenisPenghargaan) {
+                $validatedData['jenis_penghargaan'] = $jenisPenghargaan->nama;
+            }
+
             if ($request->hasFile('file_penghargaan')) {
                 $filePath = $request->file('file_penghargaan')->store('penghargaan', 'public');
                 $validatedData['file_penghargaan'] = $filePath;
@@ -229,7 +234,7 @@ class SimpegDataPenghargaanAdmController extends Controller
 
         $validator = Validator::make($request->all(), [
             'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
-            'jenis_penghargaan' => 'sometimes|string|max:100',
+            'jenis_penghargaan_id' => 'sometimes|integer|exists:simpeg_jenis_penghargaan,id',
             'nama_penghargaan' => 'sometimes|string|max:255',
             'no_sk' => 'nullable|string|max:100',
             'tanggal_sk' => 'nullable|date',
@@ -247,6 +252,13 @@ class SimpegDataPenghargaanAdmController extends Controller
         try {
             $validatedData = $validator->validated();
             
+            if (isset($validatedData['jenis_penghargaan_id'])) {
+                $jenisPenghargaan = SimpegJenisPenghargaan::find($validatedData['jenis_penghargaan_id']);
+                if ($jenisPenghargaan) {
+                    $validatedData['jenis_penghargaan'] = $jenisPenghargaan->nama;
+                }
+            }
+
             if ($request->hasFile('file_penghargaan')) {
                 if ($dataPenghargaan->file_penghargaan) {
                     Storage::disk('public')->delete($dataPenghargaan->file_penghargaan);

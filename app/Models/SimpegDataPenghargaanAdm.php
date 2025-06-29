@@ -18,6 +18,7 @@ class SimpegDataPenghargaanAdm extends Model
     protected $fillable = [
         'pegawai_id',
         'jenis_penghargaan',
+        'jenis_penghargaan_id',
         'nama_penghargaan',
         'no_sk',
         'tanggal_sk',
