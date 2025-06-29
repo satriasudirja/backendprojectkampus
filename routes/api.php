@@ -163,6 +163,8 @@ use App\Http\Controllers\Api\SimpegBeritaPegawaiController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\PayrollDosenController;
 use App\Http\Controllers\Api\ProfilesController;
+use App\Http\Controllers\Api\RekapitulasiKehadiranController;
+
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -184,6 +186,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+        Route::get('/rekapitulasi/kehadiran', [RekapitulasiKehadiranController::class, 'index']);
+         Route::get('/rekapitulasi/kehadiran/pegawai/{id}', [RekapitulasiKehadiranController::class, 'show']);
          Route::get('/profiles', [ProfilesController::class, 'getProfile']);
 
     /**
