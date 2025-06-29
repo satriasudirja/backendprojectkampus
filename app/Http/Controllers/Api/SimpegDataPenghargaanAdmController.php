@@ -169,6 +169,8 @@ class SimpegDataPenghargaanAdmController extends Controller
         try {
             $validatedData = $validator->validated();
             
+            $jenisPenghargaan = SimpegJenisPenghargaan::find($validatedData['jenis_penghargaan_id']);
+
             if ($jenisPenghargaan) {
                 $validatedData['jenis_penghargaan'] = $jenisPenghargaan->nama;
             }
@@ -545,13 +547,18 @@ class SimpegDataPenghargaanAdmController extends Controller
             ->orderBy('nama_unit')
             ->get();
 
+        $jenisPenghargaanOptions = SimpegJenisPenghargaan::select('id', 'nama')
+            ->orderBy('nama')
+            ->get();
+
         return [
             'form_options' => [
-                'unit_kerja' => $unitKerja
+                'unit_kerja' => $unitKerja,
+                'jenis_penghargaan' => $jenisPenghargaanOptions
             ],
             'validation_rules' => [
                 'pegawai_id' => 'required|integer',
-                'jenis_penghargaan' => 'required|string|max:100',
+                'jenis_penghargaan_id' => 'required|integer', 
                 'nama_penghargaan' => 'required|string|max:255',
                 'no_sk' => 'nullable|string|max:100',
                 'tanggal_sk' => 'nullable|date',
@@ -561,7 +568,7 @@ class SimpegDataPenghargaanAdmController extends Controller
                 'status_pengajuan' => 'sometimes|in:draft,diajukan,disetujui,ditolak,ditangguhkan',
             ],
             'field_notes' => [
-                'jenis_penghargaan' => 'Input manual. Ketik jenis penghargaan sesuai kebutuhan.',
+                'jenis_penghargaan_id' => 'Pilih jenis penghargaan dari daftar yang tersedia.',
                 'nama_penghargaan' => 'Nama lengkap penghargaan yang diterima',
                 'no_sk' => 'Nomor Surat Keputusan penghargaan (jika ada)',
                 'tanggal_sk' => 'Tanggal Surat Keputusan diterbitkan',
@@ -673,7 +680,7 @@ class SimpegDataPenghargaanAdmController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jenis_penghargaan' => 'required|string',
+            'jenis_penghargaan_id' => 'required|integer',
             'nama_penghargaan' => 'required|string',
             'tanggal_penghargaan' => 'nullable|date',
             'exclude_id' => 'nullable|integer' // untuk update
@@ -687,7 +694,7 @@ class SimpegDataPenghargaanAdmController extends Controller
         }
 
         $query = SimpegDataPenghargaanAdm::where('pegawai_id', $request->pegawai_id)
-            ->where('jenis_penghargaan', $request->jenis_penghargaan)
+            ->where('jenis_penghargaan_id', $request->jenis_penghargaan_id)
             ->where('nama_penghargaan', $request->nama_penghargaan);
 
         if ($request->tanggal_penghargaan) {
