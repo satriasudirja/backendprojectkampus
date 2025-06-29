@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SimpegPegawai;
 use App\Models\SimpegDataJabatanAkademik;  
+use App\Models\SimpegJabatanAkademik;  
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegStatusAktif;
 use App\Models\HubunganKerja;
@@ -218,7 +219,7 @@ class PegawaiController extends Controller
             'jabatan_fungsional_id' => 'nullable|exists:simpeg_jabatan_fungsional,id',
             'password' => 'sometimes|required|min:6',
             // Tambahkan validasi untuk field yang sering NULL
-            'user_id' => 'nullable|exists:simpeg_jabatan_akademik,id',
+            //'user_id' => 'nullable|exists:simpeg_jabatan_akademik,id',
             'kode_status_pernikahan' => 'nullable|exists:simpeg_status_pernikahan,id',
             'jabatan_akademik_id' => 'nullable|exists:simpeg_jabatan_akademik,id',
             'suku_id' => 'nullable|exists:simpeg_suku,id',
@@ -226,6 +227,17 @@ class PegawaiController extends Controller
 
         DB::beginTransaction();
         try {
+            $roleIdToStore = null;
+
+            if($request->has('jabatan_akademik_id') && !empty($request->jabatan_akademik_id)){
+                $jabatanAkademik = SimpegJabatanAkademik::find($request->jabatan_akademik_id);
+            
+                if($jabatanAkademik){
+                    $roleIdToStore = $jabatanAkademik->role_id;
+                }
+            }
+            
+
             // Create pegawai with updated fields
             $pegawai = SimpegPegawai::create([
                 'nip' => $request->nip,
@@ -275,7 +287,7 @@ class PegawaiController extends Controller
                 'modified_by' => auth()->id(),
                 'modified_dt' => now(),
                 // Tambahkan field yang sering NULL
-                'user_id' => $request->user_id,
+                'user_id' => $roleIdToStore,
                 'kode_status_pernikahan' => $request->kode_status_pernikahan,
                 'jabatan_akademik_id' => $request->jabatan_akademik_id,
                 'suku_id' => $request->suku_id,
