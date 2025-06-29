@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 
 
+
+
 class MonitoringHubunganKerjaController extends Controller
 {
     // =========================================================
