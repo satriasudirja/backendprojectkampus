@@ -236,6 +236,7 @@ class AdminSimpegRiwayatPenghargaanController extends Controller
     {
         $data = [
             'id' => $penghargaan->id,
+            'jenis_penghargaan' => $penghargaan->jenis_penghargaan,
             'nama_penghargaan' => $penghargaan->nama_penghargaan,
             'instansi' => $penghargaan->instansi_pemberi,
             'tanggal' => Carbon::parse($penghargaan->tanggal_penghargaan)->isoFormat('D MMMM YYYY'),
