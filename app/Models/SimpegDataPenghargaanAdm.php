@@ -48,6 +48,11 @@ class SimpegDataPenghargaanAdm extends Model
         return $this->belongsTo(SimpegPegawai::class, 'pegawai_id', 'id');
     }
 
+    public function jenisPenghargaan()
+    {
+        return $this->belongsTo(SimpegJenisPenghargaan::class, 'jenis_penghargaan_id');
+    }
+
     // --- SCOPE UNTUK FILTERING ---
 
     public function dokumenPendukung()
