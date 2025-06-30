@@ -77,9 +77,7 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('tahun', 'like', '%' . $search . '%')
                     ->orWhere('nama_lembaga', 'like', '%' . $search . '%')
-                    ->orWhere('kemampuan_mendengar', 'like', '%' . $search . '%')
-                    ->orWhere('kemampuan_bicara', 'like', '%' . $search . '%')
-                    ->orWhere('kemampuan_menulis', 'like', '%' . $search . '%')
+                    // Baris untuk 'kemampuan' dihapus dari sini
                     ->orWhere('tgl_diajukan', 'like', '%' . $search . '%')
                     ->orWhereHas('bahasa', function ($q2) use ($search) {
                         $q2->where('nama_bahasa', 'like', '%' . $search . '%');
@@ -113,14 +111,23 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
         if ($namaLembaga) {
             $query->where('nama_lembaga', 'like', '%' . $namaLembaga . '%');
         }
-        if ($kemampuanMendengar) {
-            $query->where('kemampuan_mendengar', $kemampuanMendengar);
+       if ($kemampuanMendengar) {
+            $value = $this->getKemampuanValue($kemampuanMendengar);
+            if ($value !== null) {
+                $query->where('kemampuan_mendengar', $value);
+            }
         }
         if ($kemampuanBicara) {
-            $query->where('kemampuan_bicara', $kemampuanBicara);
+            $value = $this->getKemampuanValue($kemampuanBicara);
+            if ($value !== null) {
+                $query->where('kemampuan_bicara', $value);
+            }
         }
         if ($kemampuanMenulis) {
-            $query->where('kemampuan_menulis', $kemampuanMenulis);
+            $value = $this->getKemampuanValue($kemampuanMenulis);
+            if ($value !== null) {
+                $query->where('kemampuan_menulis', $value);
+            }
         }
 
         $dataKemampuanBahasa = $query->orderBy('tgl_diajukan', 'desc')->paginate($perPage);
@@ -1128,5 +1135,23 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
             'jab_struktural' => $jabatanStrukturalNama,
             'pendidikan' => $jenjangPendidikanNama
         ];
+    }
+
+    /**
+     * Helper function untuk mengubah string kemampuan menjadi integer.
+     */
+    private function getKemampuanValue($stringKemampuan)
+    {
+        if (!$stringKemampuan) {
+            return null;
+        }
+        $map = [
+            'sangat baik' => 4,
+            'baik'        => 3,
+            'cukup'       => 2,
+            'kurang'      => 1,
+        ];
+        $key = strtolower($stringKemampuan);
+        return $map[$key] ?? null;
     }
 }
