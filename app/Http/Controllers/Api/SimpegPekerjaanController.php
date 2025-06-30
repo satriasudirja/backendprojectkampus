@@ -27,7 +27,7 @@ class SimpegPekerjaanController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'kode' => 'required|string|max:10|unique:simpeg_master_pekerjaan,kode',
+            'kode' => 'required|string|max:10|unique:simpeg_pekerjaan,kode',
             'nama_pekerjaan' => 'required|string|max:100',
         ]);
 
@@ -47,7 +47,7 @@ class SimpegPekerjaanController extends Controller
     public function update(Request $request, SimpegPekerjaan $pekerjaan)
     {
         $validator = Validator::make($request->all(), [
-            'kode' => ['required', 'string', 'max:10', Rule::unique('simpeg_master_pekerjaan')->ignore($pekerjaan->id)],
+            'kode' => ['required', 'string', 'max:10', Rule::unique('simpeg_pekerjaan')->ignore($pekerjaan->id)],
             'nama_pekerjaan' => 'required|string|max:100',
         ]);
 
