@@ -363,25 +363,29 @@ class SimpegDataPenghargaanValidasiController extends Controller
     /**
      * Admin Validasi: Batch approve data penghargaan.
      */
-    public function batchApprove(Request $request)
+     public function batchApprove(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_penghargaan,id'
+            'ids.*' => 'required|integer', // MODIFICATION: Removed the 'exists' rule to allow finding trashed items
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $dataToProcess = SimpegDataPenghargaanAdm::whereIn('id', $request->ids)
-                                                ->whereIn('status_pengajuan', ['draft', 'diajukan', 'ditolak' 
-                                                // 'ditangguhkan'
-                                                ])
-                                                ->get();
+        $ids = $request->input('ids');
+        // MODIFICATION: Use withTrashed() to find all records, including soft-deleted ones.
+        $dataToProcess = SimpegDataPenghargaanAdm::withTrashed()->whereIn('id', $ids)->get();
 
-        if ($dataToProcess->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'Tidak ada data penghargaan yang memenuhi syarat untuk disetujui.'], 404);
+        // MODIFICATION: Manually check if all requested IDs were actually found.
+        if (count($ids) !== $dataToProcess->count()) {
+            $foundIds = $dataToProcess->pluck('id')->all();
+            $missingIds = array_diff($ids, $foundIds);
+            return response()->json([
+                'success' => false,
+                'message' => 'Data dengan ID berikut tidak ditemukan: ' . implode(', ', $missingIds)
+            ], 404);
         }
 
         $updatedCount = 0;
@@ -389,13 +393,17 @@ class SimpegDataPenghargaanValidasiController extends Controller
         DB::beginTransaction();
         try {
             foreach ($dataToProcess as $item) {
+                 // MODIFICATION: Restore the record if it was in the trash before updating
+                if ($item->trashed()) {
+                    $item->restore();
+                }
+
                 $oldData = $item->getOriginal();
                 $item->update([
                     'status_pengajuan' => 'disetujui',
                     'tgl_disetujui' => now(),
                     'tgl_diajukan' => $item->tgl_diajukan ?? now(),
                     'tgl_ditolak' => null,
-                    // 'tgl_ditangguhkan' => null,
                 ]);
                 ActivityLogger::log('validasi_approve_penghargaan', $item, $oldData);
                 $updatedCount++;
@@ -422,11 +430,11 @@ class SimpegDataPenghargaanValidasiController extends Controller
     /**
      * Admin Validasi: Batch reject data penghargaan.
      */
-    public function batchReject(Request $request)
+  public function batchReject(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_penghargaan,id',
+            'ids.*' => 'required|integer', // MODIFICATION: Removed 'exists' rule to allow finding trashed items
             'keterangan_penolakan' => 'nullable|string|max:500',
         ]);
 
@@ -434,14 +442,18 @@ class SimpegDataPenghargaanValidasiController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $dataToProcess = SimpegDataPenghargaanAdm::whereIn('id', $request->ids)
-                                                ->whereIn('status_pengajuan', ['draft', 'diajukan', 'disetujui'
-                                                // , 'ditangguhkan'
-                                                ])
-                                                ->get();
+        $ids = $request->input('ids');
+        // MODIFICATION: Use withTrashed() to find all records, including soft-deleted ones.
+        $dataToProcess = SimpegDataPenghargaanAdm::withTrashed()->whereIn('id', $ids)->get();
 
-        if ($dataToProcess->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'Tidak ada data penghargaan yang memenuhi syarat untuk ditolak.'], 404);
+        // MODIFICATION: Manually check if all requested IDs were actually found.
+        if (count($ids) !== $dataToProcess->count()) {
+            $foundIds = $dataToProcess->pluck('id')->all();
+            $missingIds = array_diff($ids, $foundIds);
+            return response()->json([
+                'success' => false,
+                'message' => 'Data dengan ID berikut tidak ditemukan: ' . implode(', ', $missingIds)
+            ], 404);
         }
 
         $updatedCount = 0;
@@ -449,13 +461,17 @@ class SimpegDataPenghargaanValidasiController extends Controller
         DB::beginTransaction();
         try {
             foreach ($dataToProcess as $item) {
+                // MODIFICATION: Restore the record if it was in the trash before updating
+                if ($item->trashed()) {
+                    $item->restore();
+                }
+
                 $oldData = $item->getOriginal();
                 $item->update([
                     'status_pengajuan' => 'ditolak',
                     'tgl_ditolak' => now(),
                     'tgl_diajukan' => null,
                     'tgl_disetujui' => null,
-                    // 'tgl_ditangguhkan' => null,
                     'keterangan_penolakan' => $request->keterangan_penolakan,
                 ]);
                 ActivityLogger::log('validasi_reject_penghargaan', $item, $oldData);
@@ -479,7 +495,6 @@ class SimpegDataPenghargaanValidasiController extends Controller
             'rejected_ids' => $rejectedIds
         ]);
     }
-
     /**
      * Admin Validasi: Batch tangguhkan data penghargaan.
      */
