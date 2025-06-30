@@ -198,7 +198,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
             'tgl_disetujui' => now(),
             'tgl_diajukan' => $dataPenghargaan->tgl_diajukan ?? now(),
             'tgl_ditolak' => null,
-            'tgl_ditangguhkan' => null,
+            // 'tgl_ditangguhkan' => null,
         ]);
 
         ActivityLogger::log('validasi_approve_penghargaan', $dataPenghargaan, $oldData);
@@ -247,7 +247,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
             'tgl_ditolak' => now(),
             'tgl_diajukan' => null,
             'tgl_disetujui' => null,
-            'tgl_ditangguhkan' => null,
+            // 'tgl_ditangguhkan' => null,
             'keterangan_penolakan' => $request->keterangan_penolakan,
         ]);
 
@@ -262,40 +262,40 @@ class SimpegDataPenghargaanValidasiController extends Controller
     /**
      * Admin Validasi: Tangguhkan (Suspend) a single data entry.
      */
-    public function tangguhkan($id)
-    {
-        $dataPenghargaan = SimpegDataPenghargaanAdm::find($id);
+    // public function tangguhkan($id)
+    // {
+    //     $dataPenghargaan = SimpegDataPenghargaanAdm::find($id);
 
-        if (!$dataPenghargaan) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data penghargaan tidak ditemukan'
-            ], 404);
-        }
+    //     if (!$dataPenghargaan) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Data penghargaan tidak ditemukan'
+    //         ], 404);
+    //     }
 
-        if ($dataPenghargaan->status_pengajuan === 'ditangguhkan') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data sudah ditangguhkan sebelumnya'
-            ], 409);
-        }
+    //     if ($dataPenghargaan->status_pengajuan === 'ditangguhkan') {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Data sudah ditangguhkan sebelumnya'
+    //         ], 409);
+    //     }
 
-        $oldData = $dataPenghargaan->getOriginal();
-        $dataPenghargaan->update([
-            'status_pengajuan' => 'ditangguhkan',
-            'tgl_ditangguhkan' => now(),
-            'tgl_diajukan' => null,
-            'tgl_disetujui' => null,
-            'tgl_ditolak' => null,
-        ]);
+    //     $oldData = $dataPenghargaan->getOriginal();
+    //     $dataPenghargaan->update([
+    //         'status_pengajuan' => 'ditangguhkan',
+    //         'tgl_ditangguhkan' => now(),
+    //         'tgl_diajukan' => null,
+    //         'tgl_disetujui' => null,
+    //         'tgl_ditolak' => null,
+    //     ]);
 
-        ActivityLogger::log('validasi_tangguhkan_penghargaan', $dataPenghargaan, $oldData);
+    //     ActivityLogger::log('validasi_tangguhkan_penghargaan', $dataPenghargaan, $oldData);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data penghargaan berhasil ditangguhkan'
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Data penghargaan berhasil ditangguhkan'
+    //     ]);
+    // }
 
     /**
      * Admin Validasi: Batch delete data penghargaan.
@@ -375,7 +375,9 @@ class SimpegDataPenghargaanValidasiController extends Controller
         }
 
         $dataToProcess = SimpegDataPenghargaanAdm::whereIn('id', $request->ids)
-                                                ->whereIn('status_pengajuan', ['draft', 'diajukan', 'ditolak', 'ditangguhkan'])
+                                                ->whereIn('status_pengajuan', ['draft', 'diajukan', 'ditolak' 
+                                                // 'ditangguhkan'
+                                                ])
                                                 ->get();
 
         if ($dataToProcess->isEmpty()) {
@@ -393,7 +395,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
                     'tgl_disetujui' => now(),
                     'tgl_diajukan' => $item->tgl_diajukan ?? now(),
                     'tgl_ditolak' => null,
-                    'tgl_ditangguhkan' => null,
+                    // 'tgl_ditangguhkan' => null,
                 ]);
                 ActivityLogger::log('validasi_approve_penghargaan', $item, $oldData);
                 $updatedCount++;
@@ -433,7 +435,9 @@ class SimpegDataPenghargaanValidasiController extends Controller
         }
 
         $dataToProcess = SimpegDataPenghargaanAdm::whereIn('id', $request->ids)
-                                                ->whereIn('status_pengajuan', ['draft', 'diajukan', 'disetujui', 'ditangguhkan'])
+                                                ->whereIn('status_pengajuan', ['draft', 'diajukan', 'disetujui'
+                                                // , 'ditangguhkan'
+                                                ])
                                                 ->get();
 
         if ($dataToProcess->isEmpty()) {
@@ -451,7 +455,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
                     'tgl_ditolak' => now(),
                     'tgl_diajukan' => null,
                     'tgl_disetujui' => null,
-                    'tgl_ditangguhkan' => null,
+                    // 'tgl_ditangguhkan' => null,
                     'keterangan_penolakan' => $request->keterangan_penolakan,
                 ]);
                 ActivityLogger::log('validasi_reject_penghargaan', $item, $oldData);
@@ -479,59 +483,59 @@ class SimpegDataPenghargaanValidasiController extends Controller
     /**
      * Admin Validasi: Batch tangguhkan data penghargaan.
      */
-    public function batchTangguhkan(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_penghargaan,id',
-        ]);
+    // public function batchTangguhkan(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'ids' => 'required|array|min:1',
+    //         'ids.*' => 'required|integer|exists:simpeg_data_penghargaan,id',
+    //     ]);
 
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
+    //     if ($validator->fails()) {
+    //         return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+    //     }
 
-        $dataToProcess = SimpegDataPenghargaanAdm::whereIn('id', $request->ids)
-                                                ->whereIn('status_pengajuan', ['draft', 'diajukan', 'disetujui', 'ditolak'])
-                                                ->get();
+    //     $dataToProcess = SimpegDataPenghargaanAdm::whereIn('id', $request->ids)
+    //                                             ->whereIn('status_pengajuan', ['draft', 'diajukan', 'disetujui', 'ditolak'])
+    //                                             ->get();
 
-        if ($dataToProcess->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'Tidak ada data penghargaan yang memenuhi syarat untuk ditangguhkan.'], 404);
-        }
+    //     if ($dataToProcess->isEmpty()) {
+    //         return response()->json(['success' => false, 'message' => 'Tidak ada data penghargaan yang memenuhi syarat untuk ditangguhkan.'], 404);
+    //     }
 
-        $updatedCount = 0;
-        $suspendedIds = [];
-        DB::beginTransaction();
-        try {
-            foreach ($dataToProcess as $item) {
-                $oldData = $item->getOriginal();
-                $item->update([
-                    'status_pengajuan' => 'ditangguhkan',
-                    'tgl_ditangguhkan' => now(),
-                    'tgl_diajukan' => null,
-                    'tgl_disetujui' => null,
-                    'tgl_ditolak' => null,
-                ]);
-                ActivityLogger::log('validasi_tangguhkan_penghargaan', $item, $oldData);
-                $updatedCount++;
-                $suspendedIds[] = $item->id;
-            }
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Error during batch tangguhkan penghargaan (validasi): ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menangguhkan data secara batch: ' . $e->getMessage()
-            ], 500);
-        }
+    //     $updatedCount = 0;
+    //     $suspendedIds = [];
+    //     DB::beginTransaction();
+    //     try {
+    //         foreach ($dataToProcess as $item) {
+    //             $oldData = $item->getOriginal();
+    //             $item->update([
+    //                 'status_pengajuan' => 'ditangguhkan',
+    //                 'tgl_ditangguhkan' => now(),
+    //                 'tgl_diajukan' => null,
+    //                 'tgl_disetujui' => null,
+    //                 'tgl_ditolak' => null,
+    //             ]);
+    //             ActivityLogger::log('validasi_tangguhkan_penghargaan', $item, $oldData);
+    //             $updatedCount++;
+    //             $suspendedIds[] = $item->id;
+    //         }
+    //         DB::commit();
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         \Log::error('Error during batch tangguhkan penghargaan (validasi): ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Terjadi kesalahan saat menangguhkan data secara batch: ' . $e->getMessage()
+    //         ], 500);
+    //     }
 
-        return response()->json([
-            'success' => true,
-            'message' => "Berhasil menangguhkan {$updatedCount} data penghargaan",
-            'updated_count' => $updatedCount,
-            'suspended_ids' => $suspendedIds
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => "Berhasil menangguhkan {$updatedCount} data penghargaan",
+    //         'updated_count' => $updatedCount,
+    //         'suspended_ids' => $suspendedIds
+    //     ]);
+    // }
 
 
     /**
@@ -545,7 +549,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
             ['id' => 'diajukan', 'nama' => 'Diajukan'],
             ['id' => 'disetujui', 'nama' => 'Disetujui'],
             ['id' => 'ditolak', 'nama' => 'Ditolak'],
-            ['id' => 'ditangguhkan', 'nama' => 'Ditangguhkan'],
+            // ['id' => 'ditangguhkan', 'nama' => 'Ditangguhkan'],
             ['id' => 'draft', 'nama' => 'Draft'],
         ];
 
@@ -582,7 +586,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
             ['value' => 'diajukan', 'label' => 'Diajukan', 'color' => 'info'],
             ['value' => 'disetujui', 'label' => 'Disetujui', 'color' => 'success'],
             ['value' => 'ditolak', 'label' => 'Ditolak', 'color' => 'danger'],
-            ['value' => 'ditangguhkan', 'label' => 'Ditangguhkan', 'color' => 'warning'],
+            // ['value' => 'ditangguhkan', 'label' => 'Ditangguhkan', 'color' => 'warning'],
         ];
     }
 
@@ -699,7 +703,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
             'tgl_diajukan' => $dataPenghargaan->tgl_diajukan,
             'tgl_disetujui' => $dataPenghargaan->tgl_disetujui,
             'tgl_ditolak' => $dataPenghargaan->tgl_ditolak,
-            'tgl_ditangguhkan' => $dataPenghargaan->tgl_ditangguhkan,
+            // 'tgl_ditangguhkan' => $dataPenghargaan->tgl_ditangguhkan,
             'created_at' => $dataPenghargaan->created_at,
             'updated_at' => $dataPenghargaan->updated_at
         ];
@@ -709,7 +713,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
                 'detail_url' => url("/api/admin/validasi-penghargaan/{$dataPenghargaan->id}"),
                 'approve_url' => url("/api/admin/validasi-penghargaan/{$dataPenghargaan->id}/approve"),
                 'reject_url' => url("/api/admin/validasi-penghargaan/{$dataPenghargaan->id}/reject"),
-                'tangguhkan_url' => url("/api/admin/validasi-penghargaan/{$dataPenghargaan->id}/tangguhkan"),
+                // 'tangguhkan_url' => url("/api/admin/validasi-penghargaan/{$dataPenghargaan->id}/tangguhkan"),
             ];
 
             $data['actions'] = [
@@ -722,7 +726,9 @@ class SimpegDataPenghargaanValidasiController extends Controller
                 ],
             ];
             
-            if (in_array($status, ['diajukan', 'ditolak', 'ditangguhkan', 'draft'])) {
+            if (in_array($status, ['diajukan', 'ditolak', 
+            // 'ditangguhkan', 
+            'draft'])) {
                 $data['actions']['approve'] = [
                     'url' => $data['aksi']['approve_url'],
                     'method' => 'PATCH',
@@ -733,7 +739,9 @@ class SimpegDataPenghargaanValidasiController extends Controller
                     'confirm_message' => 'Apakah Anda yakin ingin MENYETUJUI data penghargaan "' . $dataPenghargaan->nama_penghargaan . '"?',
                 ];
             }
-            if (in_array($status, ['diajukan', 'disetujui', 'ditangguhkan', 'draft'])) {
+            if (in_array($status, ['diajukan', 'disetujui', 
+            // 'ditangguhkan',
+             'draft'])) {
                 $data['actions']['reject'] = [
                     'url' => $data['aksi']['reject_url'],
                     'method' => 'PATCH',
@@ -746,17 +754,17 @@ class SimpegDataPenghargaanValidasiController extends Controller
                     'input_placeholder' => 'Masukkan keterangan penolakan (opsional)'
                 ];
             }
-            if (in_array($status, ['diajukan', 'disetujui', 'ditolak', 'draft'])) {
-                $data['actions']['tangguhkan'] = [
-                    'url' => $data['aksi']['tangguhkan_url'],
-                    'method' => 'PATCH',
-                    'label' => 'Tanggguhkan',
-                    'icon' => 'pause',
-                    'color' => 'warning',
-                    'confirm' => true,
-                    'confirm_message' => 'Apakah Anda yakin ingin MENANGGUHKAN data penghargaan "' . $dataPenghargaan->nama_penghargaan . '"?',
-                ];
-            }
+            // if (in_array($status, ['diajukan', 'disetujui', 'ditolak', 'draft'])) {
+            //     $data['actions']['tangguhkan'] = [
+            //         'url' => $data['aksi']['tangguhkan_url'],
+            //         'method' => 'PATCH',
+            //         'label' => 'Tanggguhkan',
+            //         'icon' => 'pause',
+            //         'color' => 'warning',
+            //         'confirm' => true,
+            //         'confirm_message' => 'Apakah Anda yakin ingin MENANGGUHKAN data penghargaan "' . $dataPenghargaan->nama_penghargaan . '"?',
+            //     ];
+            // }
         }
         return $data;
     }
@@ -789,12 +797,12 @@ class SimpegDataPenghargaanValidasiController extends Controller
                 'icon' => 'x-circle',
                 'description' => 'Ditolak, dapat diedit ulang'
             ],
-            'ditangguhkan' => [
-                'label' => 'Ditangguhkan',
-                'color' => 'warning',
-                'icon' => 'pause-circle',
-                'description' => 'Dalam peninjauan/ditangguhkan sementara'
-            ]
+            // 'ditangguhkan' => [
+            //     'label' => 'Ditangguhkan',
+            //     'color' => 'warning',
+            //     'icon' => 'pause-circle',
+            //     'description' => 'Dalam peninjauan/ditangguhkan sementara'
+            // ]
         ];
 
         return $statusMap[$status] ?? [
