@@ -16,39 +16,29 @@ use App\Models\SimpegBerita;
 class AdminDashboardService
 {
     /**
-     * =================================================================
-     * FUNGSI DIPERBAIKI: Mengambil semua ID unit turunan secara rekursif.
-     * =================================================================
+     * Mengambil semua ID unit turunan secara rekursif.
      *
      * @param string|null $unitKerjaCode Kode unit dari unit induk.
      * @return array Array berisi ID integer dari unit induk dan semua turunannya.
      */
     protected function getAllChildUnitIds($unitKerjaCode = null)
     {
-        // Jika tidak ada kode unit yang diberikan, kembalikan semua ID unit kerja.
         if (!$unitKerjaCode) {
             return SimpegUnitKerja::pluck('id')->toArray();
         }
 
-        // Cari unit induk berdasarkan KODE-nya.
         $parentUnit = SimpegUnitKerja::where('kode_unit', $unitKerjaCode)->first();
         
-        // Jika unit induk tidak ditemukan, kembalikan array kosong.
         if (!$parentUnit) {
             return [];
         }
 
-        // Mulai proses rekursif dengan ID integer dari unit induk.
         $allChildIds = [$parentUnit->id];
         $idsToProcess = [$parentUnit->id];
 
         while (!empty($idsToProcess)) {
-            // Cari semua anak yang memiliki parent_unit_id dari antrian.
-            // Ini sekarang membandingkan integer (parent_unit_id) dengan integer (id).
             $children = SimpegUnitKerja::whereIn('parent_unit_id', $idsToProcess)->get(['id']);
-            
             $idsToProcess = [];
-
             foreach ($children as $child) {
                 if (!in_array($child->id, $allChildIds)) {
                     $allChildIds[] = $child->id;
@@ -56,7 +46,6 @@ class AdminDashboardService
                 }
             }
         }
-
         return array_unique($allChildIds);
     }
 
@@ -65,40 +54,29 @@ class AdminDashboardService
      */
     public function getStaffSummary($unitKerjaId = null)
     {
-        // Parameter 'unitKerjaId' dari controller sebenarnya adalah kode_unit.
         $unitIds = $this->getAllChildUnitIds($unitKerjaId);
 
-        // Jika tidak ada unit yang cocok, kembalikan data kosong untuk menghindari error.
         if (empty($unitIds)) {
             return ['active_employees' => 0, 'inactive_employees' => 0, 'academic_staff' => 0, 'non_academic_staff' => 0];
         }
 
-        // Query dasar untuk pegawai di unit yang dipilih (sekarang menggunakan ID integer)
         $query = SimpegPegawai::whereIn('unit_kerja_id', $unitIds);
 
-        // Pegawai aktif
-        $activeEmployees = (clone $query)
-            ->whereHas('statusAktif', function ($q) {
-                $q->where('status_keluar', false);
-            })->count();
+        $activeEmployees = (clone $query)->whereHas('statusAktif', function ($q) {
+            $q->where('status_keluar', false);
+        })->count();
 
-        // Pegawai tidak aktif
-        $inactiveEmployees = (clone $query)
-            ->whereHas('statusAktif', function ($q) {
-                $q->where('status_keluar', true);
-            })->count();
+        $inactiveEmployees = (clone $query)->whereHas('statusAktif', function ($q) {
+            $q->where('status_keluar', true);
+        })->count();
 
-        // Staf akademik
-        $academicStaff = (clone $query)
-            ->whereHas('jabatanAkademik.role', function ($q) {
-                $q->whereIn('nama', ['Dosen', 'Dosen Praktisi/Industri']);
-            })->count();
+        $academicStaff = (clone $query)->whereHas('jabatanAkademik.role', function ($q) {
+            $q->whereIn('nama', ['Dosen', 'Dosen Praktisi/Industri']);
+        })->count();
 
-        // Staf non-akademik
-        $nonAcademicStaff = (clone $query)
-             ->whereHas('jabatanAkademik.role', function ($q) {
-                $q->where('nama', 'Tenaga Kependidikan');
-            })->count();
+        $nonAcademicStaff = (clone $query)->whereHas('jabatanAkademik.role', function ($q) {
+            $q->where('nama', 'Tenaga Kependidikan');
+        })->count();
 
         return [
             'active_employees' => $activeEmployees,
@@ -115,38 +93,22 @@ class AdminDashboardService
     {
         $unitIds = $this->getAllChildUnitIds($unitKerjaId);
         if (empty($unitIds)) {
-            return $this->getEmptyEducationDistribution(); // Kembalikan struktur kosong
+            return $this->getEmptyEducationDistribution();
         }
         
         $baseQuery = SimpegPegawai::whereIn('unit_kerja_id', $unitIds);
-
         $academicStaff = (clone $baseQuery)->whereHas('jabatanAkademik.role', function ($q) {
             $q->whereIn('nama', ['Dosen', 'Dosen Praktisi/Industri']);
         })->count();
-
         $nonAcademicStaff = (clone $baseQuery)->whereHas('jabatanAkademik.role', function ($q) {
             $q->where('nama', 'Tenaga Kependidikan');
         })->count();
-
         $totalStaff = $academicStaff + $nonAcademicStaff;
-        
         $academicPercentage = $totalStaff > 0 ? round(($academicStaff / $totalStaff) * 100, 2) : 0;
         $nonAcademicPercentage = $totalStaff > 0 ? round(($nonAcademicStaff / $totalStaff) * 100, 2) : 0;
-
-        $chartData = [
-            'labels' => ['Akademik', 'Non Akademik'],
-            'datasets' => [['data' => [$academicStaff, $nonAcademicStaff]]],
-        ];
-
-        $tableData = [
-            'headers' => ['No', 'Fungsional', 'Jumlah'],
-            'rows' => [[1, 'Akademik', $academicStaff], [2, 'Non Akademik', $nonAcademicStaff]],
-            'total' => $totalStaff,
-        ];
-
         return [
-            'chart_data' => $chartData,
-            'table_data' => $tableData,
+            'chart_data' => ['labels' => ['Akademik', 'Non Akademik'], 'datasets' => [['data' => [$academicStaff, $nonAcademicStaff]]]],
+            'table_data' => ['headers' => ['No', 'Fungsional', 'Jumlah'], 'rows' => [[1, 'Akademik', $academicStaff], [2, 'Non Akademik', $nonAcademicStaff]], 'total' => $totalStaff],
             'percentages' => ['academic' => $academicPercentage, 'non_academic' => $nonAcademicPercentage]
         ];
     }
@@ -160,32 +122,20 @@ class AdminDashboardService
         $employeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)->pluck('id')->toArray();
 
         if (empty($employeeIds)) {
-            return [
-                'chart_data' => ['labels' => [], 'datasets' => [['label' => 'Jumlah Pegawai', 'data' => []]]],
-                'table_data' => ['headers' => ['Kode', 'Hubungan Kerja', 'Jumlah'], 'rows' => [], 'total' => 0],
-            ];
+            return ['chart_data' => ['labels' => [], 'datasets' => [['label' => 'Jumlah Pegawai', 'data' => []]]], 'table_data' => ['headers' => ['Kode', 'Hubungan Kerja', 'Jumlah'], 'rows' => [], 'total' => 0]];
         }
 
         $workRelationships = DB::table('simpeg_data_hubungan_kerja')
             ->join('simpeg_hubungan_kerja', 'simpeg_data_hubungan_kerja.hubungan_kerja_id', '=', 'simpeg_hubungan_kerja.id')
             ->whereIn('simpeg_data_hubungan_kerja.pegawai_id', $employeeIds)
             ->select('simpeg_hubungan_kerja.kode', 'simpeg_hubungan_kerja.nama_hub_kerja as hubungan_kerja', DB::raw('COUNT(*) as jumlah'))
-            ->groupBy('simpeg_hubungan_kerja.kode', 'simpeg_hubungan_kerja.nama_hub_kerja')
-            ->orderBy('simpeg_hubungan_kerja.kode')->get();
-
-        $total = $workRelationships->sum('jumlah');
-        $chartData = [
-            'labels' => $workRelationships->pluck('kode')->toArray(),
-            'datasets' => [['label' => 'Jumlah Pegawai', 'data' => $workRelationships->pluck('jumlah')->toArray()]],
-        ];
-
-        $tableRows = $workRelationships->map(function ($item) {
-            return ['kode' => $item->kode, 'hubungan_kerja' => $item->hubungan_kerja, 'jumlah' => $item->jumlah];
-        })->toArray();
+            ->groupBy('simpeg_hubungan_kerja.kode', 'simpeg_hubungan_kerja.nama_hub_kerja')->orderBy('simpeg_hubungan_kerja.kode')->get();
         
-        $tableData = ['headers' => ['Kode', 'Hubungan Kerja', 'Jumlah'], 'rows' => $tableRows, 'total' => $total];
-
-        return ['chart_data' => $chartData, 'table_data' => $tableData];
+        $tableRows = $workRelationships->map(fn($item) => ['kode' => $item->kode, 'hubungan_kerja' => $item->hubungan_kerja, 'jumlah' => $item->jumlah])->toArray();
+        return [
+            'chart_data' => ['labels' => $workRelationships->pluck('kode')->toArray(), 'datasets' => [['label' => 'Jumlah Pegawai', 'data' => $workRelationships->pluck('jumlah')->toArray()]]],
+            'table_data' => ['headers' => ['Kode', 'Hubungan Kerja', 'Jumlah'], 'rows' => $tableRows, 'total' => $workRelationships->sum('jumlah')]
+        ];
     }
 
     /**
@@ -194,15 +144,8 @@ class AdminDashboardService
     public function getAcademicEducationDistribution($unitKerjaId = null)
     {
         $unitIds = $this->getAllChildUnitIds($unitKerjaId);
-        $academicEmployeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)
-            ->whereHas('jabatanAkademik.role', function ($q) {
-                $q->whereIn('nama', ['Dosen', 'Dosen Praktisi/Industri']);
-            })->pluck('simpeg_pegawai.id')->toArray();
-
-        if (empty($academicEmployeeIds)) {
-            return $this->getEmptyEducationDistribution();
-        }
-        return $this->getEducationDistributionByEmployeeIds($academicEmployeeIds, 'Akademik');
+        $academicEmployeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)->whereHas('jabatanAkademik.role', fn($q) => $q->whereIn('nama', ['Dosen', 'Dosen Praktisi/Industri']))->pluck('simpeg_pegawai.id')->toArray();
+        return empty($academicEmployeeIds) ? $this->getEmptyEducationDistribution() : $this->getEducationDistributionByEmployeeIds($academicEmployeeIds, 'Akademik');
     }
 
     /**
@@ -211,23 +154,13 @@ class AdminDashboardService
     public function getNonAcademicEducationDistribution($unitKerjaId = null)
     {
         $unitIds = $this->getAllChildUnitIds($unitKerjaId);
-        $nonAcademicEmployeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)
-            ->whereHas('jabatanAkademik.role', function ($q) {
-                $q->where('nama', 'Tenaga Kependidikan');
-            })->pluck('simpeg_pegawai.id')->toArray();
-
-        if (empty($nonAcademicEmployeeIds)) {
-            return $this->getEmptyEducationDistribution();
-        }
-        return $this->getEducationDistributionByEmployeeIds($nonAcademicEmployeeIds, 'Non-Akademik');
+        $nonAcademicEmployeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)->whereHas('jabatanAkademik.role', fn($q) => $q->where('nama', 'Tenaga Kependidikan'))->pluck('simpeg_pegawai.id')->toArray();
+        return empty($nonAcademicEmployeeIds) ? $this->getEmptyEducationDistribution() : $this->getEducationDistributionByEmployeeIds($nonAcademicEmployeeIds, 'Non-Akademik');
     }
 
     private function getEmptyEducationDistribution()
     {
-        return [
-            'chart_data' => ['labels' => [], 'datasets' => [['label' => 'Jumlah Pegawai', 'data' => []]]],
-            'table_data' => ['headers' => ['Kode', 'Jenjang Pendidikan', 'Jumlah'], 'rows' => [], 'total' => 0],
-        ];
+        return ['chart_data' => ['labels' => [], 'datasets' => [['label' => 'Jumlah Pegawai', 'data' => []]]], 'table_data' => ['headers' => ['Kode', 'Jenjang Pendidikan', 'Jumlah'], 'rows' => [], 'total' => 0]];
     }
 
     private function getEducationDistributionByEmployeeIds($employeeIds, $staffType = '')
@@ -236,16 +169,12 @@ class AdminDashboardService
             ->join('simpeg_jenjang_pendidikan', 'simpeg_data_pendidikan_formal.jenjang_pendidikan_id', '=', 'simpeg_jenjang_pendidikan.id')
             ->whereIn('simpeg_data_pendidikan_formal.pegawai_id', $employeeIds)
             ->select('simpeg_jenjang_pendidikan.jenjang_singkatan as kode', 'simpeg_jenjang_pendidikan.jenjang_pendidikan', 'simpeg_jenjang_pendidikan.urutan_jenjang_pendidikan', DB::raw('COUNT(*) as jumlah'))
-            ->groupBy('simpeg_jenjang_pendidikan.jenjang_singkatan', 'simpeg_jenjang_pendidikan.jenjang_pendidikan', 'simpeg_jenjang_pendidikan.urutan_jenjang_pendidikan')
-            ->orderBy('simpeg_jenjang_pendidikan.urutan_jenjang_pendidikan')->get();
-
+            ->groupBy('simpeg_jenjang_pendidikan.jenjang_singkatan', 'simpeg_jenjang_pendidikan.jenjang_pendidikan', 'simpeg_jenjang_pendidikan.urutan_jenjang_pendidikan')->orderBy('simpeg_jenjang_pendidikan.urutan_jenjang_pendidikan')->get();
+        
         $allEducationLevels = SimpegJenjangPendidikan::orderBy('urutan_jenjang_pendidikan')->get(['jenjang_singkatan', 'jenjang_pendidikan']);
         $educationCounts = $educationLevels->pluck('jumlah', 'kode')->toArray();
         
-        $labels = [];
-        $data = [];
-        $tableRows = [];
-
+        $labels = []; $data = []; $tableRows = [];
         foreach ($allEducationLevels as $level) {
             $kode = $level->jenjang_singkatan;
             $count = $educationCounts[$kode] ?? 0;
@@ -254,29 +183,37 @@ class AdminDashboardService
             $tableRows[] = ['kode' => $kode, 'jenjang_pendidikan' => $kode . ' - ' . $level->jenjang_pendidikan, 'jumlah' => $count];
         }
 
-        $chartData = ['labels' => $labels, 'datasets' => [['label' => 'Jumlah Pegawai ' . $staffType, 'data' => $data]]];
-        $tableData = ['headers' => ['Kode', 'Jenjang Pendidikan', 'Jumlah'], 'rows' => $tableRows, 'total' => array_sum($data)];
-
-        return ['chart_data' => $chartData, 'table_data' => $tableData];
+        return [
+            'chart_data' => ['labels' => $labels, 'datasets' => [['label' => 'Jumlah Pegawai ' . $staffType, 'data' => $data]]],
+            'table_data' => ['headers' => ['Kode', 'Jenjang Pendidikan', 'Jumlah'], 'rows' => $tableRows, 'total' => array_sum($data)]
+        ];
     }
 
     public function getEducationDistribution($unitKerjaId = null)
     {
         $unitIds = $this->getAllChildUnitIds($unitKerjaId);
         $employeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)->pluck('id')->toArray();
-        if (empty($employeeIds)) {
-            return $this->getEmptyEducationDistribution();
-        }
-        return $this->getEducationDistributionByEmployeeIds($employeeIds, '');
+        return empty($employeeIds) ? $this->getEmptyEducationDistribution() : $this->getEducationDistributionByEmployeeIds($employeeIds, '');
     }
 
+    /**
+     * =================================================================
+     * FUNGSI DIPERBAIKI: Mengambil berita dengan query JSON yang benar.
+     * =================================================================
+     */
     public function getNews($unitKerjaId = null, $limit = 5)
     {
         $unitIds = $this->getAllChildUnitIds($unitKerjaId);
         $query = SimpegBerita::query();
+
         if (!empty($unitIds)) {
-            // Filter berita berdasarkan unit kerja jika ada
-            $query->whereIn('unit_kerja_id', $unitIds);
+            // Query ini akan memeriksa apakah salah satu ID dari $unitIds
+            // ada di dalam kolom JSON 'unit_kerja_id' di tabel berita.
+            $query->where(function ($q) use ($unitIds) {
+                foreach ($unitIds as $id) {
+                    $q->orWhereJsonContains('unit_kerja_id', $id);
+                }
+            });
         }
 
         return $query->orderBy('created_at', 'desc')
