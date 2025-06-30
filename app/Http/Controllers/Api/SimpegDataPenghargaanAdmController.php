@@ -192,16 +192,17 @@ class SimpegDataPenghargaanAdmController extends Controller
                 $validatedData['tgl_ditolak'] = now();
                 $validatedData['tgl_diajukan'] = null;
                 $validatedData['tgl_disetujui'] = null;
-            } elseif ($validatedData['status_pengajuan'] === 'ditangguhkan') {
-                $validatedData['tgl_ditangguhkan'] = now();
-                $validatedData['tgl_diajukan'] = null;
-                $validatedData['tgl_disetujui'] = null;
-                $validatedData['tgl_ditolak'] = null;
+            // } 
+            // elseif ($validatedData['status_pengajuan'] === 'ditangguhkan') {
+            //     $validatedData['tgl_ditangguhkan'] = now();
+            //     $validatedData['tgl_diajukan'] = null;
+            //     $validatedData['tgl_disetujui'] = null;
+            //     $validatedData['tgl_ditolak'] = null;
             } else { // 'draft'
                 $validatedData['tgl_diajukan'] = null;
                 $validatedData['tgl_disetujui'] = null;
                 $validatedData['tgl_ditolak'] = null;
-                $validatedData['tgl_ditangguhkan'] = null;
+                // $validatedData['tgl_ditangguhkan'] = null;
             }
 
             $dataPenghargaan = SimpegDataPenghargaanAdm::create($validatedData);
@@ -282,38 +283,38 @@ class SimpegDataPenghargaanAdmController extends Controller
                         $validatedData['tgl_diajukan'] = now();
                         $validatedData['tgl_disetujui'] = null;
                         $validatedData['tgl_ditolak'] = null;
-                        $validatedData['tgl_ditangguhkan'] = null;
+                        // $validatedData['tgl_ditangguhkan'] = null;
                         break;
                     case 'disetujui':
                         $validatedData['tgl_disetujui'] = now();
                         $validatedData['tgl_diajukan'] = $dataPenghargaan->tgl_diajukan ?? now(); 
                         $validatedData['tgl_ditolak'] = null;
-                        $validatedData['tgl_ditangguhkan'] = null;
+                        // $validatedData['tgl_ditangguhkan'] = null;
                         break;
                     case 'ditolak':
                         $validatedData['tgl_ditolak'] = now();
                         $validatedData['tgl_diajukan'] = null;
                         $validatedData['tgl_disetujui'] = null;
-                        $validatedData['tgl_ditangguhkan'] = null;
+                        // $validatedData['tgl_ditangguhkan'] = null;
                         break;
-                    case 'ditangguhkan':
-                        $validatedData['tgl_ditangguhkan'] = now();
-                        $validatedData['tgl_diajukan'] = null;
-                        $validatedData['tgl_disetujui'] = null;
-                        $validatedData['tgl_ditolak'] = null;
-                        break;
+                    // case 'ditangguhkan':
+                    //     $validatedData['tgl_ditangguhkan'] = now();
+                    //     $validatedData['tgl_diajukan'] = null;
+                    //     $validatedData['tgl_disetujui'] = null;
+                    //     $validatedData['tgl_ditolak'] = null;
+                    //     break;
                     case 'draft':
                         $validatedData['tgl_diajukan'] = null;
                         $validatedData['tgl_disetujui'] = null;
                         $validatedData['tgl_ditolak'] = null;
-                        $validatedData['tgl_ditangguhkan'] = null;
+                        // $validatedData['tgl_ditangguhkan'] = null;
                         break;
                 }
             } else {
                 $validatedData['tgl_diajukan'] = $dataPenghargaan->tgl_diajukan;
                 $validatedData['tgl_disetujui'] = $dataPenghargaan->tgl_disetujui;
                 $validatedData['tgl_ditolak'] = $dataPenghargaan->tgl_ditolak;
-                $validatedData['tgl_ditangguhkan'] = $dataPenghargaan->tgl_ditangguhkan;
+                // $validatedData['tgl_ditangguhkan'] = $dataPenghargaan->tgl_ditangguhkan;
             }
             
             $oldData = $dataPenghargaan->getOriginal();
@@ -821,7 +822,7 @@ class SimpegDataPenghargaanAdmController extends Controller
             'tgl_diajukan' => $dataPenghargaan->tgl_diajukan,
             'tgl_disetujui' => $dataPenghargaan->tgl_disetujui,
             'tgl_ditolak' => $dataPenghargaan->tgl_ditolak,
-            'tgl_ditangguhkan' => $dataPenghargaan->tgl_ditangguhkan,
+            // 'tgl_ditangguhkan' => $dataPenghargaan->tgl_ditangguhkan,
             'created_at' => $dataPenghargaan->created_at,
             'updated_at' => $dataPenghargaan->updated_at
         ];
