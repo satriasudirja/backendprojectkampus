@@ -859,71 +859,43 @@ class SimpegDataJabatanAkademikAdminController extends Controller
      */
     public function getFilterOptions()
     {
-        $unitKerjaOptions = SimpegUnitKerja::select('kode_unit as id', 'nama_unit as nama')
-            ->orderBy('nama_unit')
-            ->get()
-            ->prepend(['id' => 'semua', 'nama' => 'Semua Unit Kerja']);
+        // PERBAIKAN: Menambahkan alias 'tahun' pada query raw untuk pluck.
+        $yearsTmtJabatan = SimpegDataJabatanAkademik::selectRaw('EXTRACT(YEAR FROM tmt_jabatan) as tahun')
+            ->distinct()
+            ->whereNotNull('tmt_jabatan')
+            ->orderBy('tahun', 'desc')
+            ->pluck('tahun');
 
-        $jabatanAkademikOptions = SimpegJabatanAkademik::select('id', 'jabatan_akademik as nama')
-            ->orderBy('jabatan_akademik')
-            ->get()
-            ->prepend(['id' => 'semua', 'nama' => 'Semua Jabatan Akademik']);
+        $yearsTglSk = SimpegDataJabatanAkademik::selectRaw('EXTRACT(YEAR FROM tgl_sk) as tahun')
+            ->distinct()
+            ->whereNotNull('tgl_sk')
+            ->orderBy('tahun', 'desc')
+            ->pluck('tahun');
 
-        $statusPengajuanOptions = [
-            ['id' => 'semua', 'nama' => 'Semua'],
-            ['id' => 'draft', 'nama' => 'Draft'],
-            ['id' => 'diajukan', 'nama' => 'Diajukan'],
-            ['id' => 'disetujui', 'nama' => 'Disetujui'],
-            ['id' => 'ditolak', 'nama' => 'Ditolak'],
-        ];
-
-        // Retrieve existing years for date fields using EXTRACT for PostgreSQL
-        $yearsTmtJabatan = SimpegDataJabatanAkademik::distinct()
-                                                   ->pluck(DB::raw("EXTRACT(YEAR FROM tmt_jabatan)"))
-                                                   ->filter()
-                                                   ->sortDesc()
-                                                   ->values()
-                                                   ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
-                                                   ->prepend(['id' => 'semua', 'nama' => 'Semua TMT Jabatan'])
-                                                   ->toArray();
-
-        $yearsTglSk = SimpegDataJabatanAkademik::distinct()
-                                               ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_sk)"))
-                                               ->filter()
-                                               ->sortDesc()
-                                               ->values()
-                                               ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
-                                               ->prepend(['id' => 'semua', 'nama' => 'Semua Tanggal SK'])
-                                               ->toArray();
-
-        $yearsTglDisetujui = SimpegDataJabatanAkademik::whereNotNull('tgl_disetujui')
-                                                      ->distinct()
-                                                      ->pluck(DB::raw("EXTRACT(YEAR FROM tgl_disetujui)"))
-                                                      ->filter()
-                                                      ->sortDesc()
-                                                      ->values()
-                                                      ->map(function($item) { return ['id' => $item, 'nama' => $item]; })
-                                                      ->prepend(['id' => 'semua', 'nama' => 'Semua Tgl Disetujui'])
-                                                      ->toArray();
+        $yearsTglDisetujui = SimpegDataJabatanAkademik::selectRaw('EXTRACT(YEAR FROM tgl_disetujui) as tahun')
+            ->distinct()
+            ->whereNotNull('tgl_disetujui')
+            ->orderBy('tahun', 'desc')
+            ->pluck('tahun');
 
         return response()->json([
             'success' => true,
-            'filter_options' => [
-                'unit_kerja' => $unitKerjaOptions,
-                'jabatan_akademik' => $jabatanAkademikOptions,
-                'status_pengajuan' => $statusPengajuanOptions,
+            'filters' => [
+                'unit_kerja' => SimpegUnitKerja::select('kode_unit as id', 'nama_unit as nama')->orderBy('nama_unit')->get(),
+                'jabatan_akademik' => SimpegJabatanAkademik::select('id', 'jabatan_akademik as nama')->orderBy('jabatan_akademik')->get(),
+                'status_pengajuan' => [
+                    ['id' => 'semua', 'nama' => 'Semua Status'], ['id' => 'draft', 'nama' => 'Draft'],
+                    ['id' => 'diajukan', 'nama' => 'Diajukan'], ['id' => 'disetujui', 'nama' => 'Disetujui'],
+                    ['id' => 'ditolak', 'nama' => 'Ditolak'],
+                ],
                 'tahun_tmt_jabatan' => $yearsTmtJabatan,
                 'tahun_tgl_sk' => $yearsTglSk,
                 'tahun_tgl_disetujui' => $yearsTglDisetujui,
-                'pegawai_options' => SimpegPegawai::select('id as value', 'nama as label', 'nip')
-                                                ->orderBy('nama')
-                                                ->get()
-                                                ->map(function($item) { return ['value' => $item->value, 'label' => $item->nip . ' - ' . $item->label]; })
-                                                ->prepend(['value' => 'semua', 'label' => 'Semua Pegawai']),
+                'pegawai' => SimpegPegawai::select('id', 'nama', 'nip')->orderBy('nama')->get(),
             ]
         ]);
     }
-
+    
     /**
      * Get form options for create/update forms.
      */

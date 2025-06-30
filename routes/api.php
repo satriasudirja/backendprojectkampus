@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\SimpegJabatanStrukturalController;
 use App\Http\Controllers\Api\SimpegJabatanFungsionalController;
 use App\Http\Controllers\Api\SimpegMasterPangkatController;
 use App\Http\Controllers\Api\SimpegMasterProdiPerguruanTinggiController;
+use App\Http\Controllers\Api\SimpegMasterPerguruanTinggiController;
 use App\Http\Controllers\Api\SimpegEselonController;
 use App\Http\Controllers\Api\SimpegUnivLuarController;
 use App\Http\Controllers\Api\SimpegDataRiwayatPekerjaanController;
@@ -1235,6 +1236,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('univ-luar', SimpegUnivLuarController::class);
         Route::apiResource('master-pangkat', SimpegMasterPangkatController::class);
         Route::apiResource('master-prodi-perguruan-tinggi', SimpegMasterProdiPerguruanTinggiController::class);
+        Route::apiResource('master-perguruan-tinggi', SimpegMasterPerguruanTinggiController::class);
         Route::apiResource('data-riwayat-pekerjaan', SimpegDataRiwayatPekerjaanController::class);
         Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
         Route::apiResource('master-jenis-sertifikasi', SimpegMasterJenisSertifikasiController::class);
