@@ -9,7 +9,7 @@ class SimpegJenisKehadiran extends Model
 {
     use SoftDeletes;
     protected $table = 'simpeg_jenis_kehadiran';
-  
+ 
     protected $fillable = [
         'kode_jenis',
         'nama_jenis',
@@ -21,6 +21,7 @@ class SimpegJenisKehadiran extends Model
 
     public function jenisIzin()
     {
-        return $this->hasMany(JenisIzin::class);
+        // PERBAIKAN: Nama model yang benar adalah SimpegJenisIzin
+        return $this->hasMany(SimpegJenisIzin::class, 'jenis_kehadiran_id');
     }
 }

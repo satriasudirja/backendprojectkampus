@@ -14,7 +14,7 @@ class SimpegJenisIzin extends Model
     protected $fillable = [
         'jenis_kehadiran_id',
         'kode',
-        'jenis_izin',
+        'jenis_izin', // PERBAIKAN: Menggunakan nama field yang benar
         'status_presensi',
         'izin_max',
         'potong_cuti',

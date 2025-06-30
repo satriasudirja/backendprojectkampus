@@ -6,6 +6,10 @@ use Illuminate\Support\ServiceProvider;
 use App\Services\SimpleCaptchaGeneratorService;
 use App\Services\SlideCaptchaService;
 use App\Services\AdminDashboardService;
+
+use App\Models\SimpegCutiRecord;
+use App\Models\SimpegIzinRecord;
+use App\Observers\LeavePermitObserver;
 use Illuminate\Support\Facades\File;
 // Remove this line if you're not using Image facade in this file
 // use Intervention\Image\Facades\Image;
@@ -39,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-     
+             SimpegCutiRecord::observe(LeavePermitObserver::class);
+        SimpegIzinRecord::observe(LeavePermitObserver::class);
     }
 }
