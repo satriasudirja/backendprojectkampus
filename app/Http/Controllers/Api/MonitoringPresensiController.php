@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SimpegAbsensiRecord;
 use App\Models\SimpegPegawai;
 use App\Models\SimpegUnitKerja;
-use App\Services\HolidayService; // <-- LOGIKA BARU: Menggunakan Service
+use App\Services\HolidayService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -15,14 +15,9 @@ class MonitoringPresensiController extends Controller
 {
     protected $holidayService;
 
-    /**
-     * LOGIKA BARU: Inject HolidayService untuk digunakan di semua method.
-     */
     public function __construct(HolidayService $holidayService)
     {
         $this->holidayService = $holidayService;
-        // Pastikan middleware otentikasi aktif untuk endpoint admin
-        // $this->middleware('auth:api'); 
     }
 
     /**
@@ -36,43 +31,63 @@ class MonitoringPresensiController extends Controller
         $unitKerjaFilter = $request->input('unit_kerja');
         $statusPresensiFilter = $request->input('status_presensi');
 
-        // LOGIKA BARU: Query dimulai dari Pegawai Aktif, lalu di-join dengan data absensi
         $query = SimpegPegawai::query()
-            ->where('status_kerja', 'like', '%Aktif%') // Mengambil semua pegawai yang aktif
+            ->leftJoin('simpeg_unit_kerja', 'simpeg_pegawai.unit_kerja_id', '=', 'simpeg_unit_kerja.id')
             ->leftJoin('simpeg_absensi_record', function ($join) use ($tanggal) {
                 $join->on('simpeg_pegawai.id', '=', 'simpeg_absensi_record.pegawai_id')
-                     ->where('simpeg_absensi_record.tanggal_absensi', '=', $tanggal);
+                     ->whereDate('simpeg_absensi_record.tanggal_absensi', $tanggal);
             })
-            ->with(['unitKerja', 'absensiRecords' => function ($q) use ($tanggal) {
-                $q->where('tanggal_absensi', $tanggal)->with(['cutiRecord', 'izinRecord']);
-            }]);
+            ->leftJoin('simpeg_jenis_kehadiran', 'simpeg_absensi_record.jenis_kehadiran_id', '=', 'simpeg_jenis_kehadiran.id')
+            ->where('simpeg_pegawai.status_kerja', 'like', '%Aktif%');
 
-        // Filter berdasarkan Unit Kerja
         if ($unitKerjaFilter) {
             $query->where('simpeg_pegawai.unit_kerja_id', $unitKerjaFilter);
         }
 
-        // Filter berdasarkan Status Presensi
         if ($statusPresensiFilter) {
             $this->applyStatusFilter($query, $statusPresensiFilter);
         }
 
-        // Filter Pencarian
+        // =================================================================
+        // PERBAIKAN: Logika pencarian diperluas dan diperbaiki
+        // =================================================================
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('simpeg_pegawai.nama', 'like', '%' . $search . '%')
-                  ->orWhere('simpeg_pegawai.nip', 'like', '%' . $search . '%');
+                  ->orWhere('simpeg_pegawai.nip', 'like', '%' . $search . '%')
+                  ->orWhere('simpeg_unit_kerja.nama_unit', 'like', '%' . $search . '%')
+                  ->orWhere('simpeg_jenis_kehadiran.nama_jenis', 'like', '%' . $search . '%');
+
+                // Logika khusus untuk mencari status "Alpha"
+                if (stripos($search, 'alpha') !== false) {
+                    $q->orWhereNull('simpeg_absensi_record.id');
+                }
             });
         }
 
-        // Pilih kolom yang diperlukan dan lakukan paginasi
-        $presensiData = $query->select('simpeg_pegawai.*', 'simpeg_absensi_record.id as absensi_id')
-            ->orderBy('simpeg_pegawai.nama', 'asc')
+        $presensiPaginator = $query->select(
+                'simpeg_pegawai.id as pegawai_id',
+                'simpeg_pegawai.nip',
+                'simpeg_pegawai.nama as nama_pegawai',
+                'simpeg_unit_kerja.nama_unit',
+                'simpeg_absensi_record.id as absensi_id',
+                'simpeg_absensi_record.jam_masuk',
+                'simpeg_absensi_record.jam_keluar',
+                'simpeg_absensi_record.keterangan',
+                'simpeg_absensi_record.cuti_record_id',
+                'simpeg_absensi_record.izin_record_id',
+                'simpeg_jenis_kehadiran.nama_jenis as status_kehadiran'
+            )
+            // =================================================================
+            // PERBAIKAN: Urutkan berdasarkan absen keluar, lalu absen masuk terbaru
+            // =================================================================
+            ->orderBy('simpeg_absensi_record.jam_keluar', 'desc')
+            ->orderBy('simpeg_absensi_record.jam_masuk', 'desc')
+            ->orderBy('simpeg_pegawai.nama', 'asc') // Urutan sekunder berdasarkan nama
             ->paginate($perPage);
 
-        // Transformasi data untuk response
-        $presensiData->getCollection()->transform(function ($pegawai) use ($tanggal) {
-            return $this->formatPresensiData($pegawai, $tanggal);
+        $transformedData = $presensiPaginator->getCollection()->transform(function ($item) use ($tanggal) {
+            return $this->formatJoinedPresensiData($item, $tanggal);
         });
 
         return response()->json([
@@ -81,13 +96,16 @@ class MonitoringPresensiController extends Controller
             'hari' => Carbon::parse($tanggal)->locale('id')->isoFormat('dddd, DD MMMM YYYY'),
             'summary' => $this->getSummaryStatistics($tanggal, $unitKerjaFilter),
             'filter_options' => $this->getFilterOptions(),
-            'data' => $presensiData,
+            'data' => $transformedData,
+            'pagination' => [
+                'current_page' => $presensiPaginator->currentPage(),
+                'per_page' => $presensiPaginator->perPage(),
+                'total' => $presensiPaginator->total(),
+                'last_page' => $presensiPaginator->lastPage(),
+            ],
         ]);
     }
 
-    /**
-     * Helper untuk menerapkan filter status presensi.
-     */
     private function applyStatusFilter($query, $status)
     {
         switch ($status) {
@@ -106,19 +124,14 @@ class MonitoringPresensiController extends Controller
         }
     }
 
-    /**
-     * Menghitung statistik ringkasan untuk tanggal dan unit kerja tertentu.
-     */
     private function getSummaryStatistics($tanggal, $unitKerjaId = null)
     {
-        // Query untuk total pegawai aktif
         $totalPegawaiQuery = SimpegPegawai::where('status_kerja', 'like', '%Aktif%');
         if ($unitKerjaId) {
             $totalPegawaiQuery->where('unit_kerja_id', $unitKerjaId);
         }
         $totalPegawai = $totalPegawaiQuery->count();
 
-        // Query untuk data absensi pada tanggal tersebut
         $baseQuery = SimpegAbsensiRecord::whereDate('tanggal_absensi', $tanggal);
         if ($unitKerjaId) {
             $baseQuery->whereHas('pegawai', fn($q) => $q->where('unit_kerja_id', $unitKerjaId));
@@ -128,22 +141,18 @@ class MonitoringPresensiController extends Controller
         $cuti = $baseQuery->clone()->whereNotNull('cuti_record_id')->count();
         $izin = $baseQuery->clone()->whereNotNull('izin_record_id')->count();
         
-        // Alpha dihitung dari selisih total pegawai dengan yang sudah memiliki record (hadir/cuti/izin)
         $alpha = $totalPegawai - ($hadir + $cuti + $izin);
         
         return [
             'total_pegawai' => $totalPegawai,
             'hadir' => $hadir,
-            'alpha' => max(0, $alpha), // Pastikan tidak negatif
+            'alpha' => max(0, $alpha),
             'cuti' => $cuti,
             'izin' => $izin,
             'persentase_kehadiran' => $totalPegawai > 0 ? round(($hadir / $totalPegawai) * 100, 2) : 0
         ];
     }
 
-    /**
-     * Menyiapkan data filter untuk frontend.
-     */
     private function getFilterOptions()
     {
         return [
@@ -158,44 +167,55 @@ class MonitoringPresensiController extends Controller
             ]
         ];
     }
-
-    /**
-     * Memformat data pegawai dan absensinya untuk ditampilkan.
-     */
-    private function formatPresensiData($pegawai, $tanggal)
+    
+    private function formatJoinedPresensiData($item, $tanggal)
     {
-        $absensi = $pegawai->absensiRecords->first();
         $isHoliday = $this->holidayService->isHoliday(Carbon::parse($tanggal));
-
-        $statusInfo = ['label' => 'Alpha', 'color' => 'danger'];
-        if ($isHoliday) {
-            $statusInfo = ['label' => 'Libur', 'color' => 'secondary'];
-        } elseif ($absensi) {
-            $statusInfo = $absensi->getAttendanceStatus();
-        }
-
+        
+        $status = 'Alpha';
         $kehadiran = '-';
-        if ($absensi && $absensi->jam_masuk) {
-            $jamMasuk = Carbon::parse($absensi->jam_masuk)->format('H:i');
-            $kehadiran = "Masuk: {$jamMasuk}";
-            if ($absensi->jam_keluar) {
-                $jamKeluar = Carbon::parse($absensi->jam_keluar)->format('H:i');
-                $kehadiran .= ", Keluar: {$jamKeluar}";
+
+        if ($isHoliday) {
+            $status = 'Libur';
+            $kehadiran = 'Libur';
+        } elseif ($item->absensi_id) {
+            if ($item->cuti_record_id) {
+                $status = 'Cuti';
+                $kehadiran = 'Cuti';
+            } elseif ($item->izin_record_id) {
+                $status = 'Izin';
+                $kehadiran = 'Izin';
+            } elseif ($item->status_kehadiran) {
+                $status = $item->status_kehadiran;
+                if ($item->jam_masuk && in_array($status, ['Hadir', 'Terlambat'])) {
+                    $jamMasuk = Carbon::parse($item->jam_masuk)->format('H:i');
+                    $kehadiran = "Masuk: {$jamMasuk}";
+                    if ($item->jam_keluar) {
+                        $jamKeluar = Carbon::parse($item->jam_keluar)->format('H:i');
+                        $kehadiran .= ", Keluar: {$jamKeluar}";
+                    }
+                } else {
+                    $kehadiran = $status;
+                }
+            } elseif ($item->jam_masuk) {
+                $status = 'Hadir';
+                $jamMasuk = Carbon::parse($item->jam_masuk)->format('H:i');
+                $kehadiran = "Masuk: {$jamMasuk}";
+                if ($item->jam_keluar) {
+                    $jamKeluar = Carbon::parse($item->jam_keluar)->format('H:i');
+                    $kehadiran .= ", Keluar: {$jamKeluar}";
+                }
             }
         }
 
         return [
-            'nip' => $pegawai->nip,
-            'nama_pegawai' => $pegawai->nama,
-            'unit_kerja' => optional($pegawai->unitKerja)->nama_unit ?? '-',
-            'jam_kerja' => 'Fleksibel', // Jam kerja tidak lagi terikat
+            'id' => $item->pegawai_id,
+            'nip' => $item->nip,
+            'nama_pegawai' => $item->nama_pegawai,
+            'unit_kerja' => $item->nama_unit ?? '-',
+            'jam_kerja' => 'Fleksibel',
             'kehadiran' => $kehadiran,
-            'status' => $statusInfo['label'],
-            'status_color' => $statusInfo['color'],
-            'detail' => $absensi ? [
-                'id' => $absensi->id,
-                'keterangan' => $absensi->keterangan,
-            ] : null
+            'status' => $status,
         ];
     }
 }

@@ -18,8 +18,8 @@ class SimpegJamKerjaSeeder extends Seeder
             [
                 'jenis_jam_kerja' => 'Jam Kerja Normal',
                 'jam_normal' => true,
-                'jam_datang' => '08:15',
-                'jam_pulang' => '16:00',
+                'jam_datang' => '04:00',
+                'jam_pulang' => '00:00',
             ]
         ];
 
