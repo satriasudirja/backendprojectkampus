@@ -102,6 +102,11 @@ use App\Http\Controllers\Api\SimpegDataOrganisasiAdminController;
 
 
 
+
+
+
+
+
 use App\Models\JenisSertifikasi;
 
 
@@ -157,6 +162,9 @@ use App\Http\Controllers\Api\MonitoringRiwayatController;
 use App\Http\Controllers\Api\SimpegBeritaPegawaiController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\PayrollDosenController;
+use App\Http\Controllers\Api\ProfilesController;
+use App\Http\Controllers\Api\RekapitulasiKehadiranController;
+
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -178,6 +186,23 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+        Route::get('/rekapitulasi/kehadiran', [RekapitulasiKehadiranController::class, 'index']);
+         Route::get('/rekapitulasi/kehadiran/pegawai/{id}', [RekapitulasiKehadiranController::class, 'show']);
+         Route::get('/profiles', [ProfilesController::class, 'getProfile']);
+
+    /**
+     * Memperbarui email dan/atau foto profil pengguna.
+     * Method: POST
+     * URL: {{base_url}}/api/profile/update
+     */
+    Route::post('/profiles/update', [ProfilesController::class, 'updateProfile']);
+
+    /**
+     * Mengubah password pengguna.
+     * Method: POST
+     * URL: {{base_url}}/api/profile/change-password
+     */
+    Route::post('/profiles/change-password', [ProfilesController::class, 'changePassword']);
 
 
         Route::prefix('payroll')->name('payroll.api.')->group(function () {
@@ -1250,6 +1275,22 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Dosen Dashboard']);
         });
+
+          Route::get('/profiles', [ProfilesController::class, 'getProfile']);
+
+    /**
+     * Memperbarui email dan/atau foto profil pengguna.
+     * Method: POST
+     * URL: {{base_url}}/api/profile/update
+     */
+    Route::post('/profiles/update', [ProfilesController::class, 'updateProfile']);
+
+    /**
+     * Mengubah password pengguna.
+     * Method: POST
+     * URL: {{base_url}}/api/profile/change-password
+     */
+    Route::post('/profiles/change-password', [ProfilesController::class, 'changePassword']);
 
       Route::prefix('payroll')
          ->controller(PayrollDosenController::class)

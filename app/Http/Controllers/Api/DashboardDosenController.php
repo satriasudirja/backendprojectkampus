@@ -70,7 +70,7 @@ class DashboardDosenController extends Controller
             ->get(['tanggal_absensi', 'jam_masuk', 'jam_keluar'])
             ->map(function ($item) {
                 return [
-                    'tanggal' => Carbon::parse($item->tanggal_absensi)->isoFormat('dddd, D MMMM TRX'),
+                    'tanggal' => Carbon::parse($item->tanggal_absensi)->isoFormat('dddd, D MMMM YYYY'),
                     'jam_masuk' => $item->jam_masuk ? Carbon::parse($item->jam_masuk)->format('H:i:s') : '-',
                     'jam_keluar' => $item->jam_keluar ? Carbon::parse($item->jam_keluar)->format('H:i:s') : '-',
                 ];
@@ -101,7 +101,6 @@ class DashboardDosenController extends Controller
         $year = $validated['year'] ?? Carbon::now()->year;
 
         // Query data evaluasi khusus untuk pegawai yang login
-        // PERBAIKAN: Menggunakan EXTRACT untuk PostgreSQL, bukan MONTH
         $results = SimpegEvaluasiKinerja::select(
                 DB::raw('EXTRACT(MONTH FROM tanggal_penilaian) as month'),
                 DB::raw('AVG(total_nilai) as average_score')
@@ -190,8 +189,8 @@ class DashboardDosenController extends Controller
             
         $hadir = $absensi->whereNotNull('jam_masuk')->count();
         $alpha = $absensi->whereNull('jam_masuk')
-                          ->whereNull('cuti_record_id')
-                          ->whereNull('izin_record_id')->count();
+                         ->whereNull('cuti_record_id')
+                         ->whereNull('izin_record_id')->count();
 
         $totalNonHadir = $alpha + $izin + $cuti;
         
@@ -273,10 +272,13 @@ class DashboardDosenController extends Controller
             ->get();
 
         $filteredBerita = $allActiveBerita->filter(function ($berita) use ($unitKerjaIdScope) {
-            $targetUnitIds = json_decode($berita->unit_kerja_id, true);
+            // FIX: Langsung gunakan properti sebagai array, tanpa json_decode
+            $targetUnitIds = $berita->unit_kerja_id;
 
             if (!is_array($targetUnitIds)) {
-                return false;
+                // Fallback jika datanya ternyata string JSON (untuk data lama)
+                $targetUnitIds = json_decode($targetUnitIds, true);
+                if (!is_array($targetUnitIds)) return false;
             }
             
             $targetUnitIds = array_map('intval', $targetUnitIds);

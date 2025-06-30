@@ -20,6 +20,8 @@ class SimpegDataPenghargaanAdm extends Model
     protected $fillable = [
         'pegawai_id',
         'jenis_penghargaan',
+        'instansi_pemberi',
+        'jenis_penghargaan_id',
         'nama_penghargaan',
         'no_sk',
         'tanggal_sk',
@@ -47,6 +49,11 @@ class SimpegDataPenghargaanAdm extends Model
     public function pegawai()
     {
         return $this->belongsTo(SimpegPegawai::class, 'pegawai_id', 'id');
+    }
+
+    public function jenisPenghargaan()
+    {
+        return $this->belongsTo(SimpegJenisPenghargaan::class, 'jenis_penghargaan_id');
     }
 
     // --- SCOPE UNTUK FILTERING ---

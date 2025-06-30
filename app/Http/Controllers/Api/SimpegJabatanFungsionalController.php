@@ -39,21 +39,25 @@ class SimpegJabatanFungsionalController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'jabatan_akademik_id' => 'required|integer|exists:simpeg_jabatan_akademik,id',
-            'pangkat_id' => 'required|integer|exists:simpeg_pangkat,id', // Pastikan tabel simpeg_pangkat ada
+            'pangkat_id' => 'required|integer|exists:simpeg_master_pangkat,id',
             'kode' => 'required|string|max:5|unique:simpeg_jabatan_fungsional,kode',
             'nama_jabatan_fungsional' => 'required|string|max:30',
-            'kode_jabatan_akademik' => 'required|string|max:2',
+            'kode_jabatan_akademik' => 'required|string|max:3',
             'pangkat' => 'required|string|max:10',
             'angka_kredit' => 'required|string|max:6',
             'usia_pensiun' => 'required|integer',
             'keterangan' => 'nullable|string',
+            'tunjangan' => 'nullable|numeric', // Tambahkan validasi tunjangan
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // FIX: Hanya ambil data yang divalidasi dan ada di fillable model
+        // Ini lebih aman dan mencegah field 'id' ikut masuk jika tidak sengaja dikirim.
         $data = SimpegJabatanFungsional::create($validator->validated());
+        
         return response()->json($data, 201);
     }
 
@@ -73,14 +77,15 @@ class SimpegJabatanFungsionalController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'jabatan_akademik_id' => 'sometimes|required|integer|exists:simpeg_jabatan_akademik,id',
-            'pangkat_id' => 'sometimes|required|integer|exists:simpeg_pangkat,id',
+            'pangkat_id' => 'sometimes|required|integer|exists:simpeg_master_pangkat,id',
             'kode' => ['sometimes', 'required', 'string', 'max:5', Rule::unique('simpeg_jabatan_fungsional')->ignore($jabatanFungsional->id)],
             'nama_jabatan_fungsional' => 'sometimes|required|string|max:30',
-            'kode_jabatan_akademik' => 'sometimes|required|string|max:2',
+            'kode_jabatan_akademik' => 'sometimes|required|string|max:3',
             'pangkat' => 'sometimes|required|string|max:10',
             'angka_kredit' => 'sometimes|required|string|max:6',
             'usia_pensiun' => 'sometimes|required|integer',
             'keterangan' => 'nullable|string',
+            'tunjangan' => 'nullable|numeric', // Tambahkan validasi tunjangan
         ]);
 
         if ($validator->fails()) {
