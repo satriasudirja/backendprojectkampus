@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder; // Import untuk type-hinting scope
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+
 
 class SimpegDataPenghargaanAdm extends Model
 {
@@ -18,6 +20,8 @@ class SimpegDataPenghargaanAdm extends Model
     protected $fillable = [
         'pegawai_id',
         'jenis_penghargaan',
+        'instansi_pemberi',
+        'jenis_penghargaan_id',
         'nama_penghargaan',
         'no_sk',
         'tanggal_sk',
@@ -28,7 +32,7 @@ class SimpegDataPenghargaanAdm extends Model
         'tgl_diajukan',
         'tgl_disetujui',
         'tgl_ditolak',
-        'tgl_ditangguhkan', // <--- HARUS ADA DI DB dan Model
+        // 'tgl_ditangguhkan', // <--- HARUS ADA DI DB dan Model
         // 'keterangan_penolakan', // <--- Pastikan ini sudah dihapus di DB dan Model jika tidak digunakan
     ];
 
@@ -38,13 +42,18 @@ class SimpegDataPenghargaanAdm extends Model
         'tgl_diajukan' => 'datetime',
         'tgl_disetujui' => 'datetime',
         'tgl_ditolak' => 'datetime',
-        'tgl_ditangguhkan' => 'datetime', // <--- HARUS ADA DI DB dan Model
+        // 'tgl_ditangguhkan' => 'datetime', // <--- HARUS ADA DI DB dan Model
     ];
 
     // Relasi ke pegawai
     public function pegawai()
     {
         return $this->belongsTo(SimpegPegawai::class, 'pegawai_id', 'id');
+    }
+
+    public function jenisPenghargaan()
+    {
+        return $this->belongsTo(SimpegJenisPenghargaan::class, 'jenis_penghargaan_id');
     }
 
     // --- SCOPE UNTUK FILTERING ---

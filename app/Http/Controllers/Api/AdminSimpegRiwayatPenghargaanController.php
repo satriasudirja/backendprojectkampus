@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\SimpegDataPenghargaanAdm as SimpegDataPenghargaan;
 use App\Models\SimpegPegawai;
+use App\Models\SimpegJenisPenghargaan;
 use App\Models\SimpegDataPendukung;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -76,7 +77,8 @@ class AdminSimpegRiwayatPenghargaanController extends Controller
         $validator = Validator::make($request->all(), [
             'kategori_kegiatan' => 'required|string|max:255',
             'tingkat_penghargaan' => 'required|string|max:255',
-            'jenis_penghargaan' => 'required|string|max:255',
+            // 'jenis_penghargaan' => 'required|string|max:255',
+            'jenis_penghargaan_id' => 'required|integer|exists:simpeg_jenis_penghargaan,id',
             'nama_penghargaan' => 'required|string|max:255',
             'tanggal_penghargaan' => 'required|date',
             'instansi_pemberi' => 'required|string|max:255',
@@ -99,6 +101,11 @@ class AdminSimpegRiwayatPenghargaanController extends Controller
             $penghargaanData = collect($data)->except('dokumen_pendukung')->toArray();
             $penghargaanData['pegawai_id'] = $pegawai->id;
             $penghargaanData['tgl_input'] = now();
+
+            $jenisPenghargaan = SimpegJenisPenghargaan::find($penghargaanData['jenis_penghargaan_id']);
+            if ($jenisPenghargaan) {
+                $penghargaanData['jenis_penghargaan'] = $jenisPenghargaan->nama; // Isi kolom string
+            }
 
             $riwayatPenghargaan = SimpegDataPenghargaan::create($penghargaanData);
 
@@ -154,7 +161,8 @@ class AdminSimpegRiwayatPenghargaanController extends Controller
         $validator = Validator::make($request->all(), [
             'kategori_kegiatan' => 'required|string|max:255',
             'tingkat_penghargaan' => 'required|string|max:255',
-            'jenis_penghargaan' => 'required|string|max:255',
+            // 'jenis_penghargaan' => 'required|string|max:255',
+            'jenis_penghargaan_id' => 'required|integer|exists:simpeg_jenis_penghargaan,id',
             'nama_penghargaan' => 'required|string|max:255',
             'tanggal_penghargaan' => 'required|date',
             'instansi_pemberi' => 'required|string|max:255',
@@ -169,6 +177,12 @@ class AdminSimpegRiwayatPenghargaanController extends Controller
         $oldData = $penghargaan->getOriginal();
         $data = $validator->validated();
 
+        if(isset($data['jenis_penghargaan_id'])) {
+        $jenisPenghargaan = SimpegJenisPenghargaan::find($data['jenis_penghargaan_id']);
+        if ($jenisPenghargaan) {
+            $data['jenis_penghargaan'] = $jenisPenghargaan->nama;
+        }
+        }
         $penghargaan->update($data);
         ActivityLogger::log('update', $penghargaan, $oldData);
 
@@ -222,6 +236,7 @@ class AdminSimpegRiwayatPenghargaanController extends Controller
     {
         $data = [
             'id' => $penghargaan->id,
+            'jenis_penghargaan' => $penghargaan->jenis_penghargaan,
             'nama_penghargaan' => $penghargaan->nama_penghargaan,
             'instansi' => $penghargaan->instansi_pemberi,
             'tanggal' => Carbon::parse($penghargaan->tanggal_penghargaan)->isoFormat('D MMMM YYYY'),
