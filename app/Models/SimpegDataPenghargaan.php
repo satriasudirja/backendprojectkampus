@@ -26,7 +26,7 @@ class SimpegDataPenghargaan extends Model
         'tgl_diajukan',     // Ditambahkan
         'tgl_disetujui',    // Ditambahkan
         'tgl_ditolak',     // Ditambahkan
-        'tgl_ditangguhkan',
+        // 'tgl_ditangguhkan',
         'tgl_input',
         'instansi_pemberi',
         'jenis_penghargaan_id',
