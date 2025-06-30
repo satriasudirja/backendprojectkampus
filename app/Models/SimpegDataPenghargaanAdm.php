@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder; // Import untuk type-hinting scope
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+
 
 class SimpegDataPenghargaanAdm extends Model
 {
