@@ -53,4 +53,9 @@ class SimpegCutiRecord extends Model
     {
         return $this->belongsTo(SimpegDaftarCuti::class, 'jenis_cuti_id');
     }
+      public function approver()
+    {
+        // Relasi ini menghubungkan 'disetujui_oleh' dengan 'id' di tabel pegawai.
+        return $this->belongsTo(SimpegPegawai::class, 'disetujui_oleh');
+    }
 }

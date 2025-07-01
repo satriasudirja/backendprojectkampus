@@ -267,36 +267,24 @@ class SimpegDataOrganisasiAdminController extends Controller
     public function show($id)
     {
         $dataOrganisasi = SimpegDataOrganisasi::with([
-            'pegawai' => function ($q) {
-                $q->with([
-                    'unitKerja',
-                    'dataJabatanFungsional' => function ($subQuery) {
-                        $subQuery->with('jabatanFungsional')->orderBy('tmt_jabatan', 'desc')->limit(1);
-                    },
-                    'dataJabatanStruktural' => function ($subQuery) {
-                        $subQuery->with('jabatanStruktural.jenisJabatanStruktural')->orderBy('tgl_mulai', 'desc')->limit(1);
-                    },
-                    'dataPendidikanFormal' => function ($subQuery) {
-                        $subQuery->with('jenjangPendidikan')->orderBy('jenjang_pendidikan_id', 'desc')->limit(1);
-                    },
-                    'jabatanAkademik',
-                    'statusAktif'
-                ]);
-            }
+            'pegawai.unitKerja',
+            'pegawai.statusAktif',
+            'pegawai.jabatanAkademik',
+            'pegawai.dataJabatanFungsional.jabatanFungsional',
+            'pegawai.dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+            'pegawai.dataPendidikanFormal.jenjangPendidikan',
+            
         ])->find($id);
 
         if (!$dataOrganisasi) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data organisasi tidak ditemukan'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Data organisasi tidak ditemukan'], 404);
         }
 
         return response()->json([
             'success' => true,
             'data' => $this->formatDataOrganisasi($dataOrganisasi),
-            'jenis_organisasi_options' => $this->getJenisOrganisasiOptions(),
-            'pegawai_info_detail' => $this->formatPegawaiInfoDetail($dataOrganisasi->pegawai),
+            // PERBAIKAN: Memanggil fungsi yang benar
+            'pegawai_info' => $this->formatPegawaiInfo($dataOrganisasi->pegawai),
         ]);
     }
 
@@ -1020,6 +1008,28 @@ class SimpegDataOrganisasiAdminController extends Controller
         }
 
         return $data;
+    }
+
+     private function formatPegawaiInfo($pegawai)
+    {
+        if (!$pegawai) return null;
+
+        $jabatanAkademik = $pegawai->jabatanAkademik->jabatan_akademik ?? '-';
+        $jabatanFungsional = $pegawai->dataJabatanFungsional->first()->jabatanFungsional->nama_jabatan_fungsional ?? '-';
+        $jabatanStruktural = $pegawai->dataJabatanStruktural->first()->jabatanStruktural->jenisJabatanStruktural->jenis_jabatan_struktural ?? '-';
+        $pendidikan = $pegawai->dataPendidikanFormal->first()->jenjangPendidikan->jenjang_pendidikan ?? '-';
+
+        return [
+            'id' => $pegawai->id,
+            'nip' => $pegawai->nip ?? '-',
+            'nama' => $pegawai->nama ?? '-',
+            'unit_kerja' => $pegawai->unitKerja->nama_unit ?? 'Tidak Ada',
+            'status' => $pegawai->statusAktif->nama_status_aktif ?? '-',
+            'jabatan_akademik' => $jabatanAkademik,
+            'jabatan_fungsional' => $jabatanFungsional,
+            'jabatan_struktural' => $jabatanStruktural,
+            'pendidikan_terakhir' => $pendidikan,
+        ];
     }
 
     // Helper: Get status info

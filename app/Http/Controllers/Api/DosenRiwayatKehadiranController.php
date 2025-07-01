@@ -9,95 +9,88 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
-// Tambahkan use model ini jika Anda punya data libur nasional
-// use App\Models\HariLibur; 
+use App\Services\HolidayService; // <-- LOGIKA BARU: Menggunakan Service
 
 class DosenRiwayatKehadiranController extends Controller
 {
+    protected $holidayService;
+
+    /**
+     * LOGIKA BARU: Inject HolidayService melalui constructor.
+     */
+    public function __construct(HolidayService $holidayService)
+    {
+        $this->middleware('auth:api');
+        $this->holidayService = $holidayService;
+    }
+
     /**
      * Menampilkan rekapitulasi presensi bulanan untuk dosen yang sedang login.
      */
     public function getMonthlySummary(Request $request)
     {
-        // --- PERBAIKAN UTAMA ---
-        // Mengambil data pegawai langsung dari Auth::user(), sesuai dengan controller Anda yang lain.
         $pegawai = Auth::user();
-
-        // Jika karena suatu alasan data pegawai tidak ada, kirim response error.
         if (!$pegawai) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengautentikasi data pegawai. Silakan login kembali.'
-            ], 401);
+            return response()->json(['success' => false, 'message' => 'Gagal mengautentikasi data pegawai.'], 401);
         }
 
         $tahun = $request->input('tahun', date('Y'));
 
-        // Ambil semua data absensi untuk pegawai & tahun yang dipilih
+        // Ambil semua data absensi untuk tahun yang dipilih untuk efisiensi
         $allRecords = SimpegAbsensiRecord::with(['cutiRecord', 'izinRecord.jenisIzin'])
-            ->where('pegawai_id', $pegawai->id) // Query menggunakan $pegawai->id
+            ->where('pegawai_id', $pegawai->id)
             ->whereYear('tanggal_absensi', $tahun)
             ->get();
-            
-        // (Opsional) Ambil data hari libur nasional
-        $publicHolidays = []; 
-        /*
-        if (class_exists(\App\Models\HariLibur::class)) {
-            $publicHolidays = \App\Models\HariLibur::whereYear('tanggal', $tahun)
-                                     ->pluck('tanggal')
-                                     ->map(fn($date) => $date->format('Y-m-d'))
-                                     ->toArray();
-        }
-        */
-
+        
         $monthlySummary = [];
 
         for ($bulan = 1; $bulan <= 12; $bulan++) {
             $recordsInMonth = $allRecords->filter(fn($record) => Carbon::parse($record->tanggal_absensi)->month == $bulan);
 
-            $hariKerja = 0;
-            $startDate = Carbon::createFromDate($tahun, $bulan, 1);
+            $startDate = Carbon::create($tahun, $bulan, 1);
             if ($startDate->isFuture()) continue;
             
             $endDate = $startDate->copy()->endOfMonth();
             if ($endDate->isFuture()) $endDate = Carbon::now();
 
-            $currentDate = $startDate->copy();
-            while ($currentDate->lte($endDate)) {
-                if ($currentDate->isWeekday() && !in_array($currentDate->format('Y-m-d'), $publicHolidays)) {
-                    $hariKerja++;
-                }
-                $currentDate->addDay();
-            }
+            // LOGIKA BARU: Menghitung hari kerja menggunakan HolidayService
+            $hariKerja = $this->holidayService->calculateWorkingDays($startDate, $endDate);
 
             $hadirRecords = $recordsInMonth->whereNotNull('jam_masuk');
-            $hadir = $hadirRecords->count();
-            $hadir_libur = $hadirRecords->filter(function ($record) use ($publicHolidays) {
-                $tanggal = Carbon::parse($record->tanggal_absensi);
-                return $tanggal->isWeekend() || in_array($tanggal->format('Y-m-d'), $publicHolidays);
+            
+            // Hitung kehadiran pada hari kerja dan hari libur secara terpisah
+            $hadir_di_hari_kerja = $hadirRecords->filter(function ($record) {
+                return !$this->holidayService->isHoliday(Carbon::parse($record->tanggal_absensi));
             })->count();
+            
+            $hadir_libur = $hadirRecords->count() - $hadir_di_hari_kerja;
 
-            $hadir_di_hari_kerja = $hadir - $hadir_libur;
-            $terlambat = $recordsInMonth->where('terlambat', true)->count();
-            $pulangAwal = $recordsInMonth->where('pulang_awal', true)->count();
             $cuti = $recordsInMonth->whereNotNull('cuti_record_id')->count();
             
             $izinCollection = $recordsInMonth->whereNotNull('izin_record_id');
             $sakit = $izinCollection->filter(function ($record) {
-                return $record->izinRecord && optional($record->izinRecord->jenisIzin)->nama_jenis_izin &&
-                       stripos(optional($record->izinRecord->jenisIzin)->nama_jenis_izin, 'sakit') !== false;
+                return $record->izinRecord && stripos(optional($record->izinRecord)->jenis_izin, 'sakit') !== false;
             })->count();
             
             $izin = $izinCollection->count() - $sakit;
-            $totalKehadiranWajib = $hadir_di_hari_kerja + $cuti + $izin + $sakit;
-            $alpha = max(0, $hariKerja - $totalKehadiranWajib);
+            
+            // Hitung alpha berdasarkan hari kerja efektif
+            $totalKehadiranTerhitung = $hadir_di_hari_kerja + $cuti + $izin + $sakit;
+            $alpha = max(0, $hariKerja - $totalKehadiranTerhitung);
 
             $monthlySummary[] = [
                 'bulan' => Carbon::create(null, $bulan)->locale('id')->isoFormat('MMMM'),
-                'bulan_angka' => $bulan, 'tahun' => (int)$tahun, 'hari_kerja' => $hariKerja,
-                'hadir' => $hadir, 'hadir_libur' => $hadir_libur, 'terlambat' => $terlambat,
-                'pulang_awal' => $pulangAwal, 'sakit' => $sakit, 'izin' => $izin,
-                'alpha' => $alpha, 'cuti' => $cuti,
+                'bulan_angka' => $bulan,
+                'tahun' => (int)$tahun,
+                'hari_kerja' => $hariKerja,
+                'hadir' => $hadir_di_hari_kerja, // Hanya hadir di hari kerja
+                'hadir_libur' => $hadir_libur,
+                'terlambat' => 0, // Dihilangkan dari logika utama
+                'pulang_awal' => 0, // Dihilangkan dari logika utama
+                'sakit' => $sakit,
+                'izin' => $izin,
+                'alpha' => $alpha,
+                'cuti' => $cuti,
             ];
         }
 
@@ -119,13 +112,9 @@ class DosenRiwayatKehadiranController extends Controller
      */
     public function getDailyDetail(Request $request)
     {
-        // --- PERBAIKAN UTAMA ---
         $pegawai = Auth::user();
         if (!$pegawai) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengautentikasi data pegawai. Silakan login kembali.'
-            ], 401);
+            return response()->json(['success' => false, 'message' => 'Gagal mengautentikasi data pegawai.'], 401);
         }
         
         $validator = Validator::make($request->all(), [
@@ -150,16 +139,16 @@ class DosenRiwayatKehadiranController extends Controller
     }
     
     /**
-     * Helper untuk memformat data presensi tunggal.
+     * Helper untuk memformat data presensi tunggal untuk response API.
      */
     private function formatPresensiData($presensi)
     {
         $status = $presensi->getAttendanceStatus();
         return [
             'id' => $presensi->id,
-            'tanggal' => Carbon::parse($presensi->tanggal_absensi)->isoFormat('dddd, D MMMM YYYY'),
-            'jam_masuk' => $presensi->jam_masuk ? Carbon::parse($presensi->jam_masuk)->format('H:i:s') : '-',
-            'jam_keluar' => $presensi->jam_keluar ? Carbon::parse($presensi->jam_keluar)->format('H:i:s') : '-',
+            'tanggal' => Carbon::parse($presensi->tanggal_absensi)->locale('id')->isoFormat('dddd, D MMMM YYYY'),
+            'jam_masuk' => optional($presensi->jam_masuk)->format('H:i:s') ?? '-',
+            'jam_keluar' => optional($presensi->jam_keluar)->format('H:i:s') ?? '-',
             'status_label' => $status['label'],
             'status_color' => $status['color'],
             'keterangan' => $presensi->keterangan ?? '-',

@@ -32,7 +32,7 @@ class SimpegDataPenghargaanAdm extends Model
         'tgl_diajukan',
         'tgl_disetujui',
         'tgl_ditolak',
-        'tgl_ditangguhkan', // <--- HARUS ADA DI DB dan Model
+        // 'tgl_ditangguhkan', // <--- HARUS ADA DI DB dan Model
         // 'keterangan_penolakan', // <--- Pastikan ini sudah dihapus di DB dan Model jika tidak digunakan
     ];
 
@@ -42,7 +42,7 @@ class SimpegDataPenghargaanAdm extends Model
         'tgl_diajukan' => 'datetime',
         'tgl_disetujui' => 'datetime',
         'tgl_ditolak' => 'datetime',
-        'tgl_ditangguhkan' => 'datetime', // <--- HARUS ADA DI DB dan Model
+        // 'tgl_ditangguhkan' => 'datetime', // <--- HARUS ADA DI DB dan Model
     ];
 
     // Relasi ke pegawai

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SimpegPegawai;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegAbsensiRecord;
+use App\Services\HolidayService; // <-- LOGIKA BARU
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -13,11 +14,19 @@ use Carbon\CarbonPeriod;
 
 class RekapitulasiKehadiranController extends Controller
 {
+    protected $holidayService;
+
     /**
-     * Menampilkan rekapitulasi presensi bulanan pegawai dengan agregasi data.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * LOGIKA BARU: Inject HolidayService untuk digunakan di semua method.
+     */
+    public function __construct(HolidayService $holidayService)
+    {
+        $this->holidayService = $holidayService;
+        // $this->middleware('auth:api');
+    }
+
+    /**
+     * Menampilkan rekapitulasi presensi pegawai dengan agregasi data yang efisien.
      */
     public function index(Request $request)
     {
@@ -31,52 +40,46 @@ class RekapitulasiKehadiranController extends Controller
         ]);
 
         $tanggalAwal = $request->input('tanggal_awal', Carbon::now()->startOfMonth()->toDateString());
-        $tanggalAkhir = $request->input('tanggal_akhir', Carbon::now()->toDateString());
+        $tanggalAkhir = $request->input('tanggal_akhir', Carbon::now()->endOfMonth()->toDateString());
         $unitKerjaId = $request->input('unit_kerja_id');
         $search = $request->input('search');
-        $perPage = $request->input('per_page', 10);
-        
-        $GLOBALS['tanggalAwal'] = $tanggalAwal;
-        $GLOBALS['tanggalAkhir'] = $tanggalAkhir;
+        $perPage = $request->input('per_page', 15);
 
-        // 2. Hitung Hari Kerja
-        $hariKerja = $this->calculateWorkingDays($tanggalAwal, $tanggalAkhir);
+        // 2. Hitung Hari Kerja menggunakan Service
+        $hariKerja = $this->holidayService->calculateWorkingDays($tanggalAwal, $tanggalAkhir);
 
-        // 3. Query Utama untuk Rekapitulasi per Pegawai
+        // 3. Query Utama dengan withCount untuk efisiensi (menghindari N+1 problem)
         $rekapQuery = SimpegPegawai::query()
-            // =================================================================
-            // PERUBAHAN: Menggunakan leftJoin untuk mengambil nama_unit
-            // =================================================================
-            ->leftJoin('simpeg_unit_kerja', 'simpeg_pegawai.unit_kerja_id', '=', 'simpeg_unit_kerja.id')
-            ->select([
-                'simpeg_pegawai.id',
-                'simpeg_pegawai.nip',
-                'simpeg_pegawai.nama',
-                'simpeg_pegawai.unit_kerja_id',
-                'simpeg_unit_kerja.nama_unit' // Ambil nama_unit langsung dari join
-            ])
+            ->with(['unitKerja'])
             ->where(function ($query) {
-                $query->where('simpeg_pegawai.status_kerja', 'like', '%Aktif%')
+                // Filter hanya pegawai aktif
+                $query->where('status_kerja', 'like', '%Aktif%')
                       ->orWhereHas('statusAktif', function ($q) {
                           $q->where('nama_status_aktif', 'like', '%aktif%');
                       });
-            });
-
-        // Subquery untuk Agregasi data absensi
-        $rekapQuery->addSelect([
-            'hadir' => $this->createStatusSubquery('hadir', $tanggalAwal, $tanggalAkhir),
-            'terlambat' => $this->createStatusSubquery('terlambat', $tanggalAwal, $tanggalAkhir),
-            'pulang_awal' => $this->createStatusSubquery('pulang_awal', $tanggalAwal, $tanggalAkhir),
-            'cuti' => $this->createStatusSubquery('cuti', $tanggalAwal, $tanggalAkhir),
-            'izin' => $this->createStatusSubquery('izin', $tanggalAwal, $tanggalAkhir),
-            'sakit' => DB::raw('0'), // Placeholder
-        ]);
+            })
+            ->withCount([
+                'absensiRecords as hadir_count' => function ($query) use ($tanggalAwal, $tanggalAkhir) {
+                    $query->whereBetween('tanggal_absensi', [$tanggalAwal, $tanggalAkhir])
+                          ->whereNotNull('jam_masuk');
+                },
+                'absensiRecords as cuti_count' => function ($query) use ($tanggalAwal, $tanggalAkhir) {
+                    $query->whereBetween('tanggal_absensi', [$tanggalAwal, $tanggalAkhir])
+                          ->whereNotNull('cuti_record_id');
+                },
+                'absensiRecords as sakit_count' => function ($query) use ($tanggalAwal, $tanggalAkhir) {
+                    $query->whereBetween('tanggal_absensi', [$tanggalAwal, $tanggalAkhir])
+                          ->whereHas('izinRecord', fn($q) => $q->where('jenis_izin', 'like', '%sakit%'));
+                },
+                'absensiRecords as izin_count' => function ($query) use ($tanggalAwal, $tanggalAkhir) {
+                    $query->whereBetween('tanggal_absensi', [$tanggalAwal, $tanggalAkhir])
+                          ->whereNotNull('izin_record_id')
+                          ->whereDoesntHave('izinRecord', fn($q) => $q->where('jenis_izin', 'like', '%sakit%'));
+                }
+            ]);
 
         // Filter Hierarkis untuk Unit Kerja
         if ($unitKerjaId) {
-            // =================================================================
-            // PERUBAHAN: Mengambil ID integer, bukan kode string
-            // =================================================================
             $unitIds = $this->getAllDescendantUnitIds($unitKerjaId);
             if (!empty($unitIds)) {
                 $rekapQuery->whereIn('simpeg_pegawai.unit_kerja_id', $unitIds);
@@ -86,37 +89,35 @@ class RekapitulasiKehadiranController extends Controller
         // Filter Pencarian
         if ($search) {
             $rekapQuery->where(function ($q) use ($search) {
-                $q->where('simpeg_pegawai.nip', 'like', '%' . $search . '%')
-                  ->orWhere('simpeg_pegawai.nama', 'like', '%' . $search . '%');
+                $q->where('nip', 'like', '%' . $search . '%')
+                  ->orWhere('nama', 'like', '%' . $search . '%');
             });
         }
         
-        $rekapQuery->orderBy('simpeg_pegawai.nama');
+        $rekapQuery->orderBy('nama');
         $rekapData = $rekapQuery->paginate($perPage);
 
-        // 4. Transformasi Data
-        $transformedData = $rekapData->getCollection()->map(function ($pegawai) use ($hariKerja) {
-            $totalKehadiran = $pegawai->hadir + $pegawai->cuti + $pegawai->izin + $pegawai->sakit;
-            $alpa = max(0, $hariKerja - $totalKehadiran);
+        // 4. Transformasi Data untuk Response
+        $rekapData->getCollection()->transform(function ($pegawai) use ($hariKerja, $tanggalAwal, $tanggalAkhir) {
+            $totalKehadiranTerhitung = $pegawai->hadir_count + $pegawai->cuti_count + $pegawai->izin_count + $pegawai->sakit_count;
+            $alpa = max(0, $hariKerja - $totalKehadiranTerhitung);
 
             return [
                 'nip' => $pegawai->nip,
                 'nama_pegawai' => $pegawai->nama,
-                'unit_kerja' => $pegawai->nama_unit ?? '-', // Gunakan nama_unit dari hasil join
+                'unit_kerja' => optional($pegawai->unitKerja)->nama_unit ?? '-',
                 'hari_kerja' => $hariKerja,
-                'hadir' => (int)$pegawai->hadir,
-                'hadir_libur' => 0,
-                'terlambat' => (int)$pegawai->terlambat,
-                'pulang_awal' => (int)$pegawai->pulang_awal,
-                'sakit' => (int)$pegawai->sakit,
-                'izin' => (int)$pegawai->izin,
+                'hadir' => (int)$pegawai->hadir_count,
+                'hadir_libur' => 0, // Perhitungan ini memerlukan query lebih kompleks, di-set 0 untuk sekarang
+                'terlambat' => 0,   // Tidak relevan lagi
+                'pulang_awal' => 0, // Tidak relevan lagi
+                'sakit' => (int)$pegawai->sakit_count,
+                'izin' => (int)$pegawai->izin_count,
                 'alpa' => $alpa,
-                'cuti' => (int)$pegawai->cuti,
-                'aksi' => ['detail_url' => url("/api/admin/rekapitulasi/kehadiran/pegawai/{$pegawai->id}?tanggal_awal={$GLOBALS['tanggalAwal']}&tanggal_akhir={$GLOBALS['tanggalAkhir']}")]
+                'cuti' => (int)$pegawai->cuti_count,
+                'aksi' => ['detail_url' => url("/api/admin/rekapitulasi/kehadiran/pegawai/{$pegawai->id}?tanggal_awal={$tanggalAwal}&tanggal_akhir={$tanggalAkhir}")]
             ];
         });
-        
-        unset($GLOBALS['tanggalAwal'], $GLOBALS['tanggalAkhir']);
 
         // 5. Response JSON
         return response()->json([
@@ -124,30 +125,37 @@ class RekapitulasiKehadiranController extends Controller
             'message' => 'Rekapitulasi kehadiran berhasil diambil.',
             'filters' => ['tanggal_awal' => $tanggalAwal, 'tanggal_akhir' => $tanggalAkhir, 'unit_kerja_id' => $unitKerjaId, 'search' => $search],
             'filter_options' => ['unit_kerja' => SimpegUnitKerja::select('id', 'nama_unit')->orderBy('nama_unit')->get()],
-            'data' => $transformedData,
+            'data' => $rekapData->items(),
             'pagination' => ['total' => $rekapData->total(), 'per_page' => $rekapData->perPage(), 'current_page' => $rekapData->currentPage(), 'last_page' => $rekapData->lastPage(), 'from' => $rekapData->firstItem(), 'to' => $rekapData->lastItem()],
         ]);
     }
 
     /**
-     * Menampilkan detail presensi untuk satu pegawai.
+     * Menampilkan detail presensi untuk satu pegawai dalam rentang tanggal.
      */
     public function show(Request $request, $pegawaiId)
     {
-        $request->validate(['tanggal_awal' => 'required|date_format:Y-m-d', 'tanggal_akhir' => 'required|date_format:Y-m-d|after_or_equal:tanggal_awal']);
-        $tanggalAwal = $request->input('tanggal_awal');
-        $tanggalAkhir = $request->input('tanggal_akhir');
+        $request->validate([
+            'tanggal_awal' => 'required|date_format:Y-m-d',
+            'tanggal_akhir' => 'required|date_format:Y-m-d|after_or_equal:tanggal_awal'
+        ]);
+        
         $pegawai = SimpegPegawai::with('unitKerja:id,nama_unit')->find($pegawaiId);
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan.'], 404);
         }
-        $absensiRecords = SimpegAbsensiRecord::where('pegawai_id', $pegawaiId)->whereBetween('tanggal_absensi', [$tanggalAwal, $tanggalAkhir])->orderBy('tanggal_absensi', 'asc')->get();
+
+        $absensiRecords = SimpegAbsensiRecord::where('pegawai_id', $pegawaiId)
+            ->whereBetween('tanggal_absensi', [$request->tanggal_awal, $request->tanggal_akhir])
+            ->orderBy('tanggal_absensi', 'asc')
+            ->get();
+            
         $formattedData = $absensiRecords->map(function ($record) {
             $status = $record->getAttendanceStatus();
             return [
                 'hari_dan_tanggal' => Carbon::parse($record->tanggal_absensi)->locale('id')->isoFormat('dddd, D MMMM YYYY'),
-                'datang' => $record->jam_masuk ? Carbon::parse($record->jam_masuk)->format('H:i') : '-',
-                'pulang' => $record->jam_keluar ? Carbon::parse($record->jam_keluar)->format('H:i') : '-',
+                'datang' => optional($record->jam_masuk)->format('H:i') ?? '-',
+                'pulang' => optional($record->jam_keluar)->format('H:i') ?? '-',
                 'lokasi_datang' => $record->lokasi_masuk ?? 'N/A',
                 'lokasi_pulang' => $record->lokasi_keluar ?? 'N/A',
                 'jenis_presensi' => $status['label'],
@@ -155,66 +163,31 @@ class RekapitulasiKehadiranController extends Controller
                 'keterangan' => $record->keterangan ?? 'Belum melakukan presensi',
             ];
         });
+
         return response()->json([
             'success' => true,
             'message' => 'Detail presensi berhasil diambil.',
-            'pegawai' => ['id' => $pegawai->id, 'nama' => $pegawai->nama, 'nip' => $pegawai->nip, 'unit_kerja' => $pegawai->unitKerja->nama_unit ?? '-'],
-            'periode' => "Periode " . Carbon::parse($tanggalAwal)->isoFormat('D MMMM YYYY') . " s.d. " . Carbon::parse($tanggalAkhir)->isoFormat('D MMMM YYYY'),
+            'pegawai' => ['id' => $pegawai->id, 'nama' => $pegawai->nama, 'nip' => $pegawai->nip, 'unit_kerja' => optional($pegawai->unitKerja)->nama_unit ?? '-'],
+            'periode' => "Periode " . Carbon::parse($request->tanggal_awal)->isoFormat('D MMMM YYYY') . " s.d. " . Carbon::parse($request->tanggal_akhir)->isoFormat('D MMMM YYYY'),
             'data' => $formattedData,
         ]);
     }
     
-    private function createStatusSubquery(string $status, string $tanggalAwal, string $tanggalAkhir)
-    {
-        $query = DB::table('simpeg_absensi_record')->select(DB::raw('count(*)'))->whereColumn('simpeg_absensi_record.pegawai_id', 'simpeg_pegawai.id')->whereBetween('tanggal_absensi', [$tanggalAwal, $tanggalAkhir]);
-        switch ($status) {
-            case 'hadir': $query->whereNotNull('jam_masuk'); break;
-            case 'terlambat': $query->where('terlambat', true); break;
-            case 'pulang_awal': $query->where('pulang_awal', true); break;
-            case 'cuti': $query->whereNotNull('cuti_record_id'); break;
-            case 'izin': $query->whereNotNull('izin_record_id'); break;
-        }
-        return $query;
-    }
-
-    private function calculateWorkingDays(string $startDate, string $endDate): int
-    {
-        try {
-            $period = CarbonPeriod::create($startDate, $endDate);
-            $workingDays = 0;
-            foreach ($period as $date) {
-                if ($date->isWeekday()) { $workingDays++; }
-            }
-            return $workingDays;
-        } catch (\Exception $e) {
-            return 0;
-        }
-    }
-    
     /**
-     * =================================================================
-     * PERUBAHAN: Fungsi ini sekarang mengambil ID (integer) bukan kode (string)
-     * =================================================================
+     * Helper untuk mendapatkan semua ID unit kerja turunan (hierarki).
      */
     private function getAllDescendantUnitIds(int $parentUnitId): array
     {
         $allIds = [$parentUnitId];
         $idsToProcess = [$parentUnitId];
 
-        // Menggunakan loop untuk mencari semua turunan secara rekursif
         while (!empty($idsToProcess)) {
-            // Mengambil semua anak dari unit yang sedang diproses
-            // Asumsi relasi parent-child menggunakan 'parent_unit_id' yang merujuk ke 'id'
-            $children = SimpegUnitKerja::whereIn('parent_unit_id', $idsToProcess)->get(['id']);
-            
-            $idsToProcess = [];
-
-            foreach ($children as $child) {
-                if (!in_array($child->id, $allIds)) {
-                    $allIds[] = $child->id;
-                    $idsToProcess[] = $child->id;
-                }
+            $children = SimpegUnitKerja::whereIn('parent_unit_id', $idsToProcess)->pluck('id');
+            if ($children->isEmpty()) {
+                break;
             }
+            $allIds = array_merge($allIds, $children->toArray());
+            $idsToProcess = $children->toArray();
         }
         
         return $allIds;
