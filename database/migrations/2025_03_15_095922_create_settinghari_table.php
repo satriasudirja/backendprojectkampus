@@ -12,9 +12,14 @@ return new class extends Migration
     public function up()
 {
     Schema::create('settinghari', function (Blueprint $table) {
-        $table->integer('kode', 1)->primary(); // Kode int(1) primary key
-        $table->string('nama_hari', 10); // Nama Hari (10)
-        $table->string('jenis_hari', 15); // Jenis Hari (15)
+        // $table->integer('kode', 1)->primary(); // Kode int(1) primary key
+        // $table->string('nama_hari', 10); // Nama Hari (10)
+        // $table->string('jenis_hari', 15); // Jenis Hari (15)
+        // $table->timestamps();
+        $table->id('kode');
+
+        $table->string('nama_hari', 10);
+        $table->string('jenis_hari', 15);
         $table->timestamps();
     });
 }
