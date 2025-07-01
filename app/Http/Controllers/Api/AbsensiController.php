@@ -81,6 +81,27 @@ class AbsensiController extends Controller
         if ($validator->fails()) return response()->json(['success' => false, 'message' => 'Validasi gagal.', 'errors' => $validator->errors()], 422);
         
         $settingKehadiran = SimpegSettingKehadiran::first();
+
+        if ($settingKehadiran && $settingKehadiran->wajib_presensi_dilokasi) {
+            // Cek apakah model punya method isWithinRadius, jika tidak ada, kalkulasi manual
+            // Method ini sudah ada di SimpegSettingKehadiranController, kita asumsikan ada juga di model.
+            if (method_exists($settingKehadiran, 'isWithinRadius')) {
+                $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
+                
+                if (!$isWithinRadius) {
+                    // Jika user berada di luar radius, tolak absensi
+                    $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
+                    return response()->json([
+                        'success' => false, 
+                        'message' => "Anda berada di luar radius presensi yang diizinkan. Jarak Anda dari lokasi: {$distance} meter."
+                    ], 422); // 422 Unprocessable Entity
+                }
+            } else {
+                // Fallback jika method tidak ada, bisa ditambahkan log error
+                Log::warning('Method isWithinRadius() tidak ditemukan pada model SimpegSettingKehadiran.');
+            }
+        }
+        
         $jamKerja = SimpegJamKerja::where('is_default', true)->first();
         
         $fotoPath = $request->file('foto')->store('absensi/masuk', 'public');
@@ -158,6 +179,27 @@ class AbsensiController extends Controller
         ]);
         if ($validator->fails()) return response()->json(['success' => false, 'message' => 'Validasi gagal.', 'errors' => $validator->errors()], 422);
         
+        $settingKehadiran = SimpegSettingKehadiran::first();
+
+        if ($settingKehadiran && $settingKehadiran->wajib_presensi_dilokasi) {
+            // Asumsi method isWithinRadius() ada di model SimpegSettingKehadiran
+            if (method_exists($settingKehadiran, 'isWithinRadius')) {
+                $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
+                
+                if (!$isWithinRadius) {
+                    // Jika user berada di luar radius, tolak absensi
+                    $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
+                    return response()->json([
+                        'success' => false, 
+                        'message' => "Anda berada di luar radius presensi yang diizinkan. Jarak Anda dari lokasi: {$distance} meter."
+                    ], 422); // 422 Unprocessable Entity
+                }
+            } else {
+                // Fallback jika method tidak ada, bisa ditambahkan log error
+                Log::warning('Method isWithinRadius() tidak ditemukan pada model SimpegSettingKehadiran.');
+            }
+        }
+
         $fotoPath = $request->file('foto')->store('absensi/keluar', 'public');
         
         $jamMasuk = Carbon::parse($absensiHariIni->jam_masuk);
