@@ -16,6 +16,7 @@ return new class extends Migration
         $table->string('nama_hari', 10); // Nama Hari (10)
         $table->string('jenis_hari', 15); // Jenis Hari (15)
         $table->timestamps();
+        
     });
 }
 

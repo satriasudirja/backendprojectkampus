@@ -43,7 +43,7 @@ return new class extends Migration
             $table->string('nomor_induk', 30)->nullable();
             $table->text('judul_tugas')->nullable();
             $table->string('letak_gelar', 10)->nullable();
-            $table->integer('jumlah_semster_ditempuh')->nullable();
+            $table->integer('jumlah_semester_ditempuh')->nullable();
             $table->integer('jumlah_sks_kelulusan')->nullable();
             $table->float('ipk_kelulusan')->nullable();
              $table->string('status_pengajuan')->nullable();
