@@ -301,7 +301,7 @@ class SimpegPendidikanFormalDosenController extends Controller
             'jumlah_sks_kelulusan' => 'nullable|integer|min:1',
             'ipk_kelulusan' => 'nullable|numeric|min:0|max:4',
             'submit_type' => 'sometimes|in:draft,submit',
-            'keterangan' => 'nullable|string'
+            // 'keterangan' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -409,7 +409,7 @@ class SimpegPendidikanFormalDosenController extends Controller
             'jumlah_sks_kelulusan' => 'nullable|integer|min:1',
             'ipk_kelulusan' => 'nullable|numeric|min:0|max:4',
             'submit_type' => 'sometimes|in:draft,submit',
-            'keterangan' => 'nullable|string'
+            // 'keterangan' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -426,7 +426,7 @@ class SimpegPendidikanFormalDosenController extends Controller
         if ($pendidikanFormal->status_pengajuan === 'ditolak') {
             $data['status_pengajuan'] = 'draft';
             $data['tanggal_ditolak'] = null;
-            $data['keterangan'] = $request->keterangan ?? null;
+            // $data['keterangan'] = $request->keterangan ?? null;
         }
 
         // Handle submit_type
@@ -1031,7 +1031,7 @@ class SimpegPendidikanFormalDosenController extends Controller
             'ipk_kelulusan' => $pendidikanFormal->ipk_kelulusan,
             'status_pengajuan' => $status,
             'status_info' => $statusInfo,
-            'keterangan' => $pendidikanFormal->keterangan,
+            // 'keterangan' => $pendidikanFormal->keterangan,
             'can_edit' => $canEdit,
             'can_submit' => $canSubmit,
             'can_delete' => $canDelete,

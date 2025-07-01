@@ -100,7 +100,7 @@ class SimpegDataPendidikanFormalSeeder extends Seeder
                 'nomor_induk' => 'NIM' . rand(100000, 999999),
                 'judul_tugas' => 'Analisis dan Implementasi ' . $bidangStudi[array_rand($bidangStudi)],
                 'letak_gelar' => rand(0, 1) ? 'depan' : 'belakang',
-                'jumlah_semster_ditempuh' => rand(6, 14),
+                'jumlah_semester_ditempuh' => rand(6, 14),
                 'jumlah_sks_kelulusan' => rand(120, 160),
                 'ipk_kelulusan' => rand(275, 400) / 100, // 2.75 - 4.00
                 'status_pengajuan' => $status,

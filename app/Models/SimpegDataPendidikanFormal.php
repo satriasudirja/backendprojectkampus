@@ -37,7 +37,7 @@ class SimpegDataPendidikanFormal extends Model
         'nomor_induk',
         'judul_tugas',
         'letak_gelar',
-        'jumlah_semster_ditempuh',
+        'jumlah_semester_ditempuh',
         'jumlah_sks_kelulusan',
         'ipk_kelulusan',
         'status_pengajuan',
@@ -58,7 +58,7 @@ class SimpegDataPendidikanFormal extends Model
         'tanggal_disetujui' => 'datetime', // Ubah ke datetime
         'tanggal_ditolak' => 'datetime', // Tambahkan ini dan pastikan di DB juga datetime
         // 'tanggal_ditangguhkan' => 'datetime', // Dihapus
-        'jumlah_semster_ditempuh' => 'integer',
+        'jumlah_semester_ditempuh' => 'integer',
         'jumlah_sks_kelulusan' => 'integer',
         'ipk_kelulusan' => 'float'
     ];
