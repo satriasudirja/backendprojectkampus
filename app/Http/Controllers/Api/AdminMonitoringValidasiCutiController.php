@@ -7,21 +7,22 @@ use App\Models\SimpegCutiRecord;
 use App\Models\SimpegDaftarCuti;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegPegawai;
+use App\Models\SimpegAbsensiRecord;
+use App\Models\SimpegJenisKehadiran;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class AdminMonitoringValidasiCutiController extends Controller
 {
     /**
-     * Monitoring validasi pengajuan cuti untuk admin.
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * Menampilkan daftar pengajuan cuti atau pegawai yang belum mengajukan.
      */
     public function index(Request $request)
     {
@@ -53,7 +54,7 @@ class AdminMonitoringValidasiCutiController extends Controller
                 $query->where('jenis_cuti_id', $jenisCutiFilter);
             }
 
-            if ($periodeCutiFilter) {
+            if ($periodeCutiFilter && $periodeCutiFilter !== 'semua') {
                 $this->applyPeriodeCutiFilter($query, $periodeCutiFilter);
             }
 
@@ -68,17 +69,17 @@ class AdminMonitoringValidasiCutiController extends Controller
                 $query->where(function($q) use ($search) {
                     $likeOperator = (config('database.connections.' . config('database.default') . '.driver') === 'pgsql') ? 'ilike' : 'like';
                     $q->where('no_urut_cuti', $likeOperator, '%'.$search.'%')
-                      ->orWhere('alasan_cuti', $likeOperator, '%'.$search.'%')
-                      ->orWhereHas('pegawai', function($subQ) use ($search, $likeOperator) {
-                          $subQ->where('nip', $likeOperator, '%'.$search.'%')->orWhere('nama', $likeOperator, '%'.$search.'%');
-                      })
-                      ->orWhereHas('jenisCuti', function($subQ) use ($search, $likeOperator) {
-                          $subQ->where('nama_jenis_cuti', $likeOperator, '%'.$search.'%');
-                      });
+                        ->orWhere('alasan_cuti', $likeOperator, '%'.$search.'%')
+                        ->orWhereHas('pegawai', function($subQ) use ($search, $likeOperator) {
+                            $subQ->where('nip', $likeOperator, '%'.$search.'%')->orWhere('nama', $likeOperator, '%'.$search.'%');
+                        })
+                        ->orWhereHas('jenisCuti', function($subQ) use ($search, $likeOperator) {
+                            $subQ->where('nama_jenis_cuti', $likeOperator, '%'.$search.'%');
+                        });
                 });
             }
 
-            $query->orderBy('tgl_diajukan', 'desc')->orderBy('created_at', 'desc');
+            $query->orderBy('created_at', 'desc');
             $pengajuanCuti = $query->paginate($perPage);
 
             return $this->formatResponsePengajuan($pengajuanCuti, $request);
@@ -94,10 +95,243 @@ class AdminMonitoringValidasiCutiController extends Controller
     }
 
     /**
-     * Get pegawai yang belum mengajukan cuti.
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * Menampilkan detail satu pengajuan cuti.
      */
+    public function show($id)
+    {
+        if (!is_numeric($id)) {
+            return response()->json(['success' => false, 'message' => 'ID pengajuan tidak valid.'], 400);
+        }
+
+        try {
+            $pengajuanCuti = SimpegCutiRecord::with([
+                'pegawai.unitKerja', 
+                'pegawai.statusAktif', 
+                'pegawai.jabatanAkademik',
+                'jenisCuti', 
+                'approver'
+            ])->find($id);
+
+            if (!$pengajuanCuti) {
+                return response()->json(['success' => false, 'message' => 'Data pengajuan cuti tidak ditemukan'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->formatPengajuanCuti($pengajuanCuti, true),
+                'timeline' => $this->getTimelinePengajuan($pengajuanCuti)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
+        }
+    }
+
+    /**
+     * Menyetujui satu pengajuan cuti.
+     */
+    public function approvePengajuan(Request $request, $id)
+    {
+        if (!is_numeric($id)) {
+            return response()->json(['success' => false, 'message' => 'ID pengajuan tidak valid.'], 400);
+        }
+        
+        $validator = Validator::make($request->all(), ['keterangan_admin' => 'nullable|string|max:500']);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $pengajuanCuti = SimpegCutiRecord::find($id);
+            if (!$pengajuanCuti) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Data pengajuan cuti tidak ditemukan'], 404);
+            }
+            
+            if (!in_array($pengajuanCuti->status_pengajuan, ['diajukan', 'ditolak'])) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Hanya pengajuan dengan status "diajukan" atau "dibatalkan" yang dapat disetujui'], 422);
+            }
+
+            $oldData = $pengajuanCuti->getOriginal();
+            
+            $pengajuanCuti->update([
+                'status_pengajuan' => 'disetujui',
+                'tgl_disetujui' => now(),
+                'tgl_ditolak' => null,
+            ]);
+            
+            $this->createAbsensiForCuti($pengajuanCuti, $request->keterangan_admin);
+
+            if (class_exists(ActivityLogger::class)) {
+                ActivityLogger::log('approve', $pengajuanCuti, $oldData);
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan cuti berhasil disetujui',
+                'data' => $this->formatPengajuanCuti($pengajuanCuti->fresh(['pegawai.unitKerja', 'jenisCuti', 'approver']), true)
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal menyetujui pengajuan: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
+        }
+    }
+
+    /**
+     * Membatalkan/menolak satu pengajuan cuti.
+     */
+    public function rejectPengajuan(Request $request, $id)
+    {
+        if (!is_numeric($id)) {
+            return response()->json(['success' => false, 'message' => 'ID pengajuan tidak valid.'], 400);
+        }
+        
+        $validator = Validator::make($request->all(), ['keterangan_admin' => 'required|string|max:500']);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $pengajuanCuti = SimpegCutiRecord::find($id);
+            if (!$pengajuanCuti) {
+                return response()->json(['success' => false, 'message' => 'Data pengajuan cuti tidak ditemukan'], 404);
+            }
+
+            if (!in_array($pengajuanCuti->status_pengajuan, ['diajukan', 'disetujui'])) {
+                return response()->json(['success' => false, 'message' => 'Hanya pengajuan dengan status "diajukan" atau "disetujui" yang dapat dibatalkan'], 422);
+            }
+            
+            if ($pengajuanCuti->status_pengajuan === 'disetujui') {
+                $this->deleteAbsensiForCuti($pengajuanCuti);
+            }
+
+            $oldData = $pengajuanCuti->getOriginal();
+            
+            $pengajuanCuti->update([
+                'status_pengajuan' => 'ditolak',
+                'tgl_ditolak' => now(),
+                'tgl_disetujui' => null, 
+            ]);
+
+            if (class_exists(ActivityLogger::class)) {
+                ActivityLogger::log('reject', $pengajuanCuti, $oldData);
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan cuti berhasil dibatalkan',
+                'data' => $this->formatPengajuanCuti($pengajuanCuti->fresh(['pegawai.unitKerja', 'jenisCuti', 'approver']), true)
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal membatalkan pengajuan: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
+        }
+    }
+
+    /**
+     * Menyetujui beberapa pengajuan cuti sekaligus (batch).
+     */
+    public function batchApprove(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer',
+            'keterangan_admin' => 'nullable|string|max:500'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $pengajuanList = SimpegCutiRecord::whereIn('id', $request->ids)
+                ->whereIn('status_pengajuan', ['diajukan', 'ditolak'])
+                ->get();
+
+            if($pengajuanList->isEmpty()){
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Tidak ada pengajuan yang valid untuk disetujui.'], 404);
+            }
+
+            foreach ($pengajuanList as $pengajuan) {
+                $this->createAbsensiForCuti($pengajuan, $request->keterangan_admin);
+                    if (class_exists(ActivityLogger::class)) {
+                        ActivityLogger::log('approve', $pengajuan, $pengajuan->getOriginal());
+                }
+            }
+            
+            $updatedCount = SimpegCutiRecord::whereIn('id', $pengajuanList->pluck('id'))->update([
+                'status_pengajuan' => 'disetujui',
+                'tgl_disetujui' => now(),
+                'tgl_ditolak' => null,
+            ]);
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => "Berhasil menyetujui {$updatedCount} pengajuan cuti", 'updated_count' => $updatedCount]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal batch approve: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
+        }
+    }
+
+    /**
+     * Membatalkan beberapa pengajuan cuti sekaligus (batch).
+     */
+    public function batchReject(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer',
+            'keterangan_admin' => 'required|string|max:500'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $pengajuanList = SimpegCutiRecord::whereIn('id', $request->ids)
+                ->whereIn('status_pengajuan', ['diajukan', 'disetujui'])
+                ->get();
+            
+            if($pengajuanList->isEmpty()){
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Tidak ada pengajuan yang valid untuk dibatalkan.'], 404);
+            }
+
+            foreach ($pengajuanList as $pengajuan) {
+                if ($pengajuan->status_pengajuan === 'disetujui') {
+                    $this->deleteAbsensiForCuti($pengajuan);
+                }
+                if (class_exists(ActivityLogger::class)) {
+                    ActivityLogger::log('reject', $pengajuan, $pengajuan->getOriginal());
+                }
+            }
+            
+            $updatedCount = SimpegCutiRecord::whereIn('id', $pengajuanList->pluck('id'))->update([
+                'status_pengajuan' => 'ditolak',
+                'tgl_ditolak' => now(),
+                'tgl_disetujui' => null,
+            ]);
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => "Berhasil membatalkan {$updatedCount} pengajuan cuti", 'updated_count' => $updatedCount]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal batch reject: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
+        }
+    }
+    
+    // =========================================================
+    // PRIVATE HELPER METHODS
+    // =========================================================
+
     private function getPegawaiBelumMengajukan(Request $request)
     {
         $perPage = $request->per_page ?? 10;
@@ -120,10 +354,10 @@ class AdminMonitoringValidasiCutiController extends Controller
             $query->where(function($q) use ($search) {
                 $likeOperator = (config('database.connections.' . config('database.default') . '.driver') === 'pgsql') ? 'ilike' : 'like';
                 $q->where('nip', $likeOperator, '%'.$search.'%')
-                  ->orWhere('nama', $likeOperator, '%'.$search.'%')
-                  ->orWhereHas('unitKerja', function($subQ) use ($search, $likeOperator) {
-                      $subQ->where('nama_unit', $likeOperator, '%'.$search.'%');
-                  });
+                    ->orWhere('nama', $likeOperator, '%'.$search.'%')
+                    ->orWhereHas('unitKerja', function($subQ) use ($search, $likeOperator) {
+                        $subQ->where('nama_unit', $likeOperator, '%'.$search.'%');
+                    });
             });
         }
 
@@ -138,287 +372,72 @@ class AdminMonitoringValidasiCutiController extends Controller
             ->whereIn('id', $pegawaiIds)
             ->orderBy('nama', 'asc')
             ->paginate($perPage);
-
+        
         return $this->formatResponseBelumMengajukan($pegawaiBelumMengajukan);
     }
 
-    /**
-     * Get detail pengajuan cuti.
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function show($id)
+    private function createAbsensiForCuti(SimpegCutiRecord $pengajuan, $keteranganAdmin = null)
     {
-        // FIX: Validate that the ID is numeric to prevent routing conflicts with "batch"
-        if (!is_numeric($id)) {
-            return response()->json(['success' => false, 'message' => 'ID pengajuan tidak valid.'], 400);
+        $pengajuan->loadMissing('pegawai', 'jenisCuti');
+
+        if(!$pengajuan->pegawai) {
+            throw new \Exception("Data pegawai tidak ditemukan untuk pengajuan cuti ID: " . $pengajuan->id);
         }
 
-        try {
-            $pengajuanCuti = SimpegCutiRecord::with([
-                'pegawai' => function($query) {
-                    $query->with([
-                        'unitKerja', 'statusAktif', 'jabatanAkademik',
-                        'dataJabatanFungsional.jabatanFungsional',
-                        'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
-                        'dataPendidikanFormal.jenjangPendidikan'
-                    ]);
-                }, 'jenisCuti', 'approver'
-            ])->find($id);
-
-            if (!$pengajuanCuti) {
-                return response()->json(['success' => false, 'message' => 'Data pengajuan cuti tidak ditemukan'], 404);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $this->formatPengajuanCuti($pengajuanCuti, true),
-                'timeline' => $this->getTimelinePengajuan($pengajuanCuti)
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
-        }
-    }
-
-    /**
-     * Setujui pengajuan cuti.
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function approvePengajuan(Request $request, $id)
-    {
-        // FIX: Validate that the ID is numeric to prevent routing conflicts with "batch"
-        if (!is_numeric($id)) {
-            return response()->json(['success' => false, 'message' => 'ID pengajuan tidak valid.'], 400);
+        $jenisKehadiranCuti = SimpegJenisKehadiran::where('kode_jenis', 'C')->first();
+        if (!$jenisKehadiranCuti) {
+            throw new \Exception("Jenis Kehadiran 'Cuti' dengan kode 'C' tidak ditemukan. Mohon konfigurasi sistem.");
         }
 
-        try {
-            $validator = Validator::make($request->all(), ['keterangan_admin' => 'nullable|string|max:500']);
-            if ($validator->fails()) {
-                return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        $period = CarbonPeriod::create($pengajuan->tgl_mulai, $pengajuan->tgl_selesai);
+        $user = Auth::user();
+
+        foreach ($period as $date) {
+            $tanggalAbsensiStr = $date->format('Y-m-d');
+            
+            // PERBAIKAN: Gunakan keterangan dari admin jika ada, jika tidak, buat otomatis
+            $keteranganFinal = $keteranganAdmin;
+            if (empty($keteranganFinal)) {
+                $keteranganFinal = sprintf(
+                    'Cuti disetujui secara otomatis untuk: %s. Disetujui oleh: %s.',
+                    $pengajuan->jenisCuti->nama_jenis_cuti ?? 'N/A',
+                    $user->nama ?? 'Sistem'
+                );
             }
-
-            $pengajuanCuti = SimpegCutiRecord::find($id);
-            if (!$pengajuanCuti) {
-                return response()->json(['success' => false, 'message' => 'Data pengajuan cuti tidak ditemukan'], 404);
-            }
-
-            if ($pengajuanCuti->status_pengajuan !== 'diajukan') {
-                return response()->json(['success' => false, 'message' => 'Hanya pengajuan dengan status "diajukan" yang dapat disetujui'], 422);
-            }
-
-            $oldData = $pengajuanCuti->getOriginal();
-            $pengajuanCuti->update([
-                'status_pengajuan' => 'disetujui',
-                'tgl_disetujui' => now(),
-                'disetujui_oleh' => Auth::id(),
-                'keterangan_admin' => $request->keterangan_admin
-            ]);
-
-            if (class_exists(ActivityLogger::class)) {
-                ActivityLogger::log('approve', $pengajuanCuti, $oldData);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pengajuan cuti berhasil disetujui',
-                'data' => $this->formatPengajuanCuti($pengajuanCuti->fresh(['pegawai.unitKerja', 'jenisCuti', 'approver']), true)
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal menyetujui pengajuan: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
-        }
-    }
-
-    /**
-     * Tolak/Batalkan pengajuan cuti.
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function rejectPengajuan(Request $request, $id)
-    {
-        // FIX: Validate that the ID is numeric to prevent routing conflicts with "batch"
-        if (!is_numeric($id)) {
-            return response()->json(['success' => false, 'message' => 'ID pengajuan tidak valid.'], 400);
-        }
-
-        try {
-            $validator = Validator::make($request->all(), ['keterangan_admin' => 'required|string|max:500']);
-            if ($validator->fails()) {
-                return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-            }
-
-            $pengajuanCuti = SimpegCutiRecord::find($id);
-            if (!$pengajuanCuti) {
-                return response()->json(['success' => false, 'message' => 'Data pengajuan cuti tidak ditemukan'], 404);
-            }
-
-            if (!in_array($pengajuanCuti->status_pengajuan, ['diajukan', 'disetujui'])) {
-                return response()->json(['success' => false, 'message' => 'Hanya pengajuan dengan status "diajukan" atau "disetujui" yang dapat dibatalkan'], 422);
-            }
-
-            $oldData = $pengajuanCuti->getOriginal();
-            $pengajuanCuti->update([
-                'status_pengajuan' => 'ditolak',
-                'tgl_ditolak' => now(),
-                'ditolak_oleh' => Auth::id(),
-                'keterangan_admin' => $request->keterangan_admin
-            ]);
-
-            if (class_exists(ActivityLogger::class)) {
-                ActivityLogger::log('reject', $pengajuanCuti, $oldData);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pengajuan cuti berhasil dibatalkan',
-                'data' => $this->formatPengajuanCuti($pengajuanCuti->fresh(['pegawai.unitKerja', 'jenisCuti', 'approver']), true)
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal membatalkan pengajuan: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
-        }
-    }
-
-    /**
-     * Batch approve pengajuan.
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function batchApprove(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer',
-            'keterangan_admin' => 'nullable|string|max:500'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        DB::beginTransaction();
-        try {
-            $pengajuanList = SimpegCutiRecord::whereIn('id', $request->ids)->where('status_pengajuan', 'diajukan')->get();
-            $updatedCount = 0;
-            foreach ($pengajuanList as $pengajuan) {
-                $pengajuan->update([
-                    'status_pengajuan' => 'disetujui',
-                    'tgl_disetujui' => now(),
-                    'disetujui_oleh' => Auth::id(),
-                    'keterangan_admin' => $request->keterangan_admin
-                ]);
-                $updatedCount++;
-            }
-            DB::commit();
-            return response()->json(['success' => true, 'message' => "Berhasil menyetujui {$updatedCount} pengajuan cuti", 'updated_count' => $updatedCount]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Gagal batch approve: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
-        }
-    }
-
-    /**
-     * Batch reject pengajuan.
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function batchReject(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer',
-            'keterangan_admin' => 'required|string|max:500'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        DB::beginTransaction();
-        try {
-            $pengajuanList = SimpegCutiRecord::whereIn('id', $request->ids)->whereIn('status_pengajuan', ['diajukan', 'disetujui'])->get();
-            $updatedCount = 0;
-            foreach ($pengajuanList as $pengajuan) {
-                $pengajuan->update([
-                    'status_pengajuan' => 'ditolak',
-                    'tgl_ditolak' => now(),
-                    'ditolak_oleh' => Auth::id(),
-                    'keterangan_admin' => $request->keterangan_admin
-                ]);
-                $updatedCount++;
-            }
-            DB::commit();
-            return response()->json(['success' => true, 'message' => "Berhasil membatalkan {$updatedCount} pengajuan cuti", 'updated_count' => $updatedCount]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Gagal batch reject: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
-        }
-    }
-
-    /**
-     * Get statistik untuk dashboard admin.
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getStatistics(Request $request)
-    {
-        try {
-            $unitKerjaFilter = $request->unit_kerja;
-            $periodeCutiFilter = $request->periode_cuti;
-            $tableName = (new SimpegCutiRecord())->getTable();
-
-            $baseQuery = SimpegCutiRecord::query();
-            if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
-                $baseQuery->whereHas('pegawai', function($q) use ($unitKerjaFilter) {
-                    $q->where('unit_kerja_id', $unitKerjaFilter);
-                });
-            }
-            if ($periodeCutiFilter) {
-                $this->applyPeriodeCutiFilter($baseQuery, $periodeCutiFilter);
-            }
-
-            $statistics = [
-                'total_pengajuan' => $baseQuery->clone()->count(),
-                'diajukan' => $baseQuery->clone()->where('status_pengajuan', 'diajukan')->count(),
-                'disetujui' => $baseQuery->clone()->where('status_pengajuan', 'disetujui')->count(),
-                'dibatalkan' => $baseQuery->clone()->where('status_pengajuan', 'ditolak')->count(),
-                'pending_approval' => $baseQuery->clone()->where('status_pengajuan', 'diajukan')->count()
+            
+            $attributes = [
+                'pegawai_id' => $pengajuan->pegawai_id,
+                'tanggal_absensi' => $tanggalAbsensiStr,
+                'jenis_kehadiran_id' => $jenisKehadiranCuti->id,
+                'cuti_record_id' => $pengajuan->id,
+                'izin_record_id' => null,
+                'check_sum_absensi' => md5($pengajuan->pegawai_id . $tanggalAbsensiStr . 'cuti' . $pengajuan->id),
+                'status_verifikasi' => 'verified',
+                'verifikasi_oleh' => $user->nama,
+                'verifikasi_at' => now(),
+                'keterangan' => $keteranganFinal,
+                'jam_masuk' => null, 'jam_keluar' => null, 'jam_kerja_id' => null, 'setting_kehadiran_id' => null,
+                'latitude_masuk' => null, 'longitude_masuk' => null, 'lokasi_masuk' => null, 'foto_masuk' => null,
+                'latitude_keluar' => null, 'longitude_keluar' => null, 'lokasi_keluar' => null, 'foto_keluar' => null,
+                'rencana_kegiatan' => null, 'realisasi_kegiatan' => null,
+                'durasi_kerja' => 0, 'durasi_terlambat' => 0, 'durasi_pulang_awal' => 0,
+                'terlambat' => false, 'pulang_awal' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
-
-            $totalPegawaiQuery = SimpegPegawai::whereHas('jabatanAkademik', function($q) {
-                $dosenJabatan = ['Guru Besar', 'Lektor Kepala', 'Lektor', 'Asisten Ahli', 'Tenaga Pengajar', 'Dosen'];
-                $q->whereIn('jabatan_akademik', $dosenJabatan);
-            });
-            if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
-                $totalPegawaiQuery->where('unit_kerja_id', $unitKerjaFilter);
-            }
-            $totalPegawai = $totalPegawaiQuery->count();
-            $pegawaiSudahMengajukan = $baseQuery->clone()->distinct('pegawai_id')->pluck('pegawai_id');
-            $statistics['belum_mengajukan'] = $totalPegawai - $pegawaiSudahMengajukan->count();
-
-            $byJenis = $baseQuery->clone()
-                ->join('simpeg_daftar_cuti', "{$tableName}.jenis_cuti_id", '=', 'simpeg_daftar_cuti.id')
-                ->groupBy('simpeg_daftar_cuti.nama_jenis_cuti')
-                ->selectRaw('simpeg_daftar_cuti.nama_jenis_cuti, COUNT(*) as total')
-                ->get();
-            $statistics['by_jenis_cuti'] = $byJenis;
-
-            return response()->json(['success' => true, 'statistics' => $statistics]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal mengambil statistik: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
+    
+            DB::table('simpeg_absensi_record')->updateOrInsert(
+                ['pegawai_id' => $pengajuan->pegawai_id, 'tanggal_absensi' => $tanggalAbsensiStr],
+                $attributes
+            );
         }
+    }
+
+    private function deleteAbsensiForCuti(SimpegCutiRecord $pengajuan)
+    {
+        SimpegAbsensiRecord::where('cuti_record_id', $pengajuan->id)->delete();
     }
     
-    // =========================================================
-    // HELPER METHODS
-    // =========================================================
-
-    /**
-     * Get pegawai yang sudah mengajukan pada periode tertentu.
-     * @param string $periodeCuti
-     * @return \Illuminate\Support\Collection
-     */
     private function getPegawaiSudahMengajukan($periodeCuti)
     {
         $query = SimpegCutiRecord::select('pegawai_id');
@@ -426,44 +445,35 @@ class AdminMonitoringValidasiCutiController extends Controller
         return $query->distinct()->pluck('pegawai_id');
     }
 
-    /**
-     * Apply filter periode cuti.
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $periodeCuti
-     */
     private function applyPeriodeCutiFilter($query, $periodeCuti)
     {
         $currentYear = Carbon::now()->year;
         switch ($periodeCuti) {
-            case '01': $query->whereYear('tgl_mulai', $currentYear); break; // Tahunan
-            case '02': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-01-01", "{$currentYear}-06-30"]); break; // Semester 1
-            case '03': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-07-01", "{$currentYear}-12-31"]); break; // Semester 2
-            case '04': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-01-01", "{$currentYear}-03-31"]); break; // Kuartal 1
-            case '05': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-04-01", "{$currentYear}-06-30"]); break; // Kuartal 2
-            case '06': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-07-01", "{$currentYear}-09-30"]); break; // Kuartal 3
-            case '07': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-10-01", "{$currentYear}-12-31"]); break; // Kuartal 4
+            case '01': $query->whereYear('tgl_mulai', $currentYear); break;
+            case '02': $query->whereYear('tgl_mulai', $currentYear)->whereMonth('tgl_mulai', '<=', 6); break;
+            case '03': $query->whereYear('tgl_mulai', $currentYear)->whereMonth('tgl_mulai', '>', 6); break;
+            case '04': $query->whereYear('tgl_mulai', $currentYear)->whereMonth('tgl_mulai', '<=', 3); break;
+            case '05': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-04-01", "{$currentYear}-06-30"]); break;
+            case '06': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-07-01", "{$currentYear}-09-30"]); break;
+            case '07': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-10-01", "{$currentYear}-12-31"]); break;
         }
     }
 
-    /**
-     * Format response untuk pengajuan cuti yang sudah ada.
-     * @param LengthAwarePaginator $paginator
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     private function formatResponsePengajuan(LengthAwarePaginator $paginator, Request $request)
     {
         $batchActions = [];
-        if ($request->status === 'diajukan') {
+        if (in_array($request->status, ['diajukan', 'ditolak'])) {
             $batchActions = [
                 'approve' => ['url' => url('/api/admin/validasi-cuti/batch-approve'), 'method' => 'POST', 'label' => 'Setujui Terpilih', 'color' => 'success'],
-                'reject' => ['url' => url('/api/admin/validasi-cuti/batch-reject'), 'method' => 'POST', 'label' => 'Batalkan Terpilih', 'color' => 'danger']
             ];
+        }
+        if (in_array($request->status, ['diajukan', 'disetujui'])) {
+             $batchActions['reject'] = ['url' => url('/api/admin/validasi-cuti/batch-reject'), 'method' => 'POST', 'label' => 'Batalkan Terpilih', 'color' => 'danger'];
         }
 
         return response()->json([
             'success' => true,
-            'data' => $paginator->map(fn($item) => $this->formatPengajuanCuti($item, true)),
+            'data' => $paginator->map(fn($item) => $this->formatPengajuanCuti($item, true))->filter()->values(),
             'filter_options' => $this->getFilterOptions(),
             'pagination' => [
                 'current_page' => $paginator->currentPage(), 'per_page' => $paginator->perPage(),
@@ -474,47 +484,41 @@ class AdminMonitoringValidasiCutiController extends Controller
         ]);
     }
 
-    /**
-     * Format response untuk pegawai yang belum mengajukan.
-     * @param LengthAwarePaginator $pegawai
-     * @return \Illuminate\Http\JsonResponse
-     */
-    private function formatResponseBelumMengajukan(LengthAwarePaginator $pegawai)
+    private function formatResponseBelumMengajukan(LengthAwarePaginator $pegawaiPaginator)
     {
         return response()->json([
             'success' => true,
-            'data' => $pegawai->map(function ($item) {
+            'data' => $pegawaiPaginator->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'nip' => $item->nip ?? '-',
                     'nama_pegawai' => ($item->gelar_depan ? $item->gelar_depan . ' ' : '') . $item->nama . ($item->gelar_belakang ? ', ' . $item->gelar_belakang : ''),
-                    'unit_kerja' => $item->unitKerja->nama_unit ?? '-',
+                    'unit_kerja' => $this->getUnitKerjaNama($item),
                     'jenis_cuti' => '-', 'keperluan' => '-', 'lama_cuti' => '-',
                     'status' => 'Belum Diajukan', 'tgl_input' => '-',
                     'actions' => [
-                        'remind_url' => url("/api/admin/validasi-cuti/remind/{$item->id}"),
-                        'create_url' => url("/api/admin/validasi-cuti/create-for-pegawai/{$item->id}")
+                        'remind' => ['url' => url("/api/admin/validasi-cuti/remind/{$item->id}"), 'method' => 'POST', 'label' => 'Ingatkan', 'icon' => 'bell', 'color' => 'warning'],
+                        'create' => ['url' => url("/api/admin/validasi-cuti/create-for-pegawai/{$item->id}"), 'method' => 'GET', 'label' => 'Buatkan Cuti', 'icon' => 'plus-circle', 'color' => 'primary']
                     ]
                 ];
             }),
             'filter_options' => $this->getFilterOptions(),
             'pagination' => [
-                'current_page' => $pegawai->currentPage(), 'per_page' => $pegawai->perPage(),
-                'total' => $pegawai->total(), 'last_page' => $pegawai->lastPage(),
-                'from' => $pegawai->firstItem(), 'to' => $pegawai->lastItem()
+                'current_page' => $pegawaiPaginator->currentPage(), 
+                'per_page' => $pegawaiPaginator->perPage(),
+                'total' => $pegawaiPaginator->total(), 
+                'last_page' => $pegawaiPaginator->lastPage(),
+                'from' => $pegawaiPaginator->firstItem(), 
+                'to' => $pegawaiPaginator->lastItem()
             ]
         ]);
     }
 
-    /**
-     * Format data satu pengajuan cuti.
-     * @param SimpegCutiRecord $pengajuan
-     * @param bool $includeActions
-     * @return array|null
-     */
     private function formatPengajuanCuti($pengajuan, $includeActions = false)
     {
-        if (!$pengajuan) return null;
+        if (!$pengajuan || !$pengajuan->pegawai) {
+            return null;
+        }
 
         $pegawai = $pengajuan->pegawai;
         $status = $pengajuan->status_pengajuan ?? 'draft';
@@ -524,7 +528,7 @@ class AdminMonitoringValidasiCutiController extends Controller
             'id' => $pengajuan->id,
             'nip' => $pegawai->nip ?? '-',
             'nama_pegawai' => ($pegawai->gelar_depan ? $pegawai->gelar_depan . ' ' : '') . $pegawai->nama . ($pegawai->gelar_belakang ? ', ' . $pegawai->gelar_belakang : ''),
-            'unit_kerja' => $pegawai->unitKerja->nama_unit ?? '-',
+            'unit_kerja' => $this->getUnitKerjaNama($pegawai),
             'jenis_cuti' => $pengajuan->jenisCuti->nama_jenis_cuti ?? '-',
             'keperluan' => $pengajuan->alasan_cuti ?? '-',
             'lama_cuti' => $pengajuan->jumlah_cuti . ' hari',
@@ -537,22 +541,23 @@ class AdminMonitoringValidasiCutiController extends Controller
                 'tgl_selesai' => $pengajuan->tgl_selesai ? Carbon::parse($pengajuan->tgl_selesai)->format('d M Y') : '-',
                 'alamat' => $pengajuan->alamat,
                 'no_telp' => $pengajuan->no_telp,
-                'keterangan_admin' => $pengajuan->keterangan_admin,
-                'file_cuti' => $pengajuan->file_cuti_url ? ['nama_file' => basename($pengajuan->file_cuti), 'url' => $pengajuan->file_cuti_url] : null,
+                'file_cuti' => $pengajuan->file_cuti ? [
+                    'nama_file' => basename($pengajuan->file_cuti), 
+                    'url' => Storage::disk('public')->url('pegawai/cuti/' . $pengajuan->file_cuti)
+                ] : null,
                 'tgl_diajukan' => $pengajuan->tgl_diajukan ? Carbon::parse($pengajuan->tgl_diajukan)->format('d M Y H:i:s') : '-',
                 'tgl_disetujui' => $pengajuan->tgl_disetujui ? Carbon::parse($pengajuan->tgl_disetujui)->format('d M Y H:i:s') : '-',
                 'tgl_ditolak' => $pengajuan->tgl_ditolak ? Carbon::parse($pengajuan->tgl_ditolak)->format('d M Y H:i:s') : '-',
-                'approved_by_name' => $pengajuan->approver ? $pengajuan->approver->nama : '-'
+                'approved_by_name' => $pengajuan->approver->nama ?? '-',
             ]
         ];
 
         if ($includeActions) {
             $data['actions'] = [];
-            if ($status === 'diajukan') {
+            if (in_array($status, ['diajukan', 'ditolak'])) {
                 $data['actions']['approve'] = ['url' => url("/api/admin/validasi-cuti/{$pengajuan->id}/approve"), 'method' => 'PATCH', 'label' => 'Setujui', 'icon' => 'check', 'color' => 'success'];
-                $data['actions']['reject'] = ['url' => url("/api/admin/validasi-cuti/{$pengajuan->id}/reject"), 'method' => 'PATCH', 'label' => 'Batalkan', 'icon' => 'x', 'color' => 'danger'];
             }
-            if ($status === 'disetujui') {
+            if (in_array($status, ['diajukan', 'disetujui'])) {
                 $data['actions']['reject'] = ['url' => url("/api/admin/validasi-cuti/{$pengajuan->id}/reject"), 'method' => 'PATCH', 'label' => 'Batalkan', 'icon' => 'x', 'color' => 'danger'];
             }
             $data['actions']['view'] = ['url' => url("/api/admin/validasi-cuti/{$pengajuan->id}"), 'method' => 'GET', 'label' => 'Lihat Detail', 'icon' => 'eye', 'color' => 'info'];
@@ -560,11 +565,6 @@ class AdminMonitoringValidasiCutiController extends Controller
         return $data;
     }
 
-    /**
-     * Get status info (label, color, icon).
-     * @param string $status
-     * @return array
-     */
     private function getStatusInfo($status)
     {
         $statusMap = [
@@ -576,31 +576,24 @@ class AdminMonitoringValidasiCutiController extends Controller
         return $statusMap[$status] ?? ['label' => ucfirst($status), 'color' => 'secondary', 'icon' => 'circle'];
     }
 
-    /**
-     * Get timeline pengajuan.
-     * @param SimpegCutiRecord $pengajuan
-     * @return array
-     */
     private function getTimelinePengajuan($pengajuan)
     {
         $timeline = [];
-        $timeline[] = ['status' => 'draft', 'label' => 'Dibuat', 'tanggal' => $pengajuan->created_at ? $pengajuan->created_at->format('d-m-Y H:i') : '-', 'is_completed' => true];
-        if (in_array($pengajuan->status_pengajuan, ['diajukan', 'disetujui', 'ditolak'])) {
-            $timeline[] = ['status' => 'diajukan', 'label' => 'Diajukan', 'tanggal' => $pengajuan->tgl_diajukan ? Carbon::parse($pengajuan->tgl_diajukan)->format('d-m-Y H:i') : '-', 'is_completed' => true];
+        if ($pengajuan->created_at) {
+            $timeline[] = ['status' => 'draft', 'label' => 'Dibuat', 'tanggal' => $pengajuan->created_at->format('d-m-Y H:i'), 'is_completed' => true];
         }
-        if ($pengajuan->status_pengajuan === 'disetujui') {
-            $timeline[] = ['status' => 'disetujui', 'label' => 'Disetujui', 'tanggal' => $pengajuan->tgl_disetujui ? Carbon::parse($pengajuan->tgl_disetujui)->format('d-m-Y H:i') : '-', 'is_completed' => true];
+        if ($pengajuan->tgl_diajukan) {
+            $timeline[] = ['status' => 'diajukan', 'label' => 'Diajukan', 'tanggal' => Carbon::parse($pengajuan->tgl_diajukan)->format('d-m-Y H:i'), 'is_completed' => true];
         }
-        if ($pengajuan->status_pengajuan === 'ditolak') {
-            $timeline[] = ['status' => 'ditolak', 'label' => 'Dibatalkan', 'tanggal' => $pengajuan->tgl_ditolak ? Carbon::parse($pengajuan->tgl_ditolak)->format('d-m-Y H:i') : '-', 'is_completed' => true];
+        if ($pengajuan->tgl_disetujui && $pengajuan->status_pengajuan === 'disetujui') {
+            $timeline[] = ['status' => 'disetujui', 'label' => 'Disetujui', 'tanggal' => Carbon::parse($pengajuan->tgl_disetujui)->format('d M Y H:i'), 'is_completed' => true];
+        }
+        if ($pengajuan->tgl_ditolak && $pengajuan->status_pengajuan === 'ditolak') {
+            $timeline[] = ['status' => 'ditolak', 'label' => 'Dibatalkan', 'tanggal' => Carbon::parse($pengajuan->tgl_ditolak)->format('d M Y H:i'), 'is_completed' => true];
         }
         return $timeline;
     }
 
-    /**
-     * Get filter options for frontend.
-     * @return array
-     */
     private function getFilterOptions()
     {
         return [
@@ -609,5 +602,23 @@ class AdminMonitoringValidasiCutiController extends Controller
             'status' => [['value' => 'semua', 'label' => 'Semua Status'], ['value' => 'belum_diajukan', 'label' => 'Belum Diajukan'], ['value' => 'diajukan', 'label' => 'Diajukan'], ['value' => 'disetujui', 'label' => 'Disetujui'], ['value' => 'dibatalkan', 'label' => 'Dibatalkan']],
             'jenis_cuti' => SimpegDaftarCuti::select('id', 'nama_jenis_cuti')->orderBy('nama_jenis_cuti')->get()->map(fn($j) => ['id' => $j->id, 'value' => $j->id, 'label' => $j->nama_jenis_cuti])->prepend(['id' => 'semua', 'value' => 'semua', 'label' => 'Semua Jenis Cuti']),
         ];
+    }
+    
+    private function getUnitKerjaNama($pegawai)
+    {
+        if (!$pegawai) {
+            return '-';
+        }
+
+        if ($pegawai->relationLoaded('unitKerja') && $pegawai->unitKerja) {
+            return $pegawai->unitKerja->nama_unit;
+        }
+
+        if ($pegawai->unit_kerja_id) {
+            $unitKerja = SimpegUnitKerja::find($pegawai->unit_kerja_id);
+            return $unitKerja ? $unitKerja->nama_unit : '-';
+        }
+
+        return '-';
     }
 }
