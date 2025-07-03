@@ -165,7 +165,7 @@ use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\PayrollDosenController;
 use App\Http\Controllers\Api\ProfilesController;
 use App\Http\Controllers\Api\RekapitulasiKehadiranController;
-
+use App\Http\Controllers\Api\SimpegMasterGelarAkademikController;
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -187,6 +187,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
+
+        Route::apiResource('gelar-akademik', SimpegMasterGelarAkademikController::class);
         Route::get('/rekapitulasi/kehadiran', [RekapitulasiKehadiranController::class, 'index']);
          Route::get('/rekapitulasi/kehadiran/pegawai/{id}', [RekapitulasiKehadiranController::class, 'show']);
          Route::get('/profiles', [ProfilesController::class, 'getProfile']);
