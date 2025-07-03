@@ -129,8 +129,15 @@ class EvaluasiKinerjaController extends Controller
         }
 
         $atasanPenilaiId = $this->getAtasanPegawaiId($jabatanStrukturalPenilai);
-        if (!$atasanPenilaiId) return response()->json(['success' => false, 'message' => 'Atasan penilai tidak dapat ditemukan.'], 404);
-        
+        if (!$atasanPenilaiId) {
+            if (is_null($jabatanStrukturalPenilai->parent_jabatan)) {
+                $atasanPenilaiId = $user->id;
+            } else {
+                return response()->json(['success' => false, 'message' => 'Data atasan penilai tidak dapat ditemukan di sistem.'], 404);
+            }
+        }
+
+
         $data = $request->all();
         $data['penilai_id'] = $user->id;
         $data['atasan_penilai_id'] = $atasanPenilaiId;
