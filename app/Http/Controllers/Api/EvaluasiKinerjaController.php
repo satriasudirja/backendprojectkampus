@@ -317,7 +317,7 @@ class EvaluasiKinerjaController extends Controller
             'id' => $pegawai->id,
             'nip' => $pegawai->nip,
             'nama_pegawai' => $pegawai->nama,
-            'unit_kerja' => optional($pegawai->unitKerja)->nama_unit ?? '-',
+            'unit_kerja' => $this->getUnitKerjaNama($pegawai),
             'fungsional' => $this->determineFungsional($pegawai),
             'aksi' => $this->generateActionButtons($pegawai, $pegawai->evaluasiKinerja->first())
         ];
@@ -331,13 +331,28 @@ class EvaluasiKinerjaController extends Controller
         return [
             'id' => $pegawai->id,
             'nama_lengkap' => $pegawai->nama,
-            'unit_kerja' => optional($pegawai->unitKerja)->nama_unit ?? '-',
+            'unit_kerja' => $this->getUnitKerjaNama($pegawai),
             'status' => optional($pegawai->statusAktif)->nama_status_aktif ?? 'Tidak Diketahui',
             'jab_akademik' => optional($pegawai->jabatanAkademik)->jabatan_akademik ?? '-',
             'job_fungsional' => $this->determineFungsional($pegawai),
             'jab_struktural' => optional(optional($jabatanStrukturalData)->jabatanStruktural)->singkatan ?? '-',
             'pendidikan' => optional(optional($pendidikanTerakhirData)->jenjangPendidikan)->nama_jenjang ?? 'Tidak Diketahui',
         ];
+    }
+
+    private function getUnitKerjaNama($pegawai)
+    {
+        if (!$pegawai) {
+            return '-';
+        }
+        if ($pegawai->relationLoaded('unitKerja') && $pegawai->unitKerja) {
+            return $pegawai->unitKerja->nama_unit;
+        }
+        if ($pegawai->unit_kerja_id) {
+            $unitKerja = SimpegUnitKerja::find($pegawai->unit_kerja_id);
+            return $unitKerja ? $unitKerja->nama_unit : '-';
+        }
+        return '-';
     }
 
     private function formatEvaluasi($evaluasi)
