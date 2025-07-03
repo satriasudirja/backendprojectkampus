@@ -129,8 +129,18 @@ class EvaluasiKinerjaController extends Controller
         }
 
         $atasanPenilaiId = $this->getAtasanPegawaiId($jabatanStrukturalPenilai);
-        if (!$atasanPenilaiId) return response()->json(['success' => false, 'message' => 'Atasan penilai tidak dapat ditemukan.'], 404);
-        
+        if (!$atasanPenilaiId) {
+            // Cek apakah jabatan penilai tidak memiliki parent (artinya dia adalah Rektor/pimpinan tertinggi)
+            if (is_null($jabatanStrukturalPenilai->parent_jabatan)) {
+                // Jika ya, maka atasan dari penilai adalah ID penilai itu sendiri.
+                $atasanPenilaiId = $user->id;
+            } else {
+                // Jika parent seharusnya ada tapi tidak ditemukan pegawainya, ini baru sebuah error.
+                return response()->json(['success' => false, 'message' => 'Data atasan penilai tidak dapat ditemukan di sistem.'], 404);
+            }
+        }
+
+
         $data = $request->all();
         $data['penilai_id'] = $user->id;
         $data['atasan_penilai_id'] = $atasanPenilaiId;
