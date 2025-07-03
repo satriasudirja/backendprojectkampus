@@ -1226,6 +1226,9 @@ Route::prefix('validasi-cuti')->middleware('auth:api')->group(function () {
         Route::apiResource('univ-luar', SimpegUnivLuarController::class);
         Route::apiResource('master-pangkat', SimpegMasterPangkatController::class);
         Route::apiResource('master-prodi-perguruan-tinggi', SimpegMasterProdiPerguruanTinggiController::class);
+        Route::get('master-perguruan-tinggi/trash', [SimpegMasterPerguruanTinggiController::class, 'trash']);
+        Route::post('master-perguruan-tinggi/{id}/restore', [SimpegMasterPerguruanTinggiController::class, 'restore']);
+        Route::delete('master-perguruan-tinggi/{id}/force-delete', [SimpegMasterPerguruanTinggiController::class, 'forcedelete']);
         Route::apiResource('master-perguruan-tinggi', SimpegMasterPerguruanTinggiController::class);
         Route::apiResource('data-riwayat-pekerjaan', SimpegDataRiwayatPekerjaanController::class);
         Route::apiResource('jam-kerja', SimpegJamKerjaController::class);
