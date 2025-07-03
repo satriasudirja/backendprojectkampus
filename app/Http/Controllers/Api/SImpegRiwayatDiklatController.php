@@ -1030,4 +1030,54 @@ class SimpegRiwayatDiklatController extends Controller
         }
         return '-';
     }
+
+        // ========== SINGLE STATUS ACTIONS ==========
+
+    public function approve($id)
+    {
+        return $this->updateStatusById($id, 'disetujui');
+    }
+
+    public function reject($id)
+    {
+        return $this->updateStatusById($id, 'ditolak');
+    }
+
+    public function toDraft($id)
+    {
+        return $this->updateStatusById($id, 'draft');
+    }
+
+    private function updateStatusById($id, $status)
+    {
+        $request = new \Illuminate\Http\Request(['status_pengajuan' => $status]);
+        return $this->updateStatusPengajuan($request, $id);
+    }
+
+        // ========== BATCH STATUS ACTIONS ==========
+
+    public function batchApprove(Request $request)
+    {
+        return $this->batchUpdateStatus(new Request([
+            'ids' => $request->input('ids'),
+            'status_pengajuan' => 'disetujui'
+        ]));
+    }
+
+    public function batchReject(Request $request)
+    {
+        return $this->batchUpdateStatus(new Request([
+            'ids' => $request->input('ids'),
+            'status_pengajuan' => 'ditolak'
+        ]));
+    }
+
+    public function batchToDraft(Request $request)
+    {
+        return $this->batchUpdateStatus(new Request([
+            'ids' => $request->input('ids'),
+            'status_pengajuan' => 'draft'
+        ]));
+    }
+
 }

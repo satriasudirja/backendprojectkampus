@@ -911,45 +911,40 @@ Route::middleware('auth:api')->group(function () {
 
         Route::prefix('pegawai/riwayat-diklat')->group(function () {
 
-            // GET: Mendapatkan semua riwayat diklat dengan filter dan pagination
-            Route::get('/', [SimpegRiwayatDiklatController::class, 'index']);
+    // GET: Mendapatkan semua riwayat diklat dengan filter dan pagination
+    Route::get('/', [SimpegRiwayatDiklatController::class, 'index']);
 
-            // GET: Mendapatkan dropdown options untuk form
-            Route::get('/form-options', [SimpegRiwayatDiklatController::class, 'getFormOptions']);
+    // GET: Dropdown options untuk form
+    Route::get('/form-options', [SimpegRiwayatDiklatController::class, 'getFormOptions']);
 
-            // GET: Mendapatkan riwayat diklat berdasarkan pegawai ID
-            Route::get('/pegawai/{pegawaiId}', [SimpegRiwayatDiklatController::class, 'getByPegawai']);
+    // GET: Riwayat diklat berdasarkan pegawai
+    Route::get('/pegawai/{pegawaiId}', [SimpegRiwayatDiklatController::class, 'getByPegawai']);
 
-            // GET: Mendapatkan detail riwayat diklat
-            Route::get('/{id}', [SimpegRiwayatDiklatController::class, 'show']);
+    // ===== BATCH ROUTE DULUAN (KHUSUS) =====
+    Route::patch('/batch/approve', [SimpegRiwayatDiklatController::class, 'batchApprove']);
+    Route::patch('/batch/reject', [SimpegRiwayatDiklatController::class, 'batchReject']);
+    Route::patch('/batch/to-draft', [SimpegRiwayatDiklatController::class, 'batchToDraft']);
+    Route::post('/batch/update-status', [SimpegRiwayatDiklatController::class, 'batchUpdateStatus']);
+    Route::post('/batch/delete', [SimpegRiwayatDiklatController::class, 'batchDelete']);
 
-            // POST: Membuat riwayat diklat baru
-            Route::post('/', [SimpegRiwayatDiklatController::class, 'store']);
+    // ===== ROUTE SPESIFIK BERIKUTNYA =====
+    Route::get('/{id}/download/{fileId}', [SimpegRiwayatDiklatController::class, 'downloadFile']);
+    Route::patch('/{id}/approve', [SimpegRiwayatDiklatController::class, 'approve']);
+    Route::patch('/{id}/reject', [SimpegRiwayatDiklatController::class, 'reject']);
+    Route::patch('/{id}/to-draft', [SimpegRiwayatDiklatController::class, 'toDraft']);
+    Route::put('/{id}/status', [SimpegRiwayatDiklatController::class, 'updateStatusPengajuan']);
+    Route::patch('/{id}/status', [SimpegRiwayatDiklatController::class, 'updateStatusPengajuan']);
+    Route::put('/{id}/toggle-active', [SimpegRiwayatDiklatController::class, 'toggleActive']);
+    Route::patch('/{id}/toggle-active', [SimpegRiwayatDiklatController::class, 'toggleActive']);
 
-            // PUT/PATCH: Update riwayat diklat
-            Route::put('/{id}', [SimpegRiwayatDiklatController::class, 'update']);
-            Route::patch('/{id}', [SimpegRiwayatDiklatController::class, 'update']);
+    // ===== ROUTE DENGAN PARAM UMUM PALING BAWAH =====
+    Route::get('/{id}', [SimpegRiwayatDiklatController::class, 'show']);
+    Route::post('/', [SimpegRiwayatDiklatController::class, 'store']);
+    Route::put('/{id}', [SimpegRiwayatDiklatController::class, 'update']);
+    Route::patch('/{id}', [SimpegRiwayatDiklatController::class, 'update']);
+    Route::delete('/{id}', [SimpegRiwayatDiklatController::class, 'destroy']);
+});
 
-            // DELETE: Hapus riwayat diklat
-            Route::delete('/{id}', [SimpegRiwayatDiklatController::class, 'destroy']);
-
-            // POST: Batch update status
-            Route::post('/batch/update-status', [SimpegRiwayatDiklatController::class, 'batchUpdateStatus']);
-
-            // POST: Batch delete
-            Route::post('/batch/delete', [SimpegRiwayatDiklatController::class, 'batchDelete']);
-
-            // PUT/PATCH: Update status pengajuan
-            Route::put('/{id}/status', [SimpegRiwayatDiklatController::class, 'updateStatusPengajuan']);
-            Route::patch('/{id}/status', [SimpegRiwayatDiklatController::class, 'updateStatusPengajuan']);
-
-            // PUT/PATCH: Toggle active status
-            Route::put('/{id}/toggle-active', [SimpegRiwayatDiklatController::class, 'toggleActive']);
-            Route::patch('/{id}/toggle-active', [SimpegRiwayatDiklatController::class, 'toggleActive']);
-
-            // GET: Download file dokumen
-            Route::get('/{id}/download/{fileId}', [SimpegRiwayatDiklatController::class, 'downloadFile']);
-        });
         Route::prefix('setting-kehadiran')->group(function () {
             // Main routes
             Route::get('/', [SimpegSettingKehadiranController::class, 'index']); // Get setting / show form
