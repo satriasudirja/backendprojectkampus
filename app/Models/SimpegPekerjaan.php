@@ -32,7 +32,7 @@ class SimpegPekerjaan extends Model
      */
     public function dataKeluarga()
     {
-        return $this->hasMany(DataKeluargaPegawai::class, 'pekerjaan_id'); // Anda perlu menambahkan kolom 'pekerjaan_id'
+        return $this->hasMany(SimpegDataKeluargaPegawai::class, 'pekerjaan', 'nama_pekerjaan'); // Anda perlu menambahkan kolom 'pekerjaan_id'
     }
 
     /**

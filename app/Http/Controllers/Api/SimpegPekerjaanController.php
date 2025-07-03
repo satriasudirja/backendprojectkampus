@@ -59,15 +59,34 @@ class SimpegPekerjaanController extends Controller
         return response()->json($pekerjaan);
     }
 
-    public function destroy(SimpegPekerjaan $pekerjaan)
-    {
-        // Proteksi agar data master tidak bisa dihapus jika masih digunakan
-        if ($pekerjaan->dataKeluarga()->exists() || $pekerjaan->dataRiwayatPekerjaan()->exists()) {
-            return response()->json(['message' => 'Gagal menghapus: Pekerjaan ini sedang digunakan di data lain.'], 409);
-        }
-        $pekerjaan->delete();
-        return response()->json(null, 204);
+    public function destroy($id)
+{
+    $pekerjaan = SimpegPekerjaan::find($id);
+
+    if (!$pekerjaan) {
+        return response()->json([
+            'message' => 'Data pekerjaan tidak ditemukan.'
+        ], 404);
     }
+
+    // Proteksi agar data master tidak bisa dihapus jika masih digunakan
+    if (
+        $pekerjaan->dataKeluarga()->exists() ||
+        $pekerjaan->dataRiwayatPekerjaan()->exists()
+    ) {
+        return response()->json([
+            'message' => 'Gagal menghapus: Pekerjaan ini sedang digunakan di data lain.'
+        ], 409);
+    }
+
+    $pekerjaan->delete();
+
+    return response()->json([
+        'message' => 'Data pekerjaan berhasil dihapus.',
+        
+    ], 200);
+}
+
     
     // Anda bisa menambahkan method restore dan forceDelete jika diperlukan
 }
