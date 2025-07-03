@@ -59,14 +59,30 @@ class SimpegBankController extends Controller
         return response()->json($bank);
     }
 
-    public function destroy(SimpegBank $bank)
-    {
-        if ($bank->pegawai()->exists()) {
-            return response()->json(['message' => 'Gagal menghapus: Bank ini sedang digunakan oleh pegawai.'], 409);
-        }
-        $bank->delete();
-        return response()->json(null, 204);
+    public function destroy($id)
+{
+    $bank = SimpegBank::find($id);
+
+    if (!$bank) {
+        return response()->json([
+            'message' => 'Data tidak ditemukan.'
+        ], 404);
     }
+
+    if ($bank->pegawai()->exists()) {
+        return response()->json([
+            'message' => 'Gagal menghapus: Bank ini sedang digunakan oleh pegawai.'
+        ], 409);
+    }
+
+    $bank->delete();
+
+    return response()->json([
+        'message' => 'Bank berhasil dihapus (soft delete).',
+        'data' => $bank
+    ], 200);
+}
+
 
     public function restore($id)
     {
