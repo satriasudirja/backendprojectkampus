@@ -292,14 +292,39 @@ class EvaluasiKinerjaController extends Controller
         );
     }
     
+    // private function canEvaluatePegawai($jabatanPenilai, $pegawaiDievaluasi)
+    // {
+    //     if (!$jabatanPenilai || !$pegawaiDievaluasi) return false;
+    //     $jabatanPegawaiDievaluasi = $this->getUserJabatanStruktural($pegawaiDievaluasi->id);
+    //     if (!$jabatanPegawaiDievaluasi) return false;
+    //     return $jabatanPegawaiDievaluasi->isChildOf($jabatanPenilai->kode);
+    // }
     private function canEvaluatePegawai($jabatanPenilai, $pegawaiDievaluasi)
     {
-        if (!$jabatanPenilai || !$pegawaiDievaluasi) return false;
-        $jabatanPegawaiDievaluasi = $this->getUserJabatanStruktural($pegawaiDievaluasi->id);
-        if (!$jabatanPegawaiDievaluasi) return false;
-        return $jabatanPegawaiDievaluasi->isChildOf($jabatanPenilai->kode);
+        if (!$jabatanPenilai || !$pegawaiDievaluasi) {
+            return false;
+        }
+
+        $jenisPegawai = $this->determineFungsional($pegawaiDievaluasi);
+
+        // 1. Aturan untuk Dosen
+        if ($jenisPegawai === 'Dosen') {
+            // Terapkan validasi hierarki jabatan struktural yang ketat
+            $jabatanPegawaiDievaluasi = $this->getUserJabatanStruktural($pegawaiDievaluasi->id);
+            if (!$jabatanPegawaiDievaluasi) {
+                return false; // Dosen harus punya jabatan struktural untuk dievaluasi
+            }
+            return $jabatanPegawaiDievaluasi->isChildOf($jabatanPenilai->kode);
+        }
+        // 2. Aturan untuk SEMUA role SELAIN Dosen (Tendik, Administrasi, dll.)
+        else {
+            // Asumsikan mereka berhak dievaluasi jika sudah muncul di daftar.
+            // Ini karena penyaringan awal di method `index` dianggap sudah cukup
+            // untuk menentukan pegawai non-dosen mana yang berada di bawah penilai.
+            return true;
+        }
     }
-    
+
     private function getAtasanPegawaiId($jabatanStruktural)
     {
         if (!$jabatanStruktural || !$jabatanStruktural->parent_jabatan) return null;
@@ -382,12 +407,21 @@ class EvaluasiKinerjaController extends Controller
         ];
     }
 
+    // private function determineFungsional($pegawai)
+    // {
+    //     $role = optional(optional($pegawai->jabatanAkademik)->role)->nama;
+    //     return in_array($role, ['Dosen', 'Dosen Praktisi/Industri']) ? 'Dosen' : 'Staff';
+    // }
+    
     private function determineFungsional($pegawai)
     {
+        $pegawai->loadMissing('jabatanAkademik.role');
         $role = optional(optional($pegawai->jabatanAkademik)->role)->nama;
+        
+        // Fungsi ini mengembalikan 'Dosen' atau 'Staff'.
+        // 'Staff' di sini mewakili SEMUA role selain Dosen.
         return in_array($role, ['Dosen', 'Dosen Praktisi/Industri']) ? 'Dosen' : 'Staff';
     }
-    
     private function generateActionButtons($pegawai, $evaluasiTerkini)
     {
         $actions = ['add' => false, 'edit' => false, 'delete' => false, 'evaluation_id' => null];
