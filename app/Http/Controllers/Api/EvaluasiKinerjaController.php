@@ -274,10 +274,15 @@ class EvaluasiKinerjaController extends Controller
     private function getPegawaiByHierarki($jabatanStruktural, $penilaiId)
     {
         $childJabatanIds = $jabatanStruktural->getAllDescendants()->pluck('id');
-        return SimpegPegawai::where('id', '!=', $penilaiId)
+
+        // Dapatkan nama tabel dari model untuk menghindari hardcode
+        $pegawaiTable = (new SimpegPegawai)->getTable();
+
+        return SimpegPegawai::select($pegawaiTable . '.*') // <-- TAMBAHKAN BARIS INI
+            ->where($pegawaiTable . '.id', '!=', $penilaiId)
             ->whereHas('dataJabatanStruktural', fn($q) => 
                 $q->whereIn('jabatan_struktural_id', $childJabatanIds)->whereNull('tgl_selesai')
-            );
+        );
     }
     
     private function canEvaluatePegawai($jabatanPenilai, $pegawaiDievaluasi)
