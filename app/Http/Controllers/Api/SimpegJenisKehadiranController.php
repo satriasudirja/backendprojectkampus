@@ -52,11 +52,13 @@ class SimpegJenisKehadiranController extends Controller
         $request->validate([
             'kode_jenis' => 'required|string|max:2',
             'nama_jenis' => 'required|string|max:50',
+            'warna' => 'required|string|max:50',
         ]);
 
         $jenisKehadiran = SimpegJenisKehadiran::create([
             'kode_jenis' => $request->kode_jenis,
             'nama_jenis' => $request->nama_jenis,
+               'warna' => $request->warna,
         ]);
 
         ActivityLogger::log('create', $jenisKehadiran, $jenisKehadiran->toArray());
@@ -79,6 +81,7 @@ class SimpegJenisKehadiranController extends Controller
         $request->validate([
             'kode_jenis' => 'required|string|max:2',
             'nama_jenis' => 'required|string|max:50',
+                  'warna' => 'required|string|max:50',
         ]);
 
         $old = $jenisKehadiran->getOriginal();
@@ -86,6 +89,7 @@ class SimpegJenisKehadiranController extends Controller
         $jenisKehadiran->update([
             'kode_jenis' => $request->kode_jenis,
             'nama_jenis' => $request->nama_jenis,
+                       'warna' => $request->warna,
         ]);
 
         $changes = array_diff_assoc($jenisKehadiran->toArray(), $old);
