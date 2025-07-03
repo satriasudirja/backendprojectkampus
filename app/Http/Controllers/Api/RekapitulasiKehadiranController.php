@@ -6,23 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\SimpegPegawai;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegAbsensiRecord;
-use App\Services\HolidayService; // <-- LOGIKA BARU
+use App\Models\SimpegJenisIzin;
+use App\Services\HolidayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 
 class RekapitulasiKehadiranController extends Controller
 {
     protected $holidayService;
 
     /**
-     * LOGIKA BARU: Inject HolidayService untuk digunakan di semua method.
+     * Inject HolidayService untuk digunakan di semua method.
      */
     public function __construct(HolidayService $holidayService)
     {
         $this->holidayService = $holidayService;
-        // $this->middleware('auth:api');
     }
 
     /**
@@ -48,11 +47,10 @@ class RekapitulasiKehadiranController extends Controller
         // 2. Hitung Hari Kerja menggunakan Service
         $hariKerja = $this->holidayService->calculateWorkingDays($tanggalAwal, $tanggalAkhir);
 
-        // 3. Query Utama dengan withCount untuk efisiensi (menghindari N+1 problem)
+        // 3. Query Utama dengan withCount untuk efisiensi
         $rekapQuery = SimpegPegawai::query()
             ->with(['unitKerja'])
             ->where(function ($query) {
-                // Filter hanya pegawai aktif
                 $query->where('status_kerja', 'like', '%Aktif%')
                       ->orWhereHas('statusAktif', function ($q) {
                           $q->where('nama_status_aktif', 'like', '%aktif%');
@@ -69,12 +67,12 @@ class RekapitulasiKehadiranController extends Controller
                 },
                 'absensiRecords as sakit_count' => function ($query) use ($tanggalAwal, $tanggalAkhir) {
                     $query->whereBetween('tanggal_absensi', [$tanggalAwal, $tanggalAkhir])
-                          ->whereHas('izinRecord', fn($q) => $q->where('jenis_izin', 'like', '%sakit%'));
+                          ->whereHas('izinRecord.jenisIzin', fn($q) => $q->where('jenis_izin', 'ilike', '%sakit%'));
                 },
                 'absensiRecords as izin_count' => function ($query) use ($tanggalAwal, $tanggalAkhir) {
                     $query->whereBetween('tanggal_absensi', [$tanggalAwal, $tanggalAkhir])
                           ->whereNotNull('izin_record_id')
-                          ->whereDoesntHave('izinRecord', fn($q) => $q->where('jenis_izin', 'like', '%sakit%'));
+                          ->whereDoesntHave('izinRecord.jenisIzin', fn($q) => $q->where('jenis_izin', 'ilike', '%sakit%'));
                 }
             ]);
 
@@ -98,6 +96,7 @@ class RekapitulasiKehadiranController extends Controller
         $rekapData = $rekapQuery->paginate($perPage);
 
         // 4. Transformasi Data untuk Response
+        // PERBAIKAN: Teruskan variabel $tanggalAwal dan $tanggalAkhir ke dalam closure
         $rekapData->getCollection()->transform(function ($pegawai) use ($hariKerja, $tanggalAwal, $tanggalAkhir) {
             $totalKehadiranTerhitung = $pegawai->hadir_count + $pegawai->cuti_count + $pegawai->izin_count + $pegawai->sakit_count;
             $alpa = max(0, $hariKerja - $totalKehadiranTerhitung);
@@ -108,9 +107,9 @@ class RekapitulasiKehadiranController extends Controller
                 'unit_kerja' => optional($pegawai->unitKerja)->nama_unit ?? '-',
                 'hari_kerja' => $hariKerja,
                 'hadir' => (int)$pegawai->hadir_count,
-                'hadir_libur' => 0, // Perhitungan ini memerlukan query lebih kompleks, di-set 0 untuk sekarang
-                'terlambat' => 0,   // Tidak relevan lagi
-                'pulang_awal' => 0, // Tidak relevan lagi
+                'hadir_libur' => 0,
+                'terlambat' => 0,
+                'pulang_awal' => 0,
                 'sakit' => (int)$pegawai->sakit_count,
                 'izin' => (int)$pegawai->izin_count,
                 'alpa' => $alpa,
@@ -146,12 +145,30 @@ class RekapitulasiKehadiranController extends Controller
         }
 
         $absensiRecords = SimpegAbsensiRecord::where('pegawai_id', $pegawaiId)
+            ->with(['jenisKehadiran', 'cutiRecord', 'izinRecord.jenisIzin'])
             ->whereBetween('tanggal_absensi', [$request->tanggal_awal, $request->tanggal_akhir])
             ->orderBy('tanggal_absensi', 'asc')
             ->get();
             
         $formattedData = $absensiRecords->map(function ($record) {
-            $status = $record->getAttendanceStatus();
+            $status = ['label' => 'Alpha', 'color' => 'danger']; // Default
+            if ($record->cuti_record_id) {
+                $status = ['label' => 'Cuti', 'color' => 'primary'];
+            } elseif ($record->izin_record_id && $record->izinRecord && $record->izinRecord->jenisIzin) {
+                $isSakit = stripos($record->izinRecord->jenisIzin->jenis_izin, 'sakit') !== false;
+                $status = $isSakit 
+                    ? ['label' => 'Sakit', 'color' => 'warning'] 
+                    : ['label' => 'Izin', 'color' => 'info'];
+            } elseif ($record->jam_masuk) {
+                 $status = ['label' => 'Hadir Lengkap', 'color' => 'success'];
+                 if (!$record->jam_keluar) {
+                     $status['label'] = 'Hadir (Belum Pulang)';
+                     $status['color'] = 'info';
+                 }
+            } elseif ($record->jenisKehadiran) {
+                $status = ['label' => $record->jenisKehadiran->nama_jenis, 'color' => $record->jenisKehadiran->warna ?? 'secondary'];
+            }
+
             return [
                 'hari_dan_tanggal' => Carbon::parse($record->tanggal_absensi)->locale('id')->isoFormat('dddd, D MMMM YYYY'),
                 'datang' => optional($record->jam_masuk)->format('H:i') ?? '-',

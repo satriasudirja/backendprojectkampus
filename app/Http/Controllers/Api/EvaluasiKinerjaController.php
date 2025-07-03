@@ -129,8 +129,15 @@ class EvaluasiKinerjaController extends Controller
         }
 
         $atasanPenilaiId = $this->getAtasanPegawaiId($jabatanStrukturalPenilai);
-        if (!$atasanPenilaiId) return response()->json(['success' => false, 'message' => 'Atasan penilai tidak dapat ditemukan.'], 404);
-        
+        if (!$atasanPenilaiId) {
+            if (is_null($jabatanStrukturalPenilai->parent_jabatan)) {
+                $atasanPenilaiId = $user->id;
+            } else {
+                return response()->json(['success' => false, 'message' => 'Data atasan penilai tidak dapat ditemukan di sistem.'], 404);
+            }
+        }
+
+
         $data = $request->all();
         $data['penilai_id'] = $user->id;
         $data['atasan_penilai_id'] = $atasanPenilaiId;
@@ -193,23 +200,70 @@ class EvaluasiKinerjaController extends Controller
         return Validator::make($request->all(), $rules);
     }
     
+    // private function calculateTotalNilai(array $data, $jenisKinerja)
+    // {
+    //     $nilai = [];
+    //     $nilai[] = $data['nilai_kehadiran'] ?? null;
+    //     $nilai[] = $data['nilai_penerapan_tridharma'] ?? null;
+    //     $nilai[] = $data['nilai_komitmen_disiplin'] ?? null;
+    //     $nilai[] = $data['nilai_kepemimpinan_kerjasama'] ?? null;
+    //     $nilai[] = $data['nilai_inisiatif_integritas'] ?? null;
+
+    //     if ($jenisKinerja === 'dosen') {
+    //         $nilai[] = $data['nilai_pendidikan'] ?? null;
+    //         $nilai[] = $data['nilai_penelitian'] ?? null;
+    //         $nilai[] = $data['nilai_pengabdian'] ?? null;
+    //     }
+        
+    //     $validNilai = collect($nilai)->filter(fn ($value) => !is_null($value) && is_numeric($value));
+    //     return $validNilai->isNotEmpty() ? $validNilai->average() : 0;
+    // }
     private function calculateTotalNilai(array $data, $jenisKinerja)
     {
-        $nilai = [];
-        $nilai[] = $data['nilai_kehadiran'] ?? null;
-        $nilai[] = $data['nilai_penerapan_tridharma'] ?? null;
-        $nilai[] = $data['nilai_komitmen_disiplin'] ?? null;
-        $nilai[] = $data['nilai_kepemimpinan_kerjasama'] ?? null;
-        $nilai[] = $data['nilai_inisiatif_integritas'] ?? null;
+    // --- BOBOT BERDASARKAN FOTO (Total 100%) ---
+    $bobotKehadiran = 0.10; // 10%
+    $bobotPenunjang = 0.20; // 20%
 
-        if ($jenisKinerja === 'dosen') {
-            $nilai[] = $data['nilai_pendidikan'] ?? null;
-            $nilai[] = $data['nilai_penelitian'] ?? null;
-            $nilai[] = $data['nilai_pengabdian'] ?? null;
-        }
+    // Bobot Tugas Pokok untuk Dosen (Total 70%)
+    $bobotPendidikan = 0.40; // 40%
+    $bobotPenelitian = 0.20; // 20%
+    $bobotPengabdian = 0.10; // 10%
+
+    // 1. HITUNG NILAI KOMPONEN KEHADIRAN (10%)
+    // Mengambil nilai mentah kehadiran. Jika tidak ada, dianggap 0.
+    // Berdasarkan gambar, nilai mentah 25 * 0.10 = 2.50
+    $nilaiKehadiran = (float)($data['nilai_kehadiran'] ?? 0);
+    $skorKehadiran = $nilaiKehadiran * $bobotKehadiran;
+
+    // 2. HITUNG NILAI KOMPONEN PENUNJANG (20%)
+    $nilaiPenunjangItems = [
+        (float)($data['nilai_penerapan_tridharma'] ?? 0),
+        (float)($data['nilai_komitmen_disiplin'] ?? 0),
+        (float)($data['nilai_kepemimpinan_kerjasama'] ?? 0),
+        (float)($data['nilai_inisiatif_integritas'] ?? 0),
+    ];
+    // Rata-rata dari 4 item penunjang
+    $rataRataPenunjang = count($nilaiPenunjangItems) > 0 ? array_sum($nilaiPenunjangItems) / count($nilaiPenunjangItems) : 0;
+    // Kalikan rata-rata dengan bobotnya
+    $skorPenunjang = $rataRataPenunjang * $bobotPenunjang;
+
+    // 3. HITUNG NILAI KOMPONEN TUGAS POKOK (TOTAL 70%)
+    $skorTugasPokok = 0;
+    if ($jenisKinerja === 'dosen') {
+        // Ambil nilai mentah, kalikan dengan bobot masing-masing
+        $skorPendidikan = (float)($data['nilai_pendidikan'] ?? 0) * $bobotPendidikan;
+        $skorPenelitian = (float)($data['nilai_penelitian'] ?? 0) * $bobotPenelitian;
+        $skorPengabdian = (float)($data['nilai_pengabdian'] ?? 0) * $bobotPengabdian;
         
-        $validNilai = collect($nilai)->filter(fn ($value) => !is_null($value) && is_numeric($value));
-        return $validNilai->isNotEmpty() ? $validNilai->average() : 0;
+        // Jumlahkan semua skor tugas pokok
+        $skorTugasPokok = $skorPendidikan + $skorPenelitian + $skorPengabdian;
+    }
+    // Anda bisa menambahkan 'else if' untuk jenisKinerja lain jika rumusnya berbeda
+
+    // 4. JUMLAHKAN SEMUA SKOR KOMPONEN
+    $totalNilai = $skorKehadiran + $skorTugasPokok + $skorPenunjang;
+
+    return round($totalNilai, 2); // Dibulatkan 2 angka di belakang koma
     }
 
     private function determineJenisKinerja(SimpegPegawai $pegawai)
@@ -227,10 +281,15 @@ class EvaluasiKinerjaController extends Controller
     private function getPegawaiByHierarki($jabatanStruktural, $penilaiId)
     {
         $childJabatanIds = $jabatanStruktural->getAllDescendants()->pluck('id');
-        return SimpegPegawai::where('id', '!=', $penilaiId)
+
+        // Dapatkan nama tabel dari model untuk menghindari hardcode
+        $pegawaiTable = (new SimpegPegawai)->getTable();
+
+        return SimpegPegawai::select($pegawaiTable . '.*') // <-- TAMBAHKAN BARIS INI
+            ->where($pegawaiTable . '.id', '!=', $penilaiId)
             ->whereHas('dataJabatanStruktural', fn($q) => 
                 $q->whereIn('jabatan_struktural_id', $childJabatanIds)->whereNull('tgl_selesai')
-            );
+        );
     }
     
     private function canEvaluatePegawai($jabatanPenilai, $pegawaiDievaluasi)
@@ -265,7 +324,7 @@ class EvaluasiKinerjaController extends Controller
             'id' => $pegawai->id,
             'nip' => $pegawai->nip,
             'nama_pegawai' => $pegawai->nama,
-            'unit_kerja' => optional($pegawai->unitKerja)->nama_unit ?? '-',
+            'unit_kerja' => $this->getUnitKerjaNama($pegawai),
             'fungsional' => $this->determineFungsional($pegawai),
             'aksi' => $this->generateActionButtons($pegawai, $pegawai->evaluasiKinerja->first())
         ];
@@ -279,13 +338,28 @@ class EvaluasiKinerjaController extends Controller
         return [
             'id' => $pegawai->id,
             'nama_lengkap' => $pegawai->nama,
-            'unit_kerja' => optional($pegawai->unitKerja)->nama_unit ?? '-',
+            'unit_kerja' => $this->getUnitKerjaNama($pegawai),
             'status' => optional($pegawai->statusAktif)->nama_status_aktif ?? 'Tidak Diketahui',
             'jab_akademik' => optional($pegawai->jabatanAkademik)->jabatan_akademik ?? '-',
             'job_fungsional' => $this->determineFungsional($pegawai),
             'jab_struktural' => optional(optional($jabatanStrukturalData)->jabatanStruktural)->singkatan ?? '-',
             'pendidikan' => optional(optional($pendidikanTerakhirData)->jenjangPendidikan)->nama_jenjang ?? 'Tidak Diketahui',
         ];
+    }
+
+    private function getUnitKerjaNama($pegawai)
+    {
+        if (!$pegawai) {
+            return '-';
+        }
+        if ($pegawai->relationLoaded('unitKerja') && $pegawai->unitKerja) {
+            return $pegawai->unitKerja->nama_unit;
+        }
+        if ($pegawai->unit_kerja_id) {
+            $unitKerja = SimpegUnitKerja::find($pegawai->unit_kerja_id);
+            return $unitKerja ? $unitKerja->nama_unit : '-';
+        }
+        return '-';
     }
 
     private function formatEvaluasi($evaluasi)

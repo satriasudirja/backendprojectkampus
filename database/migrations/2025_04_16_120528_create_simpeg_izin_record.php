@@ -25,8 +25,8 @@ return new class extends Migration
             $table->date('tgl_diajukan')->nullable();
             $table->date('tgl_disetujui')->nullable();
             $table->date('tgl_ditolak')->nullable();
-            $table->date('approved_by')->nullable();
-            $table->date('keterangan')->nullable();
+            $table->string('approved_by')->nullable();
+            $table->string('keterangan')->nullable();
             $table->timestamps();
         
             // Foreign key constraints

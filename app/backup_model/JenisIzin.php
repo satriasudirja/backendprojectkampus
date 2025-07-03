@@ -26,4 +26,5 @@ class JenisIzin extends Model
     {
         return $this->belongsTo(SimpegJenisKehadiran::class);
     }
+    
 }

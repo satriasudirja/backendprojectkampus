@@ -783,26 +783,19 @@ Route::middleware('auth:api')->group(function () {
             Route::patch('{id}/reject', [SimpegDataKemampuanBahasaAdminController::class, 'reject']);
         });
 
-        Route::prefix('validasi-cuti')->group(function () {
-            // List monitoring pengajuan cuti
-            Route::get('/', [AdminMonitoringValidasiCutiController::class, 'index']);
-
-            // Detail pengajuan cuti
-            Route::get('/{id}', [AdminMonitoringValidasiCutiController::class, 'show']);
-
-            // Approve pengajuan
-            Route::patch('/{id}/approve', [AdminMonitoringValidasiCutiController::class, 'approvePengajuan']);
-
-            // Reject/Batalkan pengajuan
-            Route::patch('/{id}/reject', [AdminMonitoringValidasiCutiController::class, 'rejectPengajuan']);
-
-            // Batch actions
-            Route::patch('/batch/approve', [AdminMonitoringValidasiCutiController::class, 'batchApprove']);
-            Route::patch('/batch/reject', [AdminMonitoringValidasiCutiController::class, 'batchReject']);
-
-            // Statistics
-            Route::get('/statistics/dashboard', [AdminMonitoringValidasiCutiController::class, 'getStatistics']);
-        });
+Route::prefix('validasi-cuti')->middleware('auth:api')->group(function () {
+    
+    // Rute SPESIFIK harus di ATAS
+    Route::post('batch/approve', [AdminMonitoringValidasiCutiController::class, 'batchApprove']);
+    Route::post('batch/reject', [AdminMonitoringValidasiCutiController::class, 'batchReject']);
+    Route::get('statistics/dashboard', [AdminMonitoringValidasiCutiController::class, 'getStatistics']);
+    
+    // Rute DINAMIS ({id}) di BAWAH
+    Route::get('/', [AdminMonitoringValidasiCutiController::class, 'index']);
+    Route::get('/{id}', [AdminMonitoringValidasiCutiController::class, 'show'])->where('id', '[0-9]+');
+    Route::patch('/{id}/approve', [AdminMonitoringValidasiCutiController::class, 'approvePengajuan'])->where('id', '[0-9]+');
+    Route::patch('/{id}/reject', [AdminMonitoringValidasiCutiController::class, 'rejectPengajuan'])->where('id', '[0-9]+');
+});
 
 
         Route::patch('validasi-izin/batch/approve', [AdminMonitoringValidasiIzinController::class, 'batchApprove']);

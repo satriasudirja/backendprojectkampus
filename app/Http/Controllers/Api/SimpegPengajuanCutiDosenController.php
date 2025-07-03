@@ -364,8 +364,8 @@ class SimpegPengajuanCutiDosenController extends Controller
         
         // Hitung jumlah cuti jenis ini di tahun berjalan
         $count = SimpegCutiRecord::where('jenis_cuti_id', $jenisCutiId)
-                ->whereYear('created_at', $year)
-                ->count() + 1;
+            ->whereYear('created_at', $year)
+            ->count() + 1;
 
         // Format default jika tidak ada template
         $format = $jenisCuti->format_nomor_surat ?? 'CT/{kode}/{no}/{tahun}';
@@ -472,7 +472,10 @@ class SimpegPengajuanCutiDosenController extends Controller
             if ($request->hasFile('file_cuti')) {
                 $file = $request->file('file_cuti');
                 $fileName = 'cuti_'.time().'_'.$pegawai->id.'.'.$file->getClientOriginalExtension();
-                $file->storeAs('public/pegawai/cuti', $fileName);
+                // ==================================================================
+                // PERBAIKAN: Menyimpan file ke disk 'public'
+                // ==================================================================
+                $file->storeAs('pegawai/cuti', $fileName, 'public');
                 $data['file_cuti'] = $fileName;
             }
 
@@ -504,225 +507,232 @@ class SimpegPengajuanCutiDosenController extends Controller
 
     
     // Update data cuti dengan validasi status
- // Replace your update method with this fixed version
-public function update(Request $request, $id)
-{
-    try {
-        $pegawai = Auth::user();
+    // Replace your update method with this fixed version
+    public function update(Request $request, $id)
+    {
+        try {
+            $pegawai = Auth::user();
 
-        if (!$pegawai) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data pegawai tidak ditemukan'
-            ], 404);
-        }
-
-        $dataCuti = SimpegCutiRecord::where('pegawai_id', $pegawai->id)
-            ->find($id);
-
-        if (!$dataCuti) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data pengajuan cuti tidak ditemukan'
-            ], 404);
-        }
-
-        // Validasi apakah bisa diedit berdasarkan status
-        $editableStatuses = ['draft', 'ditolak'];
-        if (!in_array($dataCuti->status_pengajuan, $editableStatuses)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak dapat diedit karena sudah diajukan atau disetujui'
-            ], 422);
-        }
-
-        // FIXED VALIDATION: Use 'sometimes' instead of 'required' for update operations
-        $validationRules = [
-            'file_cuti' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'submit_type' => 'sometimes|in:draft,submit'
-        ];
-
-        // Add conditional validation - only validate fields that are present
-        if ($request->has('jenis_cuti_id')) {
-            $validationRules['jenis_cuti_id'] = 'sometimes|integer|exists:simpeg_daftar_cuti,id';
-        }
-
-        if ($request->has('tgl_mulai')) {
-            $validationRules['tgl_mulai'] = 'sometimes|date';
-        }
-
-        if ($request->has('tgl_selesai')) {
-            // For tgl_selesai, we need to check against either the new tgl_mulai or existing one
-            $tglMulai = $request->input('tgl_mulai', $dataCuti->tgl_mulai);
-            $validationRules['tgl_selesai'] = 'sometimes|date|after_or_equal:' . $tglMulai;
-        }
-
-        if ($request->has('jumlah_cuti')) {
-            $validationRules['jumlah_cuti'] = 'sometimes|integer|min:1';
-        }
-
-        if ($request->has('alasan_cuti')) {
-            $validationRules['alasan_cuti'] = 'sometimes|string|max:255';
-        }
-
-        if ($request->has('alamat')) {
-            $validationRules['alamat'] = 'sometimes|string|max:500';
-        }
-
-        if ($request->has('no_telp')) {
-            $validationRules['no_telp'] = 'sometimes|string|max:20';
-        }
-
-        // Handle form-data integer conversion
-        $requestData = $request->all();
-        if (isset($requestData['jenis_cuti_id'])) {
-            $requestData['jenis_cuti_id'] = (int) $requestData['jenis_cuti_id'];
-        }
-        if (isset($requestData['jumlah_cuti'])) {
-            $requestData['jumlah_cuti'] = (int) $requestData['jumlah_cuti'];
-        }
-
-        $validator = Validator::make($requestData, $validationRules);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-                'debug_data' => config('app.debug') ? [
-                    'received_data' => $requestData,
-                    'validation_rules' => $validationRules
-                ] : null
-            ], 422);
-        }
-
-        $oldData = $dataCuti->getOriginal();
-        $data = $request->except(['file_cuti', 'submit_type']);
-
-        // Convert string integers to actual integers for form-data
-        if (isset($data['jenis_cuti_id'])) {
-            $data['jenis_cuti_id'] = (int) $data['jenis_cuti_id'];
-        }
-        if (isset($data['jumlah_cuti'])) {
-            $data['jumlah_cuti'] = (int) $data['jumlah_cuti'];
-        }
-
-        // Update no_urut_cuti if jenis_cuti_id changed
-        if ($request->has('jenis_cuti_id') && $request->jenis_cuti_id != $dataCuti->jenis_cuti_id) {
-            $data['no_urut_cuti'] = $this->generateNoUrutCuti($request->jenis_cuti_id);
-        }
-
-        // Calculate jumlah_cuti if tgl_mulai or tgl_selesai changed
-        if (($request->has('tgl_mulai') || $request->has('tgl_selesai')) && !$request->has('jumlah_cuti')) {
-            $tglMulai = $request->tgl_mulai ?? $dataCuti->tgl_mulai;
-            $tglSelesai = $request->tgl_selesai ?? $dataCuti->tgl_selesai;
-            $data['jumlah_cuti'] = $this->calculateJumlahCuti($tglMulai, $tglSelesai);
-        }
-
-        // Reset status jika dari ditolak
-        if ($dataCuti->status_pengajuan === 'ditolak') {
-            $data['status_pengajuan'] = 'draft';
-            $data['tgl_ditolak'] = null;
-        }
-
-        // Handle submit_type
-        if ($request->submit_type === 'submit') {
-            $data['status_pengajuan'] = 'diajukan';
-            $data['tgl_diajukan'] = now();
-            $message = 'Pengajuan cuti berhasil diperbarui dan diajukan untuk persetujuan';
-        } else {
-            $message = 'Pengajuan cuti berhasil diperbarui';
-        }
-
-        // Handle file upload
-        if ($request->hasFile('file_cuti')) {
-            if ($dataCuti->file_cuti) {
-                Storage::delete('public/pegawai/cuti/'.$dataCuti->file_cuti);
+            if (!$pegawai) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pegawai tidak ditemukan'
+                ], 404);
             }
 
-            $file = $request->file('file_cuti');
-            $fileName = 'cuti_'.time().'_'.$pegawai->id.'.'.$file->getClientOriginalExtension();
-            $file->storeAs('public/pegawai/cuti', $fileName);
-            $data['file_cuti'] = $fileName;
+            $dataCuti = SimpegCutiRecord::where('pegawai_id', $pegawai->id)
+                ->find($id);
+
+            if (!$dataCuti) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pengajuan cuti tidak ditemukan'
+                ], 404);
+            }
+
+            // Validasi apakah bisa diedit berdasarkan status
+            $editableStatuses = ['draft', 'ditolak'];
+            if (!in_array($dataCuti->status_pengajuan, $editableStatuses)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data tidak dapat diedit karena sudah diajukan atau disetujui'
+                ], 422);
+            }
+
+            // FIXED VALIDATION: Use 'sometimes' instead of 'required' for update operations
+            $validationRules = [
+                'file_cuti' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'submit_type' => 'sometimes|in:draft,submit'
+            ];
+
+            // Add conditional validation - only validate fields that are present
+            if ($request->has('jenis_cuti_id')) {
+                $validationRules['jenis_cuti_id'] = 'sometimes|integer|exists:simpeg_daftar_cuti,id';
+            }
+
+            if ($request->has('tgl_mulai')) {
+                $validationRules['tgl_mulai'] = 'sometimes|date';
+            }
+
+            if ($request->has('tgl_selesai')) {
+                // For tgl_selesai, we need to check against either the new tgl_mulai or existing one
+                $tglMulai = $request->input('tgl_mulai', $dataCuti->tgl_mulai);
+                $validationRules['tgl_selesai'] = 'sometimes|date|after_or_equal:' . $tglMulai;
+            }
+
+            if ($request->has('jumlah_cuti')) {
+                $validationRules['jumlah_cuti'] = 'sometimes|integer|min:1';
+            }
+
+            if ($request->has('alasan_cuti')) {
+                $validationRules['alasan_cuti'] = 'sometimes|string|max:255';
+            }
+
+            if ($request->has('alamat')) {
+                $validationRules['alamat'] = 'sometimes|string|max:500';
+            }
+
+            if ($request->has('no_telp')) {
+                $validationRules['no_telp'] = 'sometimes|string|max:20';
+            }
+
+            // Handle form-data integer conversion
+            $requestData = $request->all();
+            if (isset($requestData['jenis_cuti_id'])) {
+                $requestData['jenis_cuti_id'] = (int) $requestData['jenis_cuti_id'];
+            }
+            if (isset($requestData['jumlah_cuti'])) {
+                $requestData['jumlah_cuti'] = (int) $requestData['jumlah_cuti'];
+            }
+
+            $validator = Validator::make($requestData, $validationRules);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors(),
+                    'debug_data' => config('app.debug') ? [
+                        'received_data' => $requestData,
+                        'validation_rules' => $validationRules
+                    ] : null
+                ], 422);
+            }
+
+            $oldData = $dataCuti->getOriginal();
+            $data = $request->except(['file_cuti', 'submit_type']);
+
+            // Convert string integers to actual integers for form-data
+            if (isset($data['jenis_cuti_id'])) {
+                $data['jenis_cuti_id'] = (int) $data['jenis_cuti_id'];
+            }
+            if (isset($data['jumlah_cuti'])) {
+                $data['jumlah_cuti'] = (int) $data['jumlah_cuti'];
+            }
+
+            // Update no_urut_cuti if jenis_cuti_id changed
+            if ($request->has('jenis_cuti_id') && $request->jenis_cuti_id != $dataCuti->jenis_cuti_id) {
+                $data['no_urut_cuti'] = $this->generateNoUrutCuti($request->jenis_cuti_id);
+            }
+
+            // Calculate jumlah_cuti if tgl_mulai or tgl_selesai changed
+            if (($request->has('tgl_mulai') || $request->has('tgl_selesai')) && !$request->has('jumlah_cuti')) {
+                $tglMulai = $request->tgl_mulai ?? $dataCuti->tgl_mulai;
+                $tglSelesai = $request->tgl_selesai ?? $dataCuti->tgl_selesai;
+                $data['jumlah_cuti'] = $this->calculateJumlahCuti($tglMulai, $tglSelesai);
+            }
+
+            // Reset status jika dari ditolak
+            if ($dataCuti->status_pengajuan === 'ditolak') {
+                $data['status_pengajuan'] = 'draft';
+                $data['tgl_ditolak'] = null;
+            }
+
+            // Handle submit_type
+            if ($request->submit_type === 'submit') {
+                $data['status_pengajuan'] = 'diajukan';
+                $data['tgl_diajukan'] = now();
+                $message = 'Pengajuan cuti berhasil diperbarui dan diajukan untuk persetujuan';
+            } else {
+                $message = 'Pengajuan cuti berhasil diperbarui';
+            }
+
+            // Handle file upload
+            if ($request->hasFile('file_cuti')) {
+                // ==================================================================
+                // PERBAIKAN: Hapus file lama dari disk 'public'
+                // ==================================================================
+                if ($dataCuti->file_cuti) {
+                    Storage::disk('public')->delete('pegawai/cuti/'.$dataCuti->file_cuti);
+                }
+
+                $file = $request->file('file_cuti');
+                $fileName = 'cuti_'.time().'_'.$pegawai->id.'.'.$file->getClientOriginalExtension();
+                // ==================================================================
+                // PERBAIKAN: Menyimpan file ke disk 'public'
+                // ==================================================================
+                $file->storeAs('pegawai/cuti', $fileName, 'public');
+                $data['file_cuti'] = $fileName;
+            }
+
+            $dataCuti->update($data);
+
+            // Log activity if ActivityLogger exists
+            if (class_exists('App\Services\ActivityLogger')) {
+                ActivityLogger::log('update', $dataCuti, $oldData);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->formatDataCuti($dataCuti->fresh(['jenisCuti'])),
+                'message' => $message
+            ]);
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage(),
+                'error_code' => 'DATABASE_ERROR'
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update data: ' . $e->getMessage(),
+                'error_code' => 'SYSTEM_ERROR'
+            ], 500);
         }
+    }
 
-        $dataCuti->update($data);
+    public function getRemainingCuti()
+    {
+        $user = auth()->user(); // pastikan pakai autentikasi
+        // Perbaikan: Ambil ID pegawai dari model User
+        $pegawaiId = $user->id; 
 
-        // Log activity if ActivityLogger exists
-        if (class_exists('App\Services\ActivityLogger')) {
-            ActivityLogger::log('update', $dataCuti, $oldData);
+        // ambil total cuti dari jenis cuti
+        $standarCuti = 12; // misalnya default 12, atau bisa dari DB
+
+        // ambil total cuti yang sudah diambil user ini dari tabel pengajuan cuti
+        $cutiTerpakai = SimpegCutiRecord::where('pegawai_id', $pegawaiId)
+                        ->where('status_pengajuan', 'disetujui') // hanya yang disetujui
+                        ->sum('jumlah_cuti');
+
+        $sisaCuti = max(0, $standarCuti - $cutiTerpakai);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'pegawai_id' => $pegawaiId,
+                'standar_cuti' => $standarCuti,
+                'terpakai' => (int) $cutiTerpakai,
+                'sisa_cuti' => $sisaCuti,
+            ]
+        ]);
+    }
+
+    public function getAvailableActions()
+    {
+        $user = auth()->user(); // Pastikan user terautentikasi
+        $role = $user->role ?? 'pegawai';
+
+        $actions = [];
+
+        if ($role === 'admin') {
+            $actions = [
+                'approve', 'reject', 'delete', 'edit'
+                // 'print' dihapus
+            ];
+        } elseif ($role === 'pegawai') {
+            $actions = [
+                'edit', 'submit'
+                // 'print' dihapus
+            ];
         }
 
         return response()->json([
             'success' => true,
-            'data' => $this->formatDataCuti($dataCuti->fresh(['jenisCuti'])),
-            'message' => $message
+            'data' => $actions,
         ]);
-
-    } catch (\Illuminate\Database\QueryException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Database error: ' . $e->getMessage(),
-            'error_code' => 'DATABASE_ERROR'
-        ], 500);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal update data: ' . $e->getMessage(),
-            'error_code' => 'SYSTEM_ERROR'
-        ], 500);
     }
-}
-
-    public function getRemainingCuti()
-{
-    $user = auth()->user(); // pastikan pakai autentikasi
-    $pegawaiId = $user->pegawai_id;
-
-    // ambil total cuti dari jenis cuti
-    $standarCuti = 12; // misalnya default 12, atau bisa dari DB
-
-    // ambil total cuti yang sudah diambil user ini dari tabel pengajuan cuti
-    $cutiTerpakai = SimpegCutiRecord::where('pegawai_id', $pegawaiId)
-                    ->where('status_pengajuan', 'disetujui') // hanya yang disetujui
-                    ->sum('jumlah_cuti');
-
-    $sisaCuti = max(0, $standarCuti - $cutiTerpakai);
-
-    return response()->json([
-        'success' => true,
-        'data' => [
-            'pegawai_id' => $pegawaiId,
-            'standar_cuti' => $standarCuti,
-            'terpakai' => $cutiTerpakai,
-            'sisa_cuti' => $sisaCuti,
-        ]
-    ]);
-}
-
-public function getAvailableActions()
-{
-    $user = auth()->user(); // Pastikan user terautentikasi
-    $role = $user->role ?? 'pegawai';
-
-    $actions = [];
-
-    if ($role === 'admin') {
-        $actions = [
-            'approve', 'reject', 'delete', 'edit'
-            // 'print' dihapus
-        ];
-    } elseif ($role === 'pegawai') {
-        $actions = [
-            'edit', 'submit'
-            // 'print' dihapus
-        ];
-    }
-
-    return response()->json([
-        'success' => true,
-        'data' => $actions,
-    ]);
-}
 
 
 
@@ -751,7 +761,10 @@ public function getAvailableActions()
 
             // Delete file if exists
             if ($dataCuti->file_cuti) {
-                Storage::delete('public/pegawai/cuti/'.$dataCuti->file_cuti);
+                // ==================================================================
+                // PERBAIKAN: Hapus file dari disk 'public'
+                // ==================================================================
+                Storage::disk('public')->delete('pegawai/cuti/'.$dataCuti->file_cuti);
             }
 
             $oldData = $dataCuti->toArray();
@@ -867,7 +880,10 @@ public function getAvailableActions()
                 try {
                     // Delete file if exists
                     if ($dataCuti->file_cuti) {
-                        Storage::delete('public/pegawai/cuti/'.$dataCuti->file_cuti);
+                        // ==================================================================
+                        // PERBAIKAN: Hapus file dari disk 'public'
+                        // ==================================================================
+                        Storage::disk('public')->delete('pegawai/cuti/'.$dataCuti->file_cuti);
                     }
 
                     $oldData = $dataCuti->toArray();
@@ -1334,7 +1350,10 @@ public function getAvailableActions()
             ],
             'dokumen' => $dataCuti->file_cuti ? [
                 'nama_file' => $dataCuti->file_cuti,
-                'url' => url('storage/pegawai/cuti/'.$dataCuti->file_cuti)
+                // ==================================================================
+                // PERBAIKAN: Membuat URL dari disk 'public'
+                // ==================================================================
+                'url' => Storage::disk('public')->url('pegawai/cuti/'.$dataCuti->file_cuti)
             ] : null,
             'created_at' => $dataCuti->created_at,
             'updated_at' => $dataCuti->updated_at

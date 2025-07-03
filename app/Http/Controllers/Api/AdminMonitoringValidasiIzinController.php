@@ -7,6 +7,8 @@ use App\Models\SimpegPengajuanIzinDosen;
 use App\Models\SimpegJenisIzin;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegPegawai;
+use App\Models\SimpegAbsensiRecord;
+use App\Models\SimpegJenisKehadiran;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,34 +16,25 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Builder;
+use Carbon\CarbonPeriod;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class AdminMonitoringValidasiIzinController extends Controller
 {
     // =========================================================
     // PUBLIC API ENDPOINTS
-    // (Methods directly accessible via routes)
     // =========================================================
 
     /**
      * Monitoring validasi pengajuan izin untuk admin.
-     * Mengelola daftar pengajuan izin berdasarkan berbagai filter.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
         try {
             if (!Auth::check()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized - Silakan login terlebih dahulu'
-                ], 401);
+                return response()->json(['success' => false, 'message' => 'Unauthorized - Silakan login terlebih dahulu'], 401);
             }
 
-            // Handle the 'belum_diajukan' status by redirecting to the specific method
             if ($request->status === 'belum_diajukan') {
                 return $this->getPegawaiBelumMengajukan($request);
             }
@@ -54,32 +47,27 @@ class AdminMonitoringValidasiIzinController extends Controller
             $statusFilter = $request->status;
             $jenisIzinFilter = $request->jenis_izin;
 
-            // Base query for existing izin submissions, eager-loading relationships to prevent N+1 issues
             $query = SimpegPengajuanIzinDosen::with([
                 'pegawai.unitKerja',
                 'pegawai.jabatanAkademik',
                 'jenisIzin',
-                'approver' // Eager load the approver
+                'approver'
             ]);
 
-            // Filter berdasarkan unit kerja
             if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
                 $query->whereHas('pegawai', function($q) use ($unitKerjaFilter) {
                     $q->where('unit_kerja_id', $unitKerjaFilter);
                 });
             }
 
-            // Filter berdasarkan jenis izin
             if ($jenisIzinFilter && $jenisIzinFilter !== 'semua') {
                 $query->where('jenis_izin_id', $jenisIzinFilter);
             }
 
-            // Filter berdasarkan periode izin
             if ($periodeIzinFilter) {
                 $this->applyPeriodeIzinFilter($query, $periodeIzinFilter);
             }
 
-            // Filter berdasarkan status pengajuan
             if ($statusFilter && $statusFilter !== 'semua') {
                 $statusMap = [
                     'diajukan' => 'diajukan',
@@ -92,11 +80,9 @@ class AdminMonitoringValidasiIzinController extends Controller
                 }
             }
 
-            // Search functionality
             if ($search) {
                 $query->where(function($q) use ($search) {
                     $likeOperator = (config('database.connections.' . config('database.default') . '.driver') === 'pgsql') ? 'ilike' : 'like';
-
                     $q->where('no_izin', $likeOperator, '%'.$search.'%')
                       ->orWhere('alasan_izin', $likeOperator, '%'.$search.'%')
                       ->orWhereHas('pegawai', function($subQ) use ($search, $likeOperator) {
@@ -109,9 +95,7 @@ class AdminMonitoringValidasiIzinController extends Controller
                 });
             }
 
-            $query->orderBy('tgl_diajukan', 'desc')
-                  ->orderBy('created_at', 'desc');
-
+            $query->orderBy('tgl_diajukan', 'desc')->orderBy('created_at', 'desc');
             $pengajuanIzin = $query->paginate($perPage);
 
             return $this->formatResponsePengajuan($pengajuanIzin, $request);
@@ -120,7 +104,6 @@ class AdminMonitoringValidasiIzinController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
-                'error_code' => 'SYSTEM_ERROR',
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ], 500);
@@ -128,100 +111,26 @@ class AdminMonitoringValidasiIzinController extends Controller
     }
 
     /**
-     * Endpoint untuk mendapatkan daftar pegawai yang belum mengajukan izin
-     * (untuk filter status 'belum_diajukan').
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getPegawaiBelumMengajukan(Request $request)
-    {
-        $perPage = $request->per_page ?? 10;
-        $search = $request->search;
-        $unitKerjaFilter = $request->unit_kerja;
-        $periodeIzinFilter = $request->periode_izin;
-
-        $query = SimpegPegawai::with([
-            'unitKerja',
-            'jabatanAkademik',
-            'statusAktif'
-        ])->where(function($q) {
-            // Robustly check for active status, case-insensitive
-            $q->whereRaw('LOWER(status_kerja) = ?', ['aktif']);
-        });
-
-        if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
-            $query->where('unit_kerja_id', $unitKerjaFilter);
-        }
-
-        $query->whereHas('jabatanAkademik', function($q) {
-            $dosenJabatan = ['Guru Besar', 'Lektor Kepala', 'Lektor', 'Asisten Ahli', 'Tenaga Pengajar', 'Dosen'];
-            $q->whereIn('jabatan_akademik', $dosenJabatan);
-        });
-
-        if ($search) {
-            $query->where(function($q) use ($search) {
-                $likeOperator = (config('database.connections.' . config('database.default') . '.driver') === 'pgsql') ? 'ilike' : 'like';
-                $q->where('nip', $likeOperator, '%'.$search.'%')
-                  ->orWhere('nama', $likeOperator, '%'.$search.'%')
-                  ->orWhereHas('unitKerja', function($subQ) use ($search, $likeOperator) {
-                      $subQ->where('nama_unit', $likeOperator, '%'.$search.'%');
-                  });
-            });
-        }
-
-        $pegawaiIds = $query->pluck('id');
-
-        if ($periodeIzinFilter && $periodeIzinFilter !== 'semua') {
-            $sudahMengajukan = $this->getPegawaiSudahMengajukan($periodeIzinFilter);
-            $pegawaiIds = collect($pegawaiIds)->diff($sudahMengajukan);
-        }
-
-        $pegawaiBelumMengajukan = SimpegPegawai::with([
-            'unitKerja',
-            'jabatanAkademik'
-        ])->whereIn('id', $pegawaiIds)
-          ->orderBy('nama', 'asc')
-          ->paginate($perPage);
-
-        return $this->formatResponseBelumMengajukan($pegawaiBelumMengajukan, $request);
-    }
-
-    /**
      * Get detail pengajuan izin
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
         try {
             $pengajuanIzin = SimpegPengajuanIzinDosen::with([
-                'pegawai' => function($query) {
-                    $query->with([
-                        'unitKerja',
-                        'statusAktif', 
-                        'jabatanAkademik',
-                        'dataJabatanFungsional.jabatanFungsional',
-                        'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
-                        'dataPendidikanFormal.jenjangPendidikan'
-                    ]);
-                },
+                'pegawai.unitKerja',
+                'pegawai.statusAktif', 
+                'pegawai.jabatanAkademik',
                 'jenisIzin',
-                'approver' // Eager load approver for detail view
+                'approver'
             ])->find($id);
 
             if (!$pengajuanIzin) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data pengajuan izin tidak ditemukan'
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'Data pengajuan izin tidak ditemukan'], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $this->formatPengajuanIzin($pengajuanIzin, true), // include actions for detail view
-                // 'pegawai_detail' => $this->formatPegawaiInfo($pengajuanIzin->pegawai), // Assuming this helper exists
-                // 'timeline' => $this->getTimelinePengajuan($pengajuanIzin) // Assuming this helper exists
+                'data' => $this->formatPengajuanIzin($pengajuanIzin, true),
             ]);
 
         } catch (\Exception $e) {
@@ -236,12 +145,10 @@ class AdminMonitoringValidasiIzinController extends Controller
 
     /**
      * Setujui pengajuan izin
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
     public function approvePengajuan(Request $request, $id)
     {
+        DB::beginTransaction();
         try {
             $validator = Validator::make($request->all(), [
                 'keterangan' => 'nullable|string|max:500'
@@ -257,8 +164,8 @@ class AdminMonitoringValidasiIzinController extends Controller
                 return response()->json(['success' => false, 'message' => 'Data pengajuan izin tidak ditemukan'], 404);
             }
 
-            if ($pengajuanIzin->status_pengajuan !== 'diajukan') {
-                return response()->json(['success' => false, 'message' => 'Hanya pengajuan dengan status "diajukan" yang dapat disetujui'], 422);
+            if (!in_array($pengajuanIzin->status_pengajuan, ['diajukan', 'ditolak'])) {
+                return response()->json(['success' => false, 'message' => 'Hanya pengajuan dengan status "diajukan" atau "ditolak" yang dapat disetujui'], 422);
             }
 
             $oldData = $pengajuanIzin->getOriginal();
@@ -266,13 +173,18 @@ class AdminMonitoringValidasiIzinController extends Controller
             $pengajuanIzin->update([
                 'status_pengajuan' => 'disetujui',
                 'tgl_disetujui' => now(),
-                'approved_by' => Auth::id(),
-                'keterangan' => $request->keterangan
+                'approved_by' => Auth::user()->nama,
+                'keterangan' => $request->keterangan,
+                'tgl_ditolak' => null
             ]);
+            
+            $this->createAbsensiForIzin($pengajuanIzin, $request->keterangan);
 
             if (class_exists(ActivityLogger::class)) {
                 ActivityLogger::log('approve', $pengajuanIzin, $oldData);
             }
+            
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -281,6 +193,7 @@ class AdminMonitoringValidasiIzinController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyetujui pengajuan: ' . $e->getMessage(),
@@ -292,12 +205,10 @@ class AdminMonitoringValidasiIzinController extends Controller
 
     /**
      * Tolak/Batalkan pengajuan izin
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
     public function rejectPengajuan(Request $request, $id)
     {
+        DB::beginTransaction();
         try {
             $validator = Validator::make($request->all(), [
                 'keterangan' => 'required|string|max:500'
@@ -318,16 +229,24 @@ class AdminMonitoringValidasiIzinController extends Controller
             }
 
             $oldData = $pengajuanIzin->getOriginal();
+            
+            if ($pengajuanIzin->status_pengajuan === 'disetujui') {
+                $this->deleteAbsensiForIzin($pengajuanIzin);
+            }
 
             $pengajuanIzin->update([
                 'status_pengajuan' => 'ditolak',
                 'tgl_ditolak' => now(),
-                'keterangan' => $request->keterangan
+                'keterangan' => $request->keterangan,
+                'tgl_disetujui' => null,
+                'approved_by' => null
             ]);
 
             if (class_exists(ActivityLogger::class)) {
                 ActivityLogger::log('reject', $pengajuanIzin, $oldData);
             }
+            
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -336,6 +255,7 @@ class AdminMonitoringValidasiIzinController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membatalkan pengajuan: ' . $e->getMessage(),
@@ -347,8 +267,6 @@ class AdminMonitoringValidasiIzinController extends Controller
 
     /**
      * Batch approve pengajuan
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function batchApprove(Request $request)
     {
@@ -365,26 +283,31 @@ class AdminMonitoringValidasiIzinController extends Controller
         DB::beginTransaction();
         try {
             $pengajuanList = SimpegPengajuanIzinDosen::whereIn('id', $request->ids)
-                ->where('status_pengajuan', 'diajukan')
+                ->whereIn('status_pengajuan', ['diajukan', 'ditolak'])
                 ->get();
 
-            $updatedCount = 0;
+            if ($pengajuanList->isEmpty()) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Tidak ada pengajuan yang valid untuk disetujui.'], 404);
+            }
+
             foreach ($pengajuanList as $pengajuan) {
                 $pengajuan->update([
                     'status_pengajuan' => 'disetujui',
                     'tgl_disetujui' => now(),
-                    'approved_by' => Auth::id(),
-                    'keterangan' => $request->keterangan
+                    'approved_by' => Auth::user()->nama,
+                    'keterangan' => $request->keterangan,
+                    'tgl_ditolak' => null
                 ]);
-                $updatedCount++;
+                $this->createAbsensiForIzin($pengajuan, $request->keterangan);
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => "Berhasil menyetujui {$updatedCount} pengajuan izin",
-                'updated_count' => $updatedCount
+                'message' => "Berhasil menyetujui " . $pengajuanList->count() . " pengajuan izin",
+                'updated_count' => $pengajuanList->count()
             ]);
 
         } catch (\Exception $e) {
@@ -400,8 +323,6 @@ class AdminMonitoringValidasiIzinController extends Controller
 
     /**
      * Batch reject pengajuan
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function batchReject(Request $request)
     {
@@ -421,22 +342,30 @@ class AdminMonitoringValidasiIzinController extends Controller
                 ->whereIn('status_pengajuan', ['diajukan', 'disetujui'])
                 ->get();
 
-            $updatedCount = 0;
+            if ($pengajuanList->isEmpty()) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Tidak ada pengajuan yang valid untuk dibatalkan.'], 404);
+            }
+            
             foreach ($pengajuanList as $pengajuan) {
+                if ($pengajuan->status_pengajuan === 'disetujui') {
+                    $this->deleteAbsensiForIzin($pengajuan);
+                }
                 $pengajuan->update([
                     'status_pengajuan' => 'ditolak',
                     'tgl_ditolak' => now(),
-                    'keterangan' => $request->keterangan
+                    'keterangan' => $request->keterangan,
+                    'tgl_disetujui' => null,
+                    'approved_by' => null
                 ]);
-                $updatedCount++;
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => "Berhasil membatalkan {$updatedCount} pengajuan izin",
-                'updated_count' => $updatedCount
+                'message' => "Berhasil membatalkan " . $pengajuanList->count() . " pengajuan izin",
+                'updated_count' => $pengajuanList->count()
             ]);
 
         } catch (\Exception $e) {
@@ -452,8 +381,6 @@ class AdminMonitoringValidasiIzinController extends Controller
 
     /**
      * Get statistik untuk dashboard admin
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function getStatistics(Request $request)
     {
@@ -464,19 +391,16 @@ class AdminMonitoringValidasiIzinController extends Controller
             $baseQuery = SimpegPengajuanIzinDosen::query();
             $tableName = (new SimpegPengajuanIzinDosen())->getTable();
 
-
-            // Apply filters
             if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
                 $baseQuery->whereHas('pegawai', function($q) use ($unitKerjaFilter) {
                     $q->where('unit_kerja_id', $unitKerjaFilter);
                 });
             }
 
-            if ($periodeIzinFilter) {
+            if ($periodeIzinFilter && $periodeIzinFilter !== 'semua') {
                 $this->applyPeriodeIzinFilter($baseQuery, $periodeIzinFilter);
             }
 
-            // Get statistics
             $statistics = [
                 'total_pengajuan' => $baseQuery->clone()->count(),
                 'diajukan' => $baseQuery->clone()->where('status_pengajuan', 'diajukan')->count(),
@@ -485,21 +409,29 @@ class AdminMonitoringValidasiIzinController extends Controller
                 'pending_approval' => $baseQuery->clone()->where('status_pengajuan', 'diajukan')->count()
             ];
 
-            // Get belum mengajukan count
             $totalPegawaiQuery = SimpegPegawai::whereHas('jabatanAkademik', function($q) {
                 $dosenJabatan = ['Guru Besar', 'Lektor Kepala', 'Lektor', 'Asisten Ahli', 'Tenaga Pengajar', 'Dosen'];
                 $q->whereIn('jabatan_akademik', $dosenJabatan);
-            });
+            })->whereRaw('LOWER(status_kerja) = ?', ['aktif']);
 
             if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
                 $totalPegawaiQuery->where('unit_kerja_id', $unitKerjaFilter);
             }
             $totalPegawai = $totalPegawaiQuery->count();
 
-            $pegawaiSudahMengajukan = $baseQuery->clone()->distinct('pegawai_id')->pluck('pegawai_id');
-            $statistics['belum_mengajukan'] = $totalPegawai - count($pegawaiSudahMengajukan);
+            $pegawaiSudahMengajukanQuery = SimpegPengajuanIzinDosen::query();
+             if ($periodeIzinFilter && $periodeIzinFilter !== 'semua') {
+                $this->applyPeriodeIzinFilter($pegawaiSudahMengajukanQuery, $periodeIzinFilter);
+            }
+             if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
+                $pegawaiSudahMengajukanQuery->whereHas('pegawai', function($q) use ($unitKerjaFilter) {
+                    $q->where('unit_kerja_id', $unitKerjaFilter);
+                });
+            }
 
-            // Statistics by jenis izin
+            $pegawaiSudahMengajukanCount = $pegawaiSudahMengajukanQuery->distinct('pegawai_id')->count('pegawai_id');
+            $statistics['belum_mengajukan'] = max(0, $totalPegawai - $pegawaiSudahMengajukanCount);
+
             $byJenis = $baseQuery->clone()
                 ->join('simpeg_jenis_izin', "{$tableName}.jenis_izin_id", '=', 'simpeg_jenis_izin.id')
                 ->groupBy('simpeg_jenis_izin.jenis_izin')
@@ -523,68 +455,115 @@ class AdminMonitoringValidasiIzinController extends Controller
         }
     }
 
-    /**
-     * Get filter options for the frontend
-     * @return array
-     */
-    public function getFilterOptions()
-    {
-        $unitKerjaOptions = SimpegUnitKerja::select('id', 'kode_unit', 'nama_unit')
-                                              ->orderBy('nama_unit')
-                                              ->get()
-                                              ->map(function($unit) {
-                                                  return [
-                                                      'id' => $unit->id,
-                                                      'nama' => $unit->nama_unit,
-                                                      'kode_unit' => $unit->kode_unit,
-                                                  ];
-                                              })
-                                              ->prepend(['id' => 'semua', 'nama' => 'Semua Unit Kerja', 'kode_unit' => '']);
-
-        $periodeIzinOptions = [
-            ['id' => 'semua', 'label' => 'Semua Periode', 'value' => 'semua'],
-            ['id' => '01', 'label' => 'Izin Tahunan', 'value' => '01'],
-            ['id' => '02', 'label' => 'Semester 1', 'value' => '02'],
-            ['id' => '03', 'label' => 'Semester 2', 'value' => '03'],
-            ['id' => '04', 'label' => 'Kuartal 1', 'value' => '04'],
-            ['id' => '05', 'label' => 'Kuartal 2', 'value' => '05'],
-            ['id' => '06', 'label' => 'Kuartal 3', 'value' => '06'],
-            ['id' => '07', 'label' => 'Kuartal 4', 'value' => '07'],
-        ];
-
-        $statusFilterOptions = [
-            ['id' => 'semua', 'label' => 'Semua Status', 'value' => 'semua'],
-            ['id' => 'belum_diajukan', 'label' => 'Belum Diajukan', 'value' => 'belum_diajukan'],
-            ['id' => 'diajukan', 'label' => 'Diajukan', 'value' => 'diajukan'],
-            ['id' => 'disetujui', 'label' => 'Disetujui', 'value' => 'disetujui'],
-            ['id' => 'dibatalkan', 'label' => 'Dibatalkan', 'value' => 'dibatalkan'],
-        ];
-
-        $jenisIzinOptions = SimpegJenisIzin::select('id', 'jenis_izin')
-                                           ->orderBy('jenis_izin')
-                                           ->get()
-                                           ->map(function($jenis) {
-                                               return ['id' => $jenis->id, 'label' => $jenis->jenis_izin, 'value' => $jenis->id];
-                                           })
-                                           ->prepend(['id' => 'semua', 'label' => 'Semua Jenis Izin', 'value' => 'semua']);
-
-        return [
-            'unit_kerja' => $unitKerjaOptions,
-            'periode_izin' => $periodeIzinOptions,
-            'status' => $statusFilterOptions,
-            'jenis_izin' => $jenisIzinOptions,
-        ];
-    }
-
     // =========================================================
     // PRIVATE HELPER METHODS
     // =========================================================
 
-    /**
-     * Get pegawai who have already applied for leave in a specific period.
-     * @param string $periodeIzin
-     * @return \Illuminate\Support\Collection
-     */
+    private function getPegawaiBelumMengajukan(Request $request)
+    {
+        $perPage = $request->per_page ?? 10;
+        $search = $request->search;
+        $unitKerjaFilter = $request->unit_kerja;
+        $periodeIzinFilter = $request->periode_izin;
+
+        $query = SimpegPegawai::with(['unitKerja', 'jabatanAkademik', 'statusAktif'])->whereRaw('LOWER(status_kerja) = ?', ['aktif']);
+
+        if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
+            $query->where('unit_kerja_id', $unitKerjaFilter);
+        }
+
+        $query->whereHas('jabatanAkademik', function($q) {
+            $dosenJabatan = ['Guru Besar', 'Lektor Kepala', 'Lektor', 'Asisten Ahli', 'Tenaga Pengajar', 'Dosen'];
+            $q->whereIn('jabatan_akademik', $dosenJabatan);
+        });
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $likeOperator = (config('database.connections.' . config('database.default') . '.driver') === 'pgsql') ? 'ilike' : 'like';
+                $q->where('nip', $likeOperator, '%'.$search.'%')
+                    ->orWhere('nama', $likeOperator, '%'.$search.'%')
+                    ->orWhereHas('unitKerja', function($subQ) use ($search, $likeOperator) {
+                        $subQ->where('nama_unit', $likeOperator, '%'.$search.'%');
+                    });
+            });
+        }
+
+        $pegawaiIds = $query->pluck('id');
+
+        if ($periodeIzinFilter && $periodeIzinFilter !== 'semua') {
+            $sudahMengajukan = $this->getPegawaiSudahMengajukan($periodeIzinFilter);
+            $pegawaiIds = collect($pegawaiIds)->diff($sudahMengajukan);
+        }
+
+        $pegawaiBelumMengajukan = SimpegPegawai::with(['unitKerja', 'jabatanAkademik'])
+            ->whereIn('id', $pegawaiIds)
+            ->orderBy('nama', 'asc')
+            ->paginate($perPage);
+        
+        return $this->formatResponseBelumMengajukan($pegawaiBelumMengajukan, $request);
+    }
+
+    private function createAbsensiForIzin(SimpegPengajuanIzinDosen $pengajuan, $keteranganAdmin = null)
+    {
+        $pengajuan->loadMissing('pegawai', 'jenisIzin');
+
+        if(!$pengajuan->pegawai) {
+            throw new \Exception("Data pegawai tidak ditemukan untuk pengajuan izin ID: " . $pengajuan->id);
+        }
+        
+        if(!$pengajuan->jenisIzin || !$pengajuan->jenisIzin->jenis_kehadiran_id) {
+            throw new \Exception("Jenis Kehadiran tidak terhubung dengan Jenis Izin ID: " . $pengajuan->jenis_izin_id);
+        }
+
+        $period = CarbonPeriod::create($pengajuan->tgl_mulai, $pengajuan->tgl_selesai);
+        $user = Auth::user();
+
+        foreach ($period as $date) {
+            $tanggalAbsensiStr = $date->format('Y-m-d');
+            
+            // PERBAIKAN: Gunakan keterangan dari admin jika ada, jika tidak, buat otomatis
+            $keteranganFinal = $keteranganAdmin;
+            if (empty($keteranganFinal)) {
+                $keteranganFinal = sprintf(
+                    'Izin disetujui secara otomatis untuk: %s. Disetujui oleh: %s.',
+                    $pengajuan->jenisIzin->jenis_izin ?? 'N/A',
+                    $user->nama ?? 'Sistem'
+                );
+            }
+            
+            $attributes = [
+                'pegawai_id' => $pengajuan->pegawai_id,
+                'tanggal_absensi' => $tanggalAbsensiStr,
+                'jenis_kehadiran_id' => $pengajuan->jenisIzin->jenis_kehadiran_id,
+                'cuti_record_id' => null,
+                'izin_record_id' => $pengajuan->id,
+                'check_sum_absensi' => md5($pengajuan->pegawai_id . $tanggalAbsensiStr . 'izin' . $pengajuan->id),
+                'status_verifikasi' => 'verified',
+                'verifikasi_oleh' => $user->nama,
+                'verifikasi_at' => now(),
+                'keterangan' => $keteranganFinal,
+                'jam_masuk' => null, 'jam_keluar' => null, 'jam_kerja_id' => null, 'setting_kehadiran_id' => null,
+                'latitude_masuk' => null, 'longitude_masuk' => null, 'lokasi_masuk' => null, 'foto_masuk' => null,
+                'latitude_keluar' => null, 'longitude_keluar' => null, 'lokasi_keluar' => null, 'foto_keluar' => null,
+                'rencana_kegiatan' => null, 'realisasi_kegiatan' => null,
+                'durasi_kerja' => 0, 'durasi_terlambat' => 0, 'durasi_pulang_awal' => 0,
+                'terlambat' => false, 'pulang_awal' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+    
+            DB::table('simpeg_absensi_record')->updateOrInsert(
+                ['pegawai_id' => $pengajuan->pegawai_id, 'tanggal_absensi' => $tanggalAbsensiStr],
+                $attributes
+            );
+        }
+    }
+
+    private function deleteAbsensiForIzin(SimpegPengajuanIzinDosen $pengajuan)
+    {
+        SimpegAbsensiRecord::where('izin_record_id', $pengajuan->id)->delete();
+    }
+    
     private function getPegawaiSudahMengajukan($periodeIzin)
     {
         $query = SimpegPengajuanIzinDosen::select('pegawai_id');
@@ -592,36 +571,24 @@ class AdminMonitoringValidasiIzinController extends Controller
         return $query->distinct()->pluck('pegawai_id');
     }
 
-    /**
-     * Apply date range filters to the query based on the selected period.
-     * @param \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder $query
-     * @param string $periodeIzin
-     * @return void
-     */
     private function applyPeriodeIzinFilter($query, $periodeIzin)
     {
         $currentYear = Carbon::now()->year;
         
         switch ($periodeIzin) {
-            case '01': $query->whereYear('tgl_mulai', $currentYear); break; // Tahunan
-            case '02': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-01-01", "{$currentYear}-06-30"]); break; // Semester 1
-            case '03': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-07-01", "{$currentYear}-12-31"]); break; // Semester 2
-            case '04': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-01-01", "{$currentYear}-03-31"]); break; // Kuartal 1
-            case '05': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-04-01", "{$currentYear}-06-30"]); break; // Kuartal 2
-            case '06': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-07-01", "{$currentYear}-09-30"]); break; // Kuartal 3
-            case '07': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-10-01", "{$currentYear}-12-31"]); break; // Kuartal 4
+            case '01': $query->whereYear('tgl_mulai', $currentYear); break;
+            case '02': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-01-01", "{$currentYear}-06-30"]); break;
+            case '03': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-07-01", "{$currentYear}-12-31"]); break;
+            case '04': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-01-01", "{$currentYear}-03-31"]); break;
+            case '05': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-04-01", "{$currentYear}-06-30"]); break;
+            case '06': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-07-01", "{$currentYear}-09-30"]); break;
+            case '07': $query->whereYear('tgl_mulai', $currentYear)->whereBetween('tgl_mulai', ["{$currentYear}-10-01", "{$currentYear}-12-31"]); break;
         }
     }
 
-    /**
-     * Format a single leave application record into a structured array for API response.
-     * @param SimpegPengajuanIzinDosen $pengajuan
-     * @param bool $includeActions
-     * @return array|null
-     */
     private function formatPengajuanIzin($pengajuan, $includeActions = false)
     {
-        if (!$pengajuan) {
+        if (!$pengajuan || !$pengajuan->pegawai) {
             return null;
         }
 
@@ -633,7 +600,7 @@ class AdminMonitoringValidasiIzinController extends Controller
             'id' => $pengajuan->id,
             'nip' => $pegawai->nip ?? '-',
             'nama_pegawai' => ($pegawai->gelar_depan ? $pegawai->gelar_depan . ' ' : '') . ($pegawai->nama ?? '-') . ($pegawai->gelar_belakang ? ', ' . $pegawai->gelar_belakang : ''),
-            'unit_kerja' => $pegawai->unitKerja->nama_unit ?? '-',
+            'unit_kerja' => $this->getUnitKerjaNama($pegawai),
             'jenis_izin' => $pengajuan->jenisIzin->jenis_izin ?? '-',
             'keperluan' => $pengajuan->alasan_izin ?? '-',
             'lama_izin' => $pengajuan->jumlah_izin . ' hari',
@@ -648,23 +615,22 @@ class AdminMonitoringValidasiIzinController extends Controller
                 'keterangan_admin' => $pengajuan->keterangan,
                 'file_pendukung' => $pengajuan->file_pendukung ? [
                     'nama_file' => basename($pengajuan->file_pendukung),
-                    'url' => $pengajuan->file_pendukung_url
+                    'url' => Storage::disk('public')->url('pegawai/izin/' . $pengajuan->file_pendukung)
                 ] : null,
                 'tgl_diajukan' => $pengajuan->tgl_diajukan ? Carbon::parse($pengajuan->tgl_diajukan)->format('d M Y H:i:s') : '-',
                 'tgl_disetujui' => $pengajuan->tgl_disetujui ? Carbon::parse($pengajuan->tgl_disetujui)->format('d M Y H:i:s') : '-',
                 'tgl_ditolak' => $pengajuan->tgl_ditolak ? Carbon::parse($pengajuan->tgl_ditolak)->format('d M Y H:i:s') : '-',
-                'approved_by_id' => $pengajuan->approved_by,
-                'approved_by_name' => $pengajuan->approver ? (($pengajuan->approver->gelar_depan ? $pengajuan->approver->gelar_depan . ' ' : '') . $pengajuan->approver->nama . ($pengajuan->approver->gelar_belakang ? ', ' . $pengajuan->approver->gelar_belakang : '')) : '-',
+                'approved_by_id' => null,
+                'approved_by_name' => $pengajuan->approved_by ?? '-',
             ]
         ];
 
         if ($includeActions) {
             $data['actions'] = [];
-            if ($status === 'diajukan') {
+            if ($status === 'diajukan' || $status === 'ditolak') {
                 $data['actions']['approve'] = ['url' => url("/api/admin/validasi-izin/{$pengajuan->id}/approve"), 'method' => 'PATCH', 'label' => 'Setujui', 'icon' => 'check', 'color' => 'success'];
-                $data['actions']['reject'] = ['url' => url("/api/admin/validasi-izin/{$pengajuan->id}/reject"), 'method' => 'PATCH', 'label' => 'Batalkan', 'icon' => 'x', 'color' => 'danger'];
             }
-            if ($status === 'disetujui') {
+            if ($status === 'diajukan' || $status === 'disetujui') {
                 $data['actions']['reject'] = ['url' => url("/api/admin/validasi-izin/{$pengajuan->id}/reject"), 'method' => 'PATCH', 'label' => 'Batalkan', 'icon' => 'x', 'color' => 'danger'];
             }
             $data['actions']['view'] = ['url' => url("/api/admin/validasi-izin/{$pengajuan->id}"), 'method' => 'GET', 'label' => 'Lihat Detail', 'icon' => 'eye', 'color' => 'info'];
@@ -673,21 +639,18 @@ class AdminMonitoringValidasiIzinController extends Controller
         return $data;
     }
     
-    /**
-     * Format the main paginated response for leave applications.
-     * @param \Illuminate\Pagination\LengthAwarePaginator $paginator
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     private function formatResponsePengajuan(LengthAwarePaginator $paginator, Request $request)
     {
         $batchActions = [];
-        if ($request->status === 'diajukan') {
+        if ($request->status === 'diajukan' || $request->status === 'ditolak') {
             $batchActions = [
                 'approve' => ['url' => url('/api/admin/validasi-izin/batch-approve'), 'method' => 'POST', 'label' => 'Setujui Terpilih', 'color' => 'success'],
-                'reject' => ['url' => url('/api/admin/validasi-izin/batch-reject'), 'method' => 'POST', 'label' => 'Batalkan Terpilih', 'color' => 'danger']
             ];
         }
+        if ($request->status === 'diajukan' || $request->status === 'disetujui') {
+             $batchActions['reject'] = ['url' => url('/api/admin/validasi-izin/batch-reject'), 'method' => 'POST', 'label' => 'Batalkan Terpilih', 'color' => 'danger'];
+        }
+
 
         return response()->json([
             'success' => true,
@@ -707,12 +670,6 @@ class AdminMonitoringValidasiIzinController extends Controller
         ]);
     }
 
-    /**
-     * Format the response for employees who have not yet applied for leave.
-     * @param \Illuminate\Pagination\LengthAwarePaginator $pegawai
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     private function formatResponseBelumMengajukan(LengthAwarePaginator $pegawai, Request $request)
     {
         return response()->json([
@@ -722,7 +679,7 @@ class AdminMonitoringValidasiIzinController extends Controller
                     'id' => $item->id,
                     'nip' => $item->nip ?? '-',
                     'nama_pegawai' => ($item->gelar_depan ? $item->gelar_depan . ' ' : '') . ($item->nama ?? '-') . ($item->gelar_belakang ? ', ' . $item->gelar_belakang : ''),
-                    'unit_kerja' => $item->unitKerja->nama_unit ?? '-',
+                    'unit_kerja' => $this->getUnitKerjaNama($item),
                     'jenis_izin' => '-',
                     'keperluan' => '-',
                     'lama_izin' => '-',
@@ -747,11 +704,6 @@ class AdminMonitoringValidasiIzinController extends Controller
         ]);
     }
 
-    /**
-     * Provides a standardized structure for status information (label, color, icon).
-     * @param string $status
-     * @return array
-     */
     private function getStatusInfo($status)
     {
         $statusMap = [
@@ -762,5 +714,72 @@ class AdminMonitoringValidasiIzinController extends Controller
             'ditangguhkan' => ['label' => 'Ditangguhkan', 'color' => 'warning', 'icon' => 'pause-circle']
         ];
         return $statusMap[$status] ?? ['label' => ucfirst($status), 'color' => 'secondary', 'icon' => 'circle'];
+    }
+
+    public function getFilterOptions()
+    {
+        $unitKerjaOptions = SimpegUnitKerja::select('id', 'kode_unit', 'nama_unit')
+                                            ->orderBy('nama_unit')
+                                            ->get()
+                                            ->map(function($unit) {
+                                                return [
+                                                    'id' => $unit->id,
+                                                    'nama' => $unit->nama_unit,
+                                                    'kode_unit' => $unit->kode_unit,
+                                                ];
+                                            })
+                                            ->prepend(['id' => 'semua', 'nama' => 'Semua Unit Kerja', 'kode_unit' => '']);
+
+        $periodeIzinOptions = [
+            ['id' => 'semua', 'label' => 'Semua Periode', 'value' => 'semua'],
+            ['id' => '01', 'label' => 'Izin Tahunan', 'value' => '01'],
+            ['id' => '02', 'label' => 'Semester 1', 'value' => '02'],
+            ['id' => '03', 'label' => 'Semester 2', 'value' => '03'],
+            ['id' => '04', 'label' => 'Kuartal 1', 'value' => '04'],
+            ['id' => '05', 'label' => 'Kuartal 2', 'value' => '05'],
+            ['id' => '06', 'label' => 'Kuartal 3', 'value' => '06'],
+            ['id' => '07', 'label' => 'Kuartal 4', 'value' => '07'],
+        ];
+
+        $statusFilterOptions = [
+            ['id' => 'semua', 'label' => 'Semua Status', 'value' => 'semua'],
+            ['id' => 'belum_diajukan', 'label' => 'Belum Diajukan', 'value' => 'belum_diajukan'],
+            ['id' => 'diajukan', 'label' => 'Diajukan', 'value' => 'diajukan'],
+            ['id' => 'disetujui', 'label' => 'Disetujui', 'value' => 'disetujui'],
+            ['id' => 'dibatalkan', 'label' => 'Dibatalkan', 'value' => 'dibatalkan'],
+        ];
+
+        $jenisIzinOptions = SimpegJenisIzin::select('id', 'jenis_izin')
+                                            ->orderBy('jenis_izin')
+                                            ->get()
+                                            ->map(function($jenis) {
+                                                return ['id' => $jenis->id, 'label' => $jenis->jenis_izin, 'value' => $jenis->id];
+                                            })
+                                            ->prepend(['id' => 'semua', 'label' => 'Semua Jenis Izin', 'value' => 'semua']);
+
+        return [
+            'unit_kerja' => $unitKerjaOptions,
+            'periode_izin' => $periodeIzinOptions,
+            'status' => $statusFilterOptions,
+            'jenis_izin' => $jenisIzinOptions,
+        ];
+    }
+    
+    private function getUnitKerjaNama($pegawai)
+    {
+        if (!$pegawai) {
+            return '-';
+        }
+
+        if ($pegawai->relationLoaded('unitKerja') && $pegawai->unitKerja) {
+            return $pegawai->unitKerja->nama_unit;
+        }
+
+        if ($pegawai->unit_kerja_id) {
+            $unitKerja = SimpegUnitKerja::find($pegawai->unit_kerja_id);
+            return $unitKerja ? $unitKerja->nama_unit : '-';
+        }
+
+        return '-';
     }
 }

@@ -141,7 +141,7 @@ class SimpegDataPelanggaranController extends Controller
             'no_sk' => 'nullable|string|max:100',
             'tgl_sk' => 'nullable|date',
             'keterangan' => 'nullable|string|max:255',
-            'file_foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048', // Max 2MB
+            'file_foto' => 'required|image|mimes:jpeg,jpg,png|max:2048', // Max 2MB
         ]);
 
         if ($validator->fails()) {
@@ -153,8 +153,7 @@ class SimpegDataPelanggaranController extends Controller
         }
 
         try {
-            $dataToCreate = $request->except(['file_foto']);
-            
+            $dataToCreate = $validator->validated();
             // Handle file upload
             if ($request->hasFile('file_foto')) {
                 $file = $request->file('file_foto');
