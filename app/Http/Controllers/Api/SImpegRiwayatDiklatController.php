@@ -1080,4 +1080,15 @@ class SimpegRiwayatDiklatController extends Controller
         ]));
     }
 
+
+
+
+
+
+
+    
+
+
+
+
 }
