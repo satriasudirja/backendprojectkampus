@@ -9,7 +9,7 @@ use App\Models\SimpegCutiRecord;
 use App\Models\SimpegIzinRecord;
 use App\Models\SimpegBerita;
 use App\Models\SimpegUnitKerja;
-use App\Models\SimpegEvaluasiKinerja; // Ditambahkan
+use App\Models\SimpegEvaluasiKinerja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -83,7 +83,7 @@ class DashboardDosenController extends Controller
     }
 
     /**
-     * [METODE BARU] Mengambil data evaluasi kinerja pribadi untuk ditampilkan sebagai diagram.
+     * Mengambil data evaluasi kinerja pribadi untuk ditampilkan sebagai diagram.
      */
     public function getEvaluasiKinerjaChart(Request $request)
     {
@@ -93,28 +93,24 @@ class DashboardDosenController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        // Validasi input tahun
         $validated = $request->validate([
             'year' => 'nullable|digits:4|integer|min:2020',
         ]);
 
         $year = $validated['year'] ?? Carbon::now()->year;
 
-        // Query data evaluasi khusus untuk pegawai yang login
         $results = SimpegEvaluasiKinerja::select(
                 DB::raw('EXTRACT(MONTH FROM tanggal_penilaian) as month'),
                 DB::raw('AVG(total_nilai) as average_score')
             )
-            ->where('pegawai_id', $pegawai->id) // Filter berdasarkan ID pegawai yang login
+            ->where('pegawai_id', $pegawai->id)
             ->whereYear('tanggal_penilaian', $year)
             ->groupBy('month')
             ->orderBy('month', 'asc')
             ->get();
 
-        // Siapkan array untuk 12 bulan dengan nilai awal 0
-        $monthlyAverages = array_fill(1, 12, 0); // Start index from 1 for month
+        $monthlyAverages = array_fill(1, 12, 0);
 
-        // Isi array dengan data hasil query
         foreach ($results as $result) {
             $month = (int) $result->month;
             if (isset($monthlyAverages[$month])) {
@@ -122,7 +118,6 @@ class DashboardDosenController extends Controller
             }
         }
         
-        // Ubah ke format array biasa (0-indexed) agar mudah digunakan di frontend
         $chartDataValues = array_values($monthlyAverages);
 
         $monthLabels = [
@@ -167,33 +162,39 @@ class DashboardDosenController extends Controller
         return "Hari ini Anda belum tercatat hadir.";
     }
 
+    /**
+     * [FIXED] Mengambil statistik kehadiran berdasarkan data dari simpeg_absensi_record.
+     * Logika ini memastikan semua perhitungan (hadir, alfa, izin, cuti) berasal dari satu
+     * sumber data yang konsisten untuk akurasi maksimal.
+     */
     private function getStatistikKehadiran($pegawaiId, $mulai, $selesai)
     {
-        $absensi = SimpegAbsensiRecord::where('pegawai_id', $pegawaiId)
+        // Mengambil semua record absensi yang relevan dalam rentang tanggal yang diberikan.
+        // Ini menjadi satu-satunya sumber kebenaran (source of truth) untuk statistik.
+        $absensiRecords = SimpegAbsensiRecord::where('pegawai_id', $pegawaiId)
             ->whereBetween('tanggal_absensi', [$mulai, $selesai])
             ->get();
             
-        $cuti = SimpegCutiRecord::where('pegawai_id', $pegawaiId)
-            ->where('status_pengajuan', 'disetujui')
-            ->where(function ($query) use ($mulai, $selesai) {
-                $query->whereBetween('tgl_mulai', [$mulai, $selesai])
-                      ->orWhereBetween('tgl_selesai', [$mulai, $selesai]);
-            })->sum('jumlah_cuti');
+        // Menghitung jumlah 'Hadir' dari record yang memiliki 'jam_masuk'.
+        $hadir = $absensiRecords->whereNotNull('jam_masuk')->count();
 
-        $izin = SimpegIzinRecord::where('pegawai_id', $pegawaiId)
-            ->where('status_pengajuan', 'disetujui')
-              ->where(function ($query) use ($mulai, $selesai) {
-                $query->whereBetween('tgl_mulai', [$mulai, $selesai])
-                      ->orWhereBetween('tgl_selesai', [$mulai, $selesai]);
-            })->sum('jumlah_izin');
-            
-        $hadir = $absensi->whereNotNull('jam_masuk')->count();
-        $alpha = $absensi->whereNull('jam_masuk')
-                         ->whereNull('cuti_record_id')
-                         ->whereNull('izin_record_id')->count();
+        // Menghitung jumlah 'Cuti' dari record yang memiliki referensi 'cuti_record_id'.
+        $cuti = $absensiRecords->whereNotNull('cuti_record_id')->count();
 
+        // Menghitung jumlah 'Izin' (termasuk Sakit) dari record yang memiliki referensi 'izin_record_id'.
+        $izin = $absensiRecords->whereNotNull('izin_record_id')->count();
+
+        // Menghitung jumlah 'Alpha' dari record yang tidak memiliki jam masuk, bukan cuti, dan bukan izin.
+        // Asumsi: record alpha dibuat di tabel absensi jika pegawai tidak ada keterangan.
+        $alpha = $absensiRecords->whereNull('jam_masuk')
+                                 ->whereNull('cuti_record_id')
+                                 ->whereNull('izin_record_id')
+                                 ->count();
+
+        // Menghitung total ketidakhadiran untuk data grafik.
         $totalNonHadir = $alpha + $izin + $cuti;
         
+        // Mengembalikan data dengan struktur yang sama, namun dengan perhitungan yang sudah benar.
         return [
             'total_hadir' => $hadir,
             'total_alpha' => $alpha,
@@ -272,11 +273,10 @@ class DashboardDosenController extends Controller
             ->get();
 
         $filteredBerita = $allActiveBerita->filter(function ($berita) use ($unitKerjaIdScope) {
-            // FIX: Langsung gunakan properti sebagai array, tanpa json_decode
             $targetUnitIds = $berita->unit_kerja_id;
 
             if (!is_array($targetUnitIds)) {
-                // Fallback jika datanya ternyata string JSON (untuk data lama)
+                // Fallback untuk data lama yang mungkin masih string JSON
                 $targetUnitIds = json_decode($targetUnitIds, true);
                 if (!is_array($targetUnitIds)) return false;
             }
