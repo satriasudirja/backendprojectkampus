@@ -31,7 +31,7 @@ class SimpegPegawaiSeeder extends Seeder
         $this->command->info('Cleaning existing data...');
         
         // Untuk PostgreSQL, disable triggers sementara
-        DB::statement('SET session_replication_role = replica;');
+        // DB::statement('SET session_replication_role = replica;');
         
         // Hapus data dalam urutan yang benar (child dulu, parent kemudian)
         SimpegUser::truncate();
