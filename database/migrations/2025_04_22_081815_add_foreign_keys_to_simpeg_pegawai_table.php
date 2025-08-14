@@ -26,8 +26,8 @@ return new class extends Migration
                   ->references('id')->on('simpeg_status_aktif')
                   ->onDelete('set null');
 
-            $table->foreign('jabatan_akademik_id')
-                  ->references('id')->on('simpeg_jabatan_akademik')
+            $table->foreign('jabatan_fungsional_id')
+                  ->references('id')->on('simpeg_fungsional_akademik')
                   ->onDelete('set null');
 
             $table->foreign('suku_id')
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->dropForeign(['unit_kerja_id']);
             $table->dropForeign(['kode_status_pernikahan']);
             $table->dropForeign(['status_aktif_id']);
-            $table->dropForeign(['jabatan_akademik_id']);
+            $table->dropForeign(['jabatan_fungsional_id']);
             $table->dropForeign(['suku_id']);
         });
     }
