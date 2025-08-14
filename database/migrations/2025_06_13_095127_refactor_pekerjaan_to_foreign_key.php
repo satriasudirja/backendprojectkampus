@@ -11,7 +11,7 @@ public function up()
 {
     
     Schema::table('simpeg_data_riwayat_pekerjaan', function (Blueprint $table) {
-        $table->unsignedBigInteger('pekerjaan_id')->nullable()->after('jenis_pekerjaan');
+        $table->uuid('pekerjaan_id')->nullable()->after('jenis_pekerjaan');
         $table->foreign('pekerjaan_id')->references('id')->on('simpeg_pekerjaan')->onDelete('set null');
         // $table->dropColumn('jenis_pekerjaan'); // Hapus setelah data lama dimigrasikan
     });

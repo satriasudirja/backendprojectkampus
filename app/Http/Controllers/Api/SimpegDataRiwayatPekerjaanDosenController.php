@@ -363,7 +363,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             'submit_type' => 'sometimes|in:draft,submit',
             'keterangan' => 'nullable|string',
             'dokumen_to_delete' => 'nullable|array',
-            'dokumen_to_delete.*' => 'integer|exists:simpeg_data_pendukung,id'
+            'dokumen_to_delete.*' => 'uuid|exists:simpeg_data_pendukung,id'
         ]);
 
         if ($validator->fails()) {
@@ -541,7 +541,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_riwayat_pekerjaan,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_riwayat_pekerjaan,id'
         ]);
 
         if ($validator->fails()) {
@@ -635,7 +635,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer'
+            'ids.*' => 'required|uuid'
         ]);
 
         if ($validator->fails()) {

@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_evaluasi_kinerja', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('pegawai_id');
-            $table->unsignedBigInteger('penilai_id');
-            $table->unsignedBigInteger('atasan_penilai_id');
+            $table->uuid('id')->primary();
+            $table->uuid('pegawai_id');
+            $table->uuid('penilai_id');
+            $table->uuid('atasan_penilai_id');
             $table->string('jenis_kinerja'); // Contoh: 'dosen' atau 'tendik'
             $table->string('periode_tahun', 10);
             $table->date('tanggal_penilaian');

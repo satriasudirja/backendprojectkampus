@@ -272,7 +272,7 @@ class AdminMonitoringValidasiIzinController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer',
+            'ids.*' => 'required|uuid',
             'keterangan' => 'nullable|string|max:500'
         ]);
 
@@ -328,7 +328,7 @@ class AdminMonitoringValidasiIzinController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer',
+            'ids.*' => 'required|uuid',
             'keterangan' => 'required|string|max:500'
         ]);
 

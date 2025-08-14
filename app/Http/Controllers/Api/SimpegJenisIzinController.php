@@ -45,7 +45,7 @@ class SimpegJenisIzinController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'jenis_kehadiran_id' => 'required|integer|exists:simpeg_jenis_kehadiran,id',
+            'jenis_kehadiran_id' => 'required|uuid|exists:simpeg_jenis_kehadiran,id',
             'kode' => 'required|string|max:5|unique:simpeg_jenis_izin,kode',
             'jenis_izin' => 'required|string|max:50',
             'status_presensi' => 'required|string|max:20',
@@ -86,7 +86,7 @@ class SimpegJenisIzinController extends Controller
     }
 
         $validator = Validator::make($request->all(), [
-            'jenis_kehadiran_id' => 'sometimes|required|integer|exists:simpeg_jenis_kehadiran,id',
+            'jenis_kehadiran_id' => 'sometimes|required|uuid|exists:simpeg_jenis_kehadiran,id',
             'jenis_izin' => 'sometimes|required|string|max:50',
             // 'status_presensi' => 'sometimes|required|string|max:20',
             'izin_max' => 'sometimes|required|string|max:3',

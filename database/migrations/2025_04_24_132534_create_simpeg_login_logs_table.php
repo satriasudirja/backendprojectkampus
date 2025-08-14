@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('simpeg_login_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('pegawai_id')->constrained('simpeg_pegawai');
+            $table->foreignUuid('pegawai_id')->constrained('simpeg_pegawai');
             $table->ipAddress('ip_address');
             $table->text('user_agent');
             $table->timestamp('logged_in_at')->default(now());

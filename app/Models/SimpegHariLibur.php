@@ -3,12 +3,14 @@
 // File: app/Models/SimpegHariLibur.php
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegHariLibur extends Model
 {
     use SoftDeletes;
+    use HasUuids;
     
     protected $table = 'simpeg_hari_libur';
     

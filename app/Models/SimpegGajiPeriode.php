@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class SimpegGajiPeriode extends Model
 {
+    use HasUuids;
     protected $table = 'simpeg_gaji_periode';
     protected $primaryKey = 'id';
     public $incrementing = false;
@@ -38,7 +40,7 @@ class SimpegGajiPeriode extends Model
     // Relasi ke slip gaji
     public function slipGaji()
     {
-        return $this->hasMany(GajiSlip::class, 'periode_id');
+        return $this->hasMany(slipGaji::class, 'periode_id');
     }
 
     // Scope untuk periode aktif

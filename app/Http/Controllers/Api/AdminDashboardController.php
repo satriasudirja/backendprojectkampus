@@ -33,6 +33,7 @@ class AdminDashboardController extends Controller
             'non_academic_education' => $this->dashboardService->getNonAcademicEducationDistribution($unitKerjaId),
             'news' => $this->dashboardService->getNews($unitKerjaId),
             'birthdays' => $this->dashboardService->getCurrentMonthBirthdays($unitKerjaId),
+            'pensiun' => $this->dashboardService->getCurrentMonthPensiun($unitKerjaId),
         ];
         
         return response()->json([

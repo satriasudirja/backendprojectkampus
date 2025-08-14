@@ -9,8 +9,8 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_riwayat_pekerjaan', function (Blueprint $table) {
             // Kolom utama
-            $table->bigIncrements('id');
-            $table->integer('pegawai_id');
+            $table->uuid('id')->primary();
+            $table->uuid('pegawai_id');
             
             // Informasi pekerjaan
             $table->string('bidang_usaha', 200);

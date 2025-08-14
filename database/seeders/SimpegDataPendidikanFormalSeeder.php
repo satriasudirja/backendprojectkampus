@@ -3,13 +3,9 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\SimpegDataPendidikanFormal;
-use App\Models\SimpegPegawai;
-use App\Models\SimpegJenjangPendidikan;
-use App\Models\MasterPerguruanTinggi;
-use App\Models\MasterProdiPerguruanTinggi;
-use App\Models\MasterGelarAkademik;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class SimpegDataPendidikanFormalSeeder extends Seeder
 {
@@ -18,70 +14,39 @@ class SimpegDataPendidikanFormalSeeder extends Seeder
      */
     public function run(): void
     {
-        // Make sure there are related records in other tables
-        $pegawaiIds = SimpegPegawai::pluck('id')->toArray();
-        $jenjangPendidikanIds = SimpegJenjangPendidikan::pluck('id')->toArray();
-        $perguruanTinggiIds = MasterPerguruanTinggi::pluck('id')->toArray();
-        $prodiIds = MasterProdiPerguruanTinggi::pluck('id')->toArray();
-        $gelarIds = MasterGelarAkademik::pluck('id')->toArray();
-        
-        // If no test data exists, create dummy IDs for testing
-        if (empty($pegawaiIds)) {
-            $pegawaiIds = [1, 2, 3];
-        }
-        
-        if (empty($jenjangPendidikanIds)) {
-            $jenjangPendidikanIds = [1, 2, 3, 4]; // S1, S2, S3, D3
-        }
-        
-        if (empty($perguruanTinggiIds)) {
-            $perguruanTinggiIds = [1, 2, 3, 4, 5];
-        }
-        
-        if (empty($prodiIds)) {
-            $prodiIds = [1, 2, 3, 4, 5];
-        }
-        
-        if (empty($gelarIds)) {
-            $gelarIds = [1, 2, 3, 4, 5];
+        // Ambil semua UUID dari tabel relasi
+        $pegawaiIds = DB::table('simpeg_pegawai')->pluck('id')->toArray();
+        $jenjangPendidikanIds = DB::table('simpeg_jenjang_pendidikan')->pluck('id')->toArray();
+        $perguruanTinggiIds = DB::table('simpeg_master_perguruan_tinggi')->pluck('id')->toArray();
+        $prodiIds = DB::table('simpeg_master_prodi_perguruan_tinggi')->pluck('id')->toArray();
+        $gelarIds = DB::table('simpeg_master_gelar_akademik')->pluck('id')->toArray();
+
+        // Validasi data referensi
+        if (empty($pegawaiIds) || empty($jenjangPendidikanIds) || empty($perguruanTinggiIds) || empty($prodiIds) || empty($gelarIds)) {
+            $this->command->error('Satu atau lebih tabel relasi (pegawai, jenjang, PT, prodi, gelar) kosong.');
+            $this->command->info('Harap jalankan seeder untuk tabel-tabel tersebut terlebih dahulu sebelum menjalankan seeder ini.');
+            return;
         }
         
         $statusOptions = ['draft', 'diajukan', 'disetujui', 'ditolak', 'ditangguhkan'];
-        $universitas = [
-            'Universitas Indonesia',
-            'Institut Teknologi Bandung',
-            'Universitas Gadjah Mada',
-            'Universitas Padjadjaran',
-            'Institut Pertanian Bogor',
-            'Universitas Airlangga',
-            'Universitas Diponegoro',
-            'Universitas Brawijaya'
-        ];
         $bidangStudi = [
-            'Teknik Informatika',
-            'Kedokteran',
-            'Ilmu Hukum',
-            'Akuntansi',
-            'Manajemen',
-            'Sistem Informasi',
-            'Teknik Elektro',
-            'Sastra Indonesia',
-            'Ilmu Komunikasi',
-            'Psikologi'
+            'Teknik Informatika', 'Kedokteran', 'Ilmu Hukum', 'Akuntansi', 'Manajemen',
+            'Sistem Informasi', 'Teknik Elektro', 'Sastra Indonesia', 'Ilmu Komunikasi', 'Psikologi'
         ];
         
-        // Create 50 education records
+        $dataPendidikan = [];
+
+        // Buat 50 data pendidikan
         for ($i = 0; $i < 50; $i++) {
-            $pegawaiId = $pegawaiIds[array_rand($pegawaiIds)];
-            $jenjangId = $jenjangPendidikanIds[array_rand($jenjangPendidikanIds)];
             $tahunLulus = rand(2000, 2023);
             $tahunMasuk = $tahunLulus - rand(3, 5);
             $status = $statusOptions[array_rand($statusOptions)];
             
             $pendidikan = [
-                'pegawai_id' => $pegawaiId,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawaiIds[array_rand($pegawaiIds)],
                 'lokasi_studi' => rand(0, 1) ? 'Dalam Negeri' : 'Luar Negeri',
-                'jenjang_pendidikan_id' => $jenjangId,
+                'jenjang_pendidikan_id' => $jenjangPendidikanIds[array_rand($jenjangPendidikanIds)],
                 'perguruan_tinggi_id' => $perguruanTinggiIds[array_rand($perguruanTinggiIds)],
                 'prodi_perguruan_tinggi_id' => $prodiIds[array_rand($prodiIds)],
                 'gelar_akademik_id' => $gelarIds[array_rand($gelarIds)],
@@ -102,11 +67,17 @@ class SimpegDataPendidikanFormalSeeder extends Seeder
                 'letak_gelar' => rand(0, 1) ? 'depan' : 'belakang',
                 'jumlah_semester_ditempuh' => rand(6, 14),
                 'jumlah_sks_kelulusan' => rand(120, 160),
-                'ipk_kelulusan' => rand(275, 400) / 100, // 2.75 - 4.00
+                'ipk_kelulusan' => rand(275, 400) / 100,
                 'status_pengajuan' => $status,
+                'created_at' => now(),
+                'updated_at' => now(),
+
+                // --- SOLUSI: Definisikan kolom di awal dengan nilai null ---
+                'tanggal_diajukan' => null,
+                'tanggal_disetujui' => null,
             ];
             
-            // Add dates based on status
+            // Isi tanggal hanya jika statusnya sesuai
             if (in_array($status, ['diajukan', 'disetujui', 'ditolak', 'ditangguhkan'])) {
                 $pendidikan['tanggal_diajukan'] = Carbon::now()->subDays(rand(10, 90));
                 
@@ -115,7 +86,10 @@ class SimpegDataPendidikanFormalSeeder extends Seeder
                 }
             }
             
-            SimpegDataPendidikanFormal::create($pendidikan);
+            $dataPendidikan[] = $pendidikan;
         }
+        
+        // Gunakan bulk insert untuk efisiensi
+        DB::table('simpeg_data_pendidikan_formal')->insert($dataPendidikan);
     }
 }

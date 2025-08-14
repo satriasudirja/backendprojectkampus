@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder; // Import Builder for type-hinting scopes
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class SimpegDataHubunganKerja extends Model
 {
+    use HasUuids;
     use HasFactory;
 
     protected $table = 'simpeg_data_hubungan_kerja';

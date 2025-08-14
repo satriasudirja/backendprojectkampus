@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_tes', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             
             // Foreign keys
-            $table->integer('pegawai_id');
-            $table->integer('jenis_tes_id');
+            $table->uuid('pegawai_id');
+            $table->uuid('jenis_tes_id');
             
             // Data tes
             $table->string('nama_tes', 100);

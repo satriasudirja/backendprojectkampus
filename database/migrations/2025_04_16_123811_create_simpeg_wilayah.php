@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('wilayah', function (Blueprint $table) {
             // Kolom utama
-             $table->bigIncrements('id'); // Menggunakan bigIncrements sebagai ganti int(100)
+             $table->uuid('id')->primary(); // Menggunakan bigIncrements sebagai ganti int(100)
             
             // Data negara
             $table->string('kode_negara', 10)->nullable();

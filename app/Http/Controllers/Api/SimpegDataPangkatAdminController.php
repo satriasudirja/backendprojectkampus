@@ -205,10 +205,10 @@ class SimpegDataPangkatAdminController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jenis_sk_id' => 'required|integer|exists:simpeg_daftar_jenis_sk,id',
-            'jenis_kenaikan_pangkat_id' => 'required|integer|exists:simpeg_jenis_kenaikan_pangkat,id',
-            'pangkat_id' => 'required|integer|exists:simpeg_master_pangkat,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'jenis_sk_id' => 'required|uuid|exists:simpeg_daftar_jenis_sk,id',
+            'jenis_kenaikan_pangkat_id' => 'required|uuid|exists:simpeg_jenis_kenaikan_pangkat,id',
+            'pangkat_id' => 'required|uuid|exists:simpeg_master_pangkat,id',
             'tmt_pangkat' => 'required|date',
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date',
@@ -312,10 +312,10 @@ class SimpegDataPangkatAdminController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
-            'jenis_sk_id' => 'sometimes|integer|exists:simpeg_daftar_jenis_sk,id',
-            'jenis_kenaikan_pangkat_id' => 'sometimes|integer|exists:simpeg_jenis_kenaikan_pangkat,id',
-            'pangkat_id' => 'sometimes|integer|exists:simpeg_master_pangkat,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id',
+            'jenis_sk_id' => 'sometimes|uuid|exists:simpeg_daftar_jenis_sk,id',
+            'jenis_kenaikan_pangkat_id' => 'sometimes|uuid|exists:simpeg_jenis_kenaikan_pangkat,id',
+            'pangkat_id' => 'sometimes|uuid|exists:simpeg_master_pangkat,id',
             'tmt_pangkat' => 'sometimes|date',
             'no_sk' => 'sometimes|string|max:100',
             'tgl_sk' => 'sometimes|date',
@@ -578,7 +578,7 @@ class SimpegDataPangkatAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pangkat,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_pangkat,id',
         ]);
 
         if ($validator->fails()) {
@@ -658,7 +658,7 @@ class SimpegDataPangkatAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pangkat,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_pangkat,id'
         ]);
 
         if ($validator->fails()) {
@@ -721,7 +721,7 @@ class SimpegDataPangkatAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pangkat,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_pangkat,id',
         ]);
 
         if ($validator->fails()) {
@@ -784,7 +784,7 @@ class SimpegDataPangkatAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pangkat,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_pangkat,id',
         ]);
 
         if ($validator->fails()) {
@@ -1013,10 +1013,10 @@ class SimpegDataPangkatAdminController extends Controller
                 ]
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
-                'jenis_sk_id' => 'required|integer',
-                'jenis_kenaikan_pangkat_id' => 'required|integer',
-                'pangkat_id' => 'required|integer',
+                'pegawai_id' => 'required|uuid',
+                'jenis_sk_id' => 'required|uuid',
+                'jenis_kenaikan_pangkat_id' => 'required|uuid',
+                'pangkat_id' => 'required|uuid',
                 'tmt_pangkat' => 'required|date',
                 'no_sk' => 'required|string|max:100',
                 'tgl_sk' => 'required|date',

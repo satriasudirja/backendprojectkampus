@@ -12,12 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_users', function (Blueprint $table) {
-             $table->bigIncrements('id');
-            $table->foreignId('role_id')
-            ->constrained('simpeg_users_roles')
-            ->onDelete('restrict');
+            $table->uuid('id')->primary();
+
+            // Relasi ke pegawai table
+            $table->foreignUuid('pegawai_id')
+                  ->unique() // Memastiksan 1 pegawai hanya punya 1 akun
+                  ->constrained('simpeg_pegawai')
+                  ->onUpdate('cascade')
+                  ->onDelete('cascade');
+
+            
+                  
             $table->string('username', 50); 
             $table->string('password', 100); 
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

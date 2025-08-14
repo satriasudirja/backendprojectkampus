@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class SimpegMediaPublikasiSeeder extends Seeder
 {
@@ -178,6 +180,18 @@ class SimpegMediaPublikasiSeeder extends Seeder
             ['nama' => 'Virtuoso: Jurnal Pengkajian dan Penciptaan Musik'],
         ];
 
-        DB::table('simpeg_media_publikasi')->insert($mediaPublikasi);
+        $now = Carbon::now();
+
+        $dataToInsert = array_map(function($item) use ($now){
+            $item ['id'] = Str::uuid();
+            $item['created_at'] = $now;
+            $item['updated_at'] = $now;
+            return $item;
+
+        }, $mediaPublikasi);
+
+        
+        DB::table('simpeg_media_publikasi')->truncate();
+        DB::table('simpeg_media_publikasi')->insert($dataToInsert);
     }
 }

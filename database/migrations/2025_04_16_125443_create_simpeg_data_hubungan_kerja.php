@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_hubungan_kerja', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             
             // Data SK
             $table->string('no_sk', 50)->nullable();
@@ -34,9 +34,9 @@ return new class extends Migration
              $table->timestamp('tgl_ditolak')->nullable();
                 $table->string('keterangan')->nullable();
                 $table->string('dibuat_oleh')->nullable();
-            $table->integer('hubungan_kerja_id');
-            $table->integer('status_aktif_id');
-            $table->integer('pegawai_id');
+            $table->uuid('hubungan_kerja_id');
+            $table->uuid('status_aktif_id');
+            $table->uuid('pegawai_id');
             
             $table->timestamps();
 

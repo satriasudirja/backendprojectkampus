@@ -147,8 +147,8 @@ class SimpegDataPenghargaanAdmController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jenis_penghargaan_id' => 'required|integer|exists:simpeg_jenis_penghargaan,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'jenis_penghargaan_id' => 'required|uuid|exists:simpeg_jenis_penghargaan,id',
             'nama_penghargaan' => 'required|string|max:255',
             'no_sk' => 'nullable|string|max:100',
             'tanggal_sk' => 'nullable|date',
@@ -236,8 +236,8 @@ class SimpegDataPenghargaanAdmController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
-            'jenis_penghargaan_id' => 'sometimes|integer|exists:simpeg_jenis_penghargaan,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id',
+            'jenis_penghargaan_id' => 'sometimes|uuid|exists:simpeg_jenis_penghargaan,id',
             'nama_penghargaan' => 'sometimes|string|max:255',
             'no_sk' => 'nullable|string|max:100',
             'tanggal_sk' => 'nullable|date',
@@ -377,7 +377,7 @@ class SimpegDataPenghargaanAdmController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_penghargaan,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_penghargaan,id'
         ]);
 
         if ($validator->fails()) {
@@ -558,8 +558,8 @@ class SimpegDataPenghargaanAdmController extends Controller
                 'jenis_penghargaan' => $jenisPenghargaanOptions
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
-                'jenis_penghargaan_id' => 'required|integer', 
+                'pegawai_id' => 'required|uuid',
+                'jenis_penghargaan_id' => 'required|uuid', 
                 'nama_penghargaan' => 'required|string|max:255',
                 'no_sk' => 'nullable|string|max:100',
                 'tanggal_sk' => 'nullable|date',
@@ -680,11 +680,11 @@ class SimpegDataPenghargaanAdmController extends Controller
     public function validateDuplicate(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jenis_penghargaan_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'jenis_penghargaan_id' => 'required|uuid',
             'nama_penghargaan' => 'required|string',
             'tanggal_penghargaan' => 'nullable|date',
-            'exclude_id' => 'nullable|integer' // untuk update
+            'exclude_id' => 'nullable|uuid' // untuk update
         ]);
 
         if ($validator->fails()) {

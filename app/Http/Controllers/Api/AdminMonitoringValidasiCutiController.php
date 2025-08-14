@@ -239,7 +239,7 @@ class AdminMonitoringValidasiCutiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer',
+            'ids.*' => 'required|uuid',
             'keterangan_admin' => 'nullable|string|max:500'
         ]);
 
@@ -286,7 +286,7 @@ class AdminMonitoringValidasiCutiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer',
+            'ids.*' => 'required|uuid',
             'keterangan_admin' => 'required|string|max:500'
         ]);
 

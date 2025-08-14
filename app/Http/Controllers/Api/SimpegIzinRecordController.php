@@ -50,8 +50,8 @@ class SimpegIzinRecordController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'pegawai_id' => 'required|integer',
-            'jenis_izin_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid',
+            'jenis_izin_id' => 'required|uuid',
             'alasan' => 'required|string|max:255',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'required|date|after_or_equal:tgl_mulai',
@@ -97,8 +97,8 @@ class SimpegIzinRecordController extends Controller
         }
 
         $request->validate([
-            'pegawai_id' => 'required|integer',
-            'jenis_izin_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid',
+            'jenis_izin_id' => 'required|uuid',
             'alasan' => 'required|string|max:255',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'required|date|after_or_equal:tgl_mulai',

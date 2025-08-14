@@ -562,7 +562,7 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_kemampuan_bahasa,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_kemampuan_bahasa,id'
         ]);
 
         if ($validator->fails()) {
@@ -629,7 +629,7 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_kemampuan_bahasa,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_kemampuan_bahasa,id'
         ]);
 
         if ($validator->fails()) {
@@ -697,7 +697,7 @@ class SimpegDataKemampuanBahasaAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_kemampuan_bahasa,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_kemampuan_bahasa,id',
             'keterangan' => 'nullable|string|max:500',
         ]);
 

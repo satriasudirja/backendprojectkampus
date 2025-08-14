@@ -445,9 +445,9 @@ class SimpegRiwayatPendidikanController extends Controller
         
         // Siapkan aturan validasi
         $rules = [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jenjang_pendidikan_id' => 'nullable|integer|exists:simpeg_jenjang_pendidikan,id',
-            'gelar_akademik_id' => 'nullable|integer|exists:simpeg_master_gelar_akademik,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'jenjang_pendidikan_id' => 'nullable|uuid|exists:simpeg_jenjang_pendidikan,id',
+            'gelar_akademik_id' => 'nullable|uuid|exists:simpeg_master_gelar_akademik,id',
             'lokasi_studi' => 'nullable|string|max:100',
             'bidang_studi' => 'nullable|string|max:100',
             'nisn' => 'nullable|string|max:30',
@@ -475,11 +475,11 @@ class SimpegRiwayatPendidikanController extends Controller
         
         // Tambahkan validasi untuk perguruan_tinggi_id dan prodi_perguruan_tinggi_id jika tabel ada
         if ($perguruanTinggiExists) {
-            $rules['perguruan_tinggi_id'] = 'nullable|integer|exists:master_perguruan_tinggi,id';
+            $rules['perguruan_tinggi_id'] = 'nullable|uuid|exists:master_perguruan_tinggi,id';
         }
         
         if ($prodiPerguruanTinggiExists) {
-            $rules['prodi_perguruan_tinggi_id'] = 'nullable|integer|exists:master_prodi_perguruan_tinggi,id';
+            $rules['prodi_perguruan_tinggi_id'] = 'nullable|uuid|exists:master_prodi_perguruan_tinggi,id';
         }
         
         // Tambahkan validasi untuk nama_institusi jika kolom ada
@@ -576,8 +576,8 @@ class SimpegRiwayatPendidikanController extends Controller
         
         // Siapkan aturan validasi
         $rules = [
-            'jenjang_pendidikan_id' => 'nullable|integer|exists:simpeg_jenjang_pendidikan,id',
-            'gelar_akademik_id' => 'nullable|integer|exists:simpeg_master_gelar_akademik,id',
+            'jenjang_pendidikan_id' => 'nullable|uuid|exists:simpeg_jenjang_pendidikan,id',
+            'gelar_akademik_id' => 'nullable|uuid|exists:simpeg_master_gelar_akademik,id',
             'lokasi_studi' => 'nullable|string|max:100',
             'bidang_studi' => 'nullable|string|max:100',
             'nisn' => 'nullable|string|max:30',
@@ -605,11 +605,11 @@ class SimpegRiwayatPendidikanController extends Controller
         
         // Tambahkan validasi untuk perguruan_tinggi_id dan prodi_perguruan_tinggi_id jika tabel ada
         if ($perguruanTinggiExists) {
-            $rules['perguruan_tinggi_id'] = 'nullable|integer|exists:master_perguruan_tinggi,id';
+            $rules['perguruan_tinggi_id'] = 'nullable|uuid|exists:master_perguruan_tinggi,id';
         }
         
         if ($prodiPerguruanTinggiExists) {
-            $rules['prodi_perguruan_tinggi_id'] = 'nullable|integer|exists:master_prodi_perguruan_tinggi,id';
+            $rules['prodi_perguruan_tinggi_id'] = 'nullable|uuid|exists:master_prodi_perguruan_tinggi,id';
         }
         
         // Tambahkan validasi untuk nama_institusi jika kolom ada

@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes; // Added for consistency if needed
 use Illuminate\Database\Eloquent\Builder; // Import Builder for type-hinting scopes
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Support\Facades\DB; // For DB::raw in scopes
 
 
 class SimpegDataPangkat extends Model
 {
+    use HasUuids;
     use HasFactory;
     use SoftDeletes; // Added for consistency if you intend to soft delete these records
 

@@ -77,7 +77,7 @@ class AdminSimpegRiwayatCutiController extends Controller
         $pegawai = SimpegPegawai::findOrFail($pegawai_id);
 
         $validator = Validator::make($request->all(), [
-            'jenis_cuti_id' => 'required|integer|exists:simpeg_daftar_cuti,id',
+            'jenis_cuti_id' => 'required|uuid|exists:simpeg_daftar_cuti,id',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'required|date|after_or_equal:tgl_mulai',
             'alasan_cuti' => 'required|string|max:500',
@@ -148,7 +148,7 @@ class AdminSimpegRiwayatCutiController extends Controller
         $cuti = SimpegCutiRecord::where('pegawai_id', $pegawai_id)->findOrFail($riwayat_id);
             
         $validator = Validator::make($request->all(), [
-            'jenis_cuti_id' => 'required|integer|exists:simpeg_daftar_cuti,id',
+            'jenis_cuti_id' => 'required|uuid|exists:simpeg_daftar_cuti,id',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'required|date|after_or_equal:tgl_mulai',
             'alasan_cuti' => 'required|string|max:500',

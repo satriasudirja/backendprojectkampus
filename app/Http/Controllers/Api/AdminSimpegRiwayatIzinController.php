@@ -77,7 +77,7 @@ class AdminSimpegRiwayatIzinController extends Controller
         $pegawai = SimpegPegawai::findOrFail($pegawai_id);
 
         $validator = Validator::make($request->all(), [
-            'jenis_izin_id' => 'required|integer|exists:simpeg_jenis_izin,id',
+            'jenis_izin_id' => 'required|uuid|exists:simpeg_jenis_izin,id',
             'alasan_izin' => 'required|string|max:500',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'required|date|after_or_equal:tgl_mulai',
@@ -140,7 +140,7 @@ class AdminSimpegRiwayatIzinController extends Controller
         $izin = SimpegIzinRecord::where('pegawai_id', $pegawai_id)->findOrFail($riwayat_id);
             
         $validator = Validator::make($request->all(), [
-            'jenis_izin_id' => 'required|integer|exists:simpeg_jenis_izin,id',
+            'jenis_izin_id' => 'required|uuid|exists:simpeg_jenis_izin,id',
             'alasan_izin' => 'required|string|max:500',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'required|date|after_or_equal:tgl_mulai',

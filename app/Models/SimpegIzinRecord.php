@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Carbon\Carbon;
 
 class SimpegIzinRecord extends Model
 {
     use SoftDeletes;
+    use HasUuids;
     
     protected $table = 'simpeg_izin_record';
     

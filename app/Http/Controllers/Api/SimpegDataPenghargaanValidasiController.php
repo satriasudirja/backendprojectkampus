@@ -304,7 +304,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_penghargaan,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_penghargaan,id'
         ]);
 
         if ($validator->fails()) {
@@ -367,7 +367,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer', // MODIFICATION: Removed the 'exists' rule to allow finding trashed items
+            'ids.*' => 'required|uuid', // MODIFICATION: Removed the 'exists' rule to allow finding trashed items
         ]);
 
         if ($validator->fails()) {
@@ -434,7 +434,7 @@ class SimpegDataPenghargaanValidasiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer', // MODIFICATION: Removed 'exists' rule to allow finding trashed items
+            'ids.*' => 'required|uuid', // MODIFICATION: Removed 'exists' rule to allow finding trashed items
             'keterangan_penolakan' => 'nullable|string|max:500',
         ]);
 

@@ -206,7 +206,7 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id', // Required for admin
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id', // Required for admin
             'bidang_usaha' => 'nullable|string|max:100',
             'jenis_pekerjaan' => 'required|string|max:100',
             'jabatan' => 'required|string|max:100',
@@ -223,7 +223,7 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
             'dokumen_pendukung' => 'nullable|array',
             'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string|in:Surat_Keterangan_Kerja,SK_Penempatan,Kontrak_Kerja,Dokumen_Lainnya', // Sesuaikan dengan CHECK constraint di DB Anda
             'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string|max:255',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer', // Optional
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid', // Optional
             'dokumen_pendukung.*.keterangan' => 'nullable|string|max:1000',
             'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120'
         ]);
@@ -327,7 +327,7 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id',
             'bidang_usaha' => 'nullable|string|max:100',
             'jenis_pekerjaan' => 'sometimes|string|max:100',
             'jabatan' => 'sometimes|string|max:100',
@@ -342,14 +342,14 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
             'keterangan_penolakan' => 'nullable|string|max:500', // Admin can add rejection notes
             // Dokumen pendukung (polymorphic)
             'dokumen_pendukung' => 'nullable|array',
-            'dokumen_pendukung.*.id' => 'nullable|integer|exists:simpeg_data_pendukung,id',
+            'dokumen_pendukung.*.id' => 'nullable|uuid|exists:simpeg_data_pendukung,id',
             'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string|in:Surat_Keterangan_Kerja,SK_Penempatan,Kontrak_Kerja,Dokumen_Lainnya', // Sesuaikan dengan CHECK constraint di DB Anda
             'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string|max:255',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer',
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid',
             'dokumen_pendukung.*.keterangan' => 'nullable|string|max:1000',
             'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
             'dokumen_pendukung_to_delete' => 'nullable|array', // Array of IDs to delete
-            'dokumen_pendukung_to_delete.*' => 'nullable|integer|exists:simpeg_data_pendukung,id'
+            'dokumen_pendukung_to_delete.*' => 'nullable|uuid|exists:simpeg_data_pendukung,id'
         ]);
 
         if ($validator->fails()) {
@@ -671,7 +671,7 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_riwayat_pekerjaan,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_riwayat_pekerjaan,id',
         ]);
 
         if ($validator->fails()) {
@@ -765,7 +765,7 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_riwayat_pekerjaan,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_riwayat_pekerjaan,id'
         ]);
 
         if ($validator->fails()) {
@@ -833,7 +833,7 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_riwayat_pekerjaan,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_riwayat_pekerjaan,id',
             'keterangan_penolakan' => 'nullable|string|max:500',
         ]);
 
@@ -903,7 +903,7 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_riwayat_pekerjaan,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_riwayat_pekerjaan,id',
         ]);
 
         if ($validator->fails()) {
@@ -1090,7 +1090,7 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
                 'tipe_dokumen_options' => $tipeDokumenOptions, // For dynamic document upload form
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
+                'pegawai_id' => 'required|uuid',
                 'bidang_usaha' => 'nullable|string|max:100',
                 'jenis_pekerjaan' => 'required|string|max:100',
                 'jabatan' => 'required|string|max:100',
@@ -1104,14 +1104,14 @@ class SimpegDataRiwayatPekerjaanDosenAdminController extends Controller
                 'keterangan' => 'nullable|string|max:1000',
                 'keterangan_penolakan' => 'nullable|string|max:500',
                 'dokumen_pendukung' => 'nullable|array',
-                'dokumen_pendukung.*.id' => 'nullable|integer|exists:simpeg_data_pendukung,id',
+                'dokumen_pendukung.*.id' => 'nullable|uuid|exists:simpeg_data_pendukung,id',
                 'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string|in:Surat_Keterangan_Kerja,SK_Penempatan,Kontrak_Kerja,Dokumen_Lainnya', // SESUAIKAN
                 'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string|max:255',
-                'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer',
+                'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid',
                 'dokumen_pendukung.*.keterangan' => 'nullable|string|max:1000',
                 'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
                 'dokumen_pendukung_to_delete' => 'nullable|array',
-                'dokumen_pendukung_to_delete.*' => 'nullable|integer|exists:simpeg_data_pendukung,id'
+                'dokumen_pendukung_to_delete.*' => 'nullable|uuid|exists:simpeg_data_pendukung,id'
             ],
             'field_notes' => [
                 'pegawai_id' => 'Pilih pegawai yang bersangkutan.',

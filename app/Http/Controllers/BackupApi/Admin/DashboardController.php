@@ -32,7 +32,7 @@ class DashboardController extends Controller
                     'user_statistics' => $userStats,
                     'system_stats' => [
                         'daily_visitors' => 125,
-                        'active_sessions' => \DB::table('sessions')->count()
+                        'active_sessions' => DB::table('sessions')->count()
                     ]
                 ]
             ]);

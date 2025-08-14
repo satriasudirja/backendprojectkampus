@@ -8,7 +8,7 @@ class CreateGelarAkademikTable extends Migration
     public function up()
     {
         Schema::create('simpeg_master_gelar_akademik', function (Blueprint $table) {
-             $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             $table->string('gelar', 15);
             $table->string('nama_gelar', 100);
             $table->timestamps();

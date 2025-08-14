@@ -52,8 +52,8 @@ class SimpegGajiTunjanganKhususController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'komponen_id' => 'required|integer|exists:simpeg_komponen_gaji,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'komponen_id' => 'required|uuid|exists:simpeg_komponen_gaji,id',
             'jumlah' => 'required|numeric',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'nullable|date|after_or_equal:tgl_mulai',
@@ -87,8 +87,8 @@ class SimpegGajiTunjanganKhususController extends Controller
         }
 
         $request->validate([
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'komponen_id' => 'required|integer|exists:simpeg_komponen_gaji,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'komponen_id' => 'required|uuid|exists:simpeg_komponen_gaji,id',
             'jumlah' => 'required|numeric',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'nullable|date|after_or_equal:tgl_mulai',

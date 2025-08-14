@@ -80,8 +80,8 @@ class AdminSimpegRiwayatHubunganKerjaController extends Controller
         $validator = Validator::make($request->all(), [
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date',
-            'hubungan_kerja_id' => 'required|integer|exists:simpeg_hubungan_kerja,id',
-            'status_aktif_id' => 'required|integer|exists:simpeg_status_aktif,id',
+            'hubungan_kerja_id' => 'required|uuid|exists:simpeg_hubungan_kerja,id',
+            'status_aktif_id' => 'required|uuid|exists:simpeg_status_aktif,id',
             'tgl_awal' => 'required|date',
             'tgl_akhir' => 'nullable|date|after_or_equal:tgl_awal',
             'pejabat_penetap' => 'nullable|string|max:255',
@@ -139,8 +139,8 @@ class AdminSimpegRiwayatHubunganKerjaController extends Controller
         $validator = Validator::make($request->all(), [
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date',
-            'hubungan_kerja_id' => 'required|integer|exists:simpeg_hubungan_kerja,id',
-            'status_aktif_id' => 'required|integer|exists:simpeg_status_aktif,id',
+            'hubungan_kerja_id' => 'required|uuid|exists:simpeg_hubungan_kerja,id',
+            'status_aktif_id' => 'required|uuid|exists:simpeg_status_aktif,id',
             'tgl_awal' => 'required|date',
             'tgl_akhir' => 'nullable|date|after_or_equal:tgl_awal',
             'pejabat_penetap' => 'nullable|string|max:255',

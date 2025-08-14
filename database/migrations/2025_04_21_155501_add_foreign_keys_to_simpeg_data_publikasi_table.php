@@ -16,7 +16,7 @@ return new class extends Migration
 
 
              Schema::create('simpeg_jenis_publikasi', function (Blueprint $table) {
-               $table->bigIncrements('id');
+               $table->uuid('id')->primary();
             $table->string('kode', 5)->nullable();
             $table->string('jenis_publikasi', 50);
       

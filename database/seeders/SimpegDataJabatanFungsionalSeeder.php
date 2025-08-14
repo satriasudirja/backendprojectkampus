@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class SimpegDataJabatanFungsionalSeeder extends Seeder
 {
@@ -64,6 +65,7 @@ class SimpegDataJabatanFungsionalSeeder extends Seeder
             $tanggalSk = Carbon::parse($tmtJabatan)->subDays(rand(30, 90))->format('Y-m-d');
             
             $data[] = [
+                'id' => Str::uuid(),
                 'jabatan_fungsional_id' => $jabatanFungsionalId,
                 'pegawai_id' => $pegawaiId,
                 'tmt_jabatan' => $tmtJabatan,
@@ -81,6 +83,8 @@ class SimpegDataJabatanFungsionalSeeder extends Seeder
         // FIXED: Tambahkan data khusus hanya jika pegawai ID tersebut benar-benar ada
         if (in_array(20, $validPegawaiIds)) {
             $data[] = [
+                
+                'id' => Str::uuid(),
                 'jabatan_fungsional_id' => $validJabatanIds[0], // Gunakan ID pertama yang valid
                 'pegawai_id' => 20, // Harsanto Firgantoro
                 'tmt_jabatan' => '2022-03-01',
@@ -99,6 +103,8 @@ class SimpegDataJabatanFungsionalSeeder extends Seeder
 
         if (in_array(81, $validPegawaiIds)) {
             $data[] = [
+                
+                'id' => Str::uuid(),
                 'jabatan_fungsional_id' => $validJabatanIds[count($validJabatanIds) > 1 ? 1 : 0], // Gunakan ID kedua jika ada
                 'pegawai_id' => 81, // Gabriella Elma Susanti
                 'tmt_jabatan' => '2021-09-01',

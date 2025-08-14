@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_organisasi', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('pegawai_id');
+            $table->uuid('id')->primary();
+            $table->uuid('pegawai_id');
             
             // Informasi Dasar Organisasi
             $table->string('nama_organisasi', 100);

@@ -24,7 +24,7 @@ class SimpegGajiSlipSeeder extends Seeder
         $periodes = DB::table('simpeg_gaji_periode')->get();
         
         // Data sample pegawai IDs (asumsikan sudah ada di tabel simpeg_pegawai)
-        $pegawaiIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        $pegawaiIds = DB::table('simpeg_pegawai')->pluck('id')->toArray();
         
         foreach ($periodes as $periode) {
             // Tentukan status berdasarkan status periode
@@ -50,6 +50,7 @@ class SimpegGajiSlipSeeder extends Seeder
                 
                 // Insert ke database menggunakan Query Builder
                 DB::table('simpeg_gaji_slip')->insert([
+                    'id'=>Str::uuid(),
                     'pegawai_id' => $pegawaiId,
                     'periode_id' => $periode->id,
                     'total_pendapatan' => $totalPendapatan,

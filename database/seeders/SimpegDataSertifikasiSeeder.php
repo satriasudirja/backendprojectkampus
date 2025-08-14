@@ -6,11 +6,13 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Faker\Factory as Faker;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class SimpegDataSertifikasiSeeder extends Seeder
 {
     public function run()
     {
+
         $faker = Faker::create('id_ID');
         
         // Pastikan hanya mengambil ID yang benar-benar ada
@@ -34,6 +36,7 @@ class SimpegDataSertifikasiSeeder extends Seeder
             $tglSertifikasi = $faker->dateTimeBetween('-5 years', 'now');
             
             $data[] = [
+                'id' => Str::uuid(),
                 'pegawai_id' => $faker->randomElement($pegawaiIds),
                 'jenis_sertifikasi_id' => $faker->randomElement($jenisSertifikasiIds),
                 'bidang_ilmu_id' => $faker->randomElement($bidangIlmuIds),

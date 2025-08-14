@@ -13,7 +13,7 @@ return [
 
     'defaults' => [
         'guard' => 'api',
-        'passwords' => 'simpeg_pegawai',
+        'passwords' => 'simpeg_users',
     ],
 
     /*
@@ -28,7 +28,7 @@ return [
     'guards' => [
         'api' => [
             'driver' => 'jwt',
-            'provider' => 'simpeg_pegawai',
+            'provider' => 'simpeg_users',
             'hash' => false,
         ],
     ],
@@ -43,9 +43,9 @@ return [
     */
 
     'providers' => [
-        'simpeg_pegawai' => [
+        'simpeg_users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\SimpegPegawai::class,
+            'model' => App\Models\SimpegUser::class,
         ],
     ],
 
@@ -59,8 +59,8 @@ return [
     */
 
     'passwords' => [
-        'simpeg_pegawai' => [
-            'provider' => 'simpeg_pegawai',
+        'simpeg_users' => [
+            'provider' => 'simpeg_users',
             'table' => 'password_resets',
             'expire' => false,
             'throttle' => false,

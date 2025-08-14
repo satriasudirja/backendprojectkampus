@@ -135,8 +135,8 @@ class SimpegDataPelanggaranController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jenis_pelanggaran_id' => 'required|integer|exists:simpeg_jenis_pelanggaran,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'jenis_pelanggaran_id' => 'required|uuid|exists:simpeg_jenis_pelanggaran,id',
             'tgl_pelanggaran' => 'nullable|date',
             'no_sk' => 'nullable|string|max:100',
             'tgl_sk' => 'nullable|date',
@@ -209,8 +209,8 @@ class SimpegDataPelanggaranController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
-            'jenis_pelanggaran_id' => 'sometimes|integer|exists:simpeg_jenis_pelanggaran,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id',
+            'jenis_pelanggaran_id' => 'sometimes|uuid|exists:simpeg_jenis_pelanggaran,id',
             'tgl_pelanggaran' => 'nullable|date',
             'no_sk' => 'nullable|string|max:100',
             'tgl_sk' => 'nullable|date',
@@ -315,7 +315,7 @@ class SimpegDataPelanggaranController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pelanggaran,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_pelanggaran,id'
         ]);
 
         if ($validator->fails()) {
@@ -476,8 +476,8 @@ class SimpegDataPelanggaranController extends Controller
                 'jenis_pelanggaran' => $jenisPelanggaran
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
-                'jenis_pelanggaran_id' => 'required|integer',
+                'pegawai_id' => 'required|uuid',
+                'jenis_pelanggaran_id' => 'required|uuid',
                 'tgl_pelanggaran' => 'nullable|date',
                 'no_sk' => 'nullable|string|max:100',
                 'tgl_sk' => 'nullable|date',
@@ -593,10 +593,10 @@ class SimpegDataPelanggaranController extends Controller
     public function validateDuplicate(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jenis_pelanggaran_id' => 'required|integer|exists:simpeg_jenis_pelanggaran,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'jenis_pelanggaran_id' => 'required|uuid|exists:simpeg_jenis_pelanggaran,id',
             'tgl_pelanggaran' => 'nullable|date',
-            'exclude_id' => 'nullable|integer' // untuk update
+            'exclude_id' => 'nullable|uuid' // untuk update
         ]);
 
         if ($validator->fails()) {

@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_jabatan_struktural', function (Blueprint $table) {
 
-               $table->bigIncrements('id')->primary();
+               $table->uuid('id')->primary();
             
             // Relasi ke tabel referensi
-            $table->integer('jabatan_struktural_id');
-            $table->integer('pegawai_id');
+            $table->uuid('jabatan_struktural_id');
+            $table->uuid('pegawai_id');
             
 
             

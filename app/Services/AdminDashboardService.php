@@ -241,4 +241,35 @@ class AdminDashboardService
             ->select('simpeg_pegawai.id', 'simpeg_pegawai.nip', 'simpeg_pegawai.nama', 'simpeg_pegawai.tanggal_lahir', 'simpeg_unit_kerja.nama_unit as unit_kerja_nama')
             ->get();
     }
+
+    public function getCurrentMonthPensiun($unitKerjaId = null)
+    {
+        $unitIds = $this->getAllChildUnitIds($unitKerjaId);
+        if (empty($unitIds)) {
+            return collect(); // Return an empty collection
+        }
+
+        $currentYear = Carbon::now()->year;
+        $currentMonth = Carbon::now()->month;
+
+        return DB::table('simpeg_pegawai')
+            ->join('simpeg_unit_kerja', 'simpeg_pegawai.unit_kerja_id', '=', 'simpeg_unit_kerja.id')
+            ->join('simpeg_status_aktif', 'simpeg_pegawai.status_aktif_id', '=', 'simpeg_status_aktif.id')
+            ->whereIn('simpeg_pegawai.unit_kerja_id', $unitIds)
+            ->where('simpeg_status_aktif.status_keluar', false) // Hanya pegawai yang statusnya masih aktif
+            // Logika: Cek apakah ulang tahun ke-65 pegawai jatuh pada tahun dan bulan ini.
+            // Ini berfungsi baik di PostgreSQL.
+            ->whereRaw('EXTRACT(YEAR FROM (tanggal_lahir + INTERVAL \'65 years\')) = ?', [$currentYear])
+            ->whereRaw('EXTRACT(MONTH FROM (tanggal_lahir + INTERVAL \'65 years\')) = ?', [$currentMonth])
+            ->select(
+                'simpeg_pegawai.id',
+                'simpeg_pegawai.nip',
+                'simpeg_pegawai.nama',
+                'simpeg_pegawai.tanggal_lahir',
+                'simpeg_unit_kerja.nama_unit as unit_kerja_nama',
+                // Menghitung tanggal pensiun yang pasti untuk ditampilkan
+                DB::raw("(tanggal_lahir + INTERVAL '65 years') as tanggal_pensiun")
+            )
+            ->get();
+    }
 }

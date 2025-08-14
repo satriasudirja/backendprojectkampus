@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class SimpegSukuSeeder extends Seeder
 {
@@ -40,6 +41,7 @@ class SimpegSukuSeeder extends Seeder
 
         $data = array_map(function ($suku) use ($now) {
             return [
+                'id' => Str::uuid(),
                 'nama_suku' => $suku,
                 'created_at' => $now,
                 'updated_at' => $now,

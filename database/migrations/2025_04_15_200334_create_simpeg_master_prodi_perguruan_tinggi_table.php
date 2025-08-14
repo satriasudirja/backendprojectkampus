@@ -12,9 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_master_prodi_perguruan_tinggi', function (Blueprint $table) {
-             $table->bigIncrements('id');
-            $table->integer('perguruan_tinggi_id');
-            $table->integer('jenjang_pendidikan_id');
+            $table->uuid('id')->primary();
+            $table->uuid('perguruan_tinggi_id');
+            $table->uuid('jenjang_pendidikan_id');
+            
             $table->string('kode', 10);
             $table->string('nama_prodi', 100);
             $table->text('jenjang')->nullable();

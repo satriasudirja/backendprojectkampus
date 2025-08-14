@@ -248,8 +248,8 @@ class SimpegDataRiwayatTesAdminController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id', // Required for admin
-            'jenis_tes_id' => 'required|integer|exists:simpeg_daftar_jenis_test,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id', // Required for admin
+            'jenis_tes_id' => 'required|uuid|exists:simpeg_daftar_jenis_test,id',
             'nama_tes' => 'required|string|max:100',
             'penyelenggara' => 'required|string|max:100',
             'tgl_tes' => 'required|date|before_or_equal:today',
@@ -340,8 +340,8 @@ class SimpegDataRiwayatTesAdminController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id', // Can update pegawai_id
-            'jenis_tes_id' => 'sometimes|integer|exists:simpeg_daftar_jenis_test,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id', // Can update pegawai_id
+            'jenis_tes_id' => 'sometimes|uuid|exists:simpeg_daftar_jenis_test,id',
             'nama_tes' => 'sometimes|string|max:100',
             'penyelenggara' => 'sometimes|string|max:100',
             'tgl_tes' => 'sometimes|date|before_or_equal:today',
@@ -637,7 +637,7 @@ class SimpegDataRiwayatTesAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_tes,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_tes,id',
         ]);
 
         if ($validator->fails()) {
@@ -711,7 +711,7 @@ class SimpegDataRiwayatTesAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_tes,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_tes,id'
         ]);
 
         if ($validator->fails()) {
@@ -780,7 +780,7 @@ class SimpegDataRiwayatTesAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_tes,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_tes,id',
             'keterangan_penolakan' => 'nullable|string|max:500',
         ]);
 
@@ -850,7 +850,7 @@ class SimpegDataRiwayatTesAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_tes,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_tes,id',
         ]);
 
         if ($validator->fails()) {
@@ -1034,8 +1034,8 @@ class SimpegDataRiwayatTesAdminController extends Controller
                 ]
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
-                'jenis_tes_id' => 'required|integer|exists:simpeg_daftar_jenis_test,id',
+                'pegawai_id' => 'required|uuid',
+                'jenis_tes_id' => 'required|uuid|exists:simpeg_daftar_jenis_test,id',
                 'nama_tes' => 'required|string|max:100',
                 'penyelenggara' => 'required|string|max:100',
                 'tgl_tes' => 'required|date|before_or_equal:today',

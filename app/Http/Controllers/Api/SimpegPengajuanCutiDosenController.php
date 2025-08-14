@@ -422,7 +422,7 @@ class SimpegPengajuanCutiDosenController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'jenis_cuti_id' => 'required|integer|exists:simpeg_daftar_cuti,id',
+                'jenis_cuti_id' => 'required|uuid|exists:simpeg_daftar_cuti,id',
                 'tgl_mulai' => 'required|date',
                 'tgl_selesai' => 'required|date|after_or_equal:tgl_mulai',
                 'jumlah_cuti' => 'nullable|integer|min:1',
@@ -547,7 +547,7 @@ class SimpegPengajuanCutiDosenController extends Controller
 
             // Add conditional validation - only validate fields that are present
             if ($request->has('jenis_cuti_id')) {
-                $validationRules['jenis_cuti_id'] = 'sometimes|integer|exists:simpeg_daftar_cuti,id';
+                $validationRules['jenis_cuti_id'] = 'sometimes|uuid|exists:simpeg_daftar_cuti,id';
             }
 
             if ($request->has('tgl_mulai')) {
@@ -843,7 +843,7 @@ class SimpegPengajuanCutiDosenController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'ids' => 'required|array|min:1',
-                'ids.*' => 'required|integer'
+                'ids.*' => 'required|uuid'
             ]);
 
             if ($validator->fails()) {
@@ -933,7 +933,7 @@ class SimpegPengajuanCutiDosenController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'ids' => 'required|array|min:1',
-                'ids.*' => 'required|integer'
+                'ids.*' => 'required|uuid'
             ]);
 
             if ($validator->fails()) {

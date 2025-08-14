@@ -8,7 +8,8 @@ class CreateJenisPKMTable extends Migration
     public function up()
     {
         Schema::create('jenis_pkm', function (Blueprint $table) {
-            $table->string('kode', 4)->primary();
+            $table->uuid('id')->primary();
+            $table->string('kode', 4);
             $table->string('nama_pkm', 100);
             $table->timestamps();
         });

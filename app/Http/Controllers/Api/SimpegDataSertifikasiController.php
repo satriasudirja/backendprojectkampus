@@ -52,9 +52,9 @@ class SimpegDataSertifikasiController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'pegawai_id' => 'nullable|integer',
-            'jenis_sertifikasi_id' => 'nullable|integer',
-            'bidang_ilmu_id' => 'nullable|integer',
+            'pegawai_id' => 'nullable|uuid',
+            'jenis_sertifikasi_id' => 'nullable|uuid',
+            'bidang_ilmu_id' => 'nullable|uuid',
             'no_sertifikasi' => 'required|string|max:50',
             'tgl_sertifikasi' => 'required|date',
             'no_registrasi' => 'required|string|max:20',
@@ -99,9 +99,9 @@ class SimpegDataSertifikasiController extends Controller
         }
 
         $request->validate([
-            'pegawai_id' => 'nullable|integer',
-            'jenis_sertifikasi_id' => 'nullable|integer',
-            'bidang_ilmu_id' => 'nullable|integer',
+            'pegawai_id' => 'nullable|uuid',
+            'jenis_sertifikasi_id' => 'nullable|uuid',
+            'bidang_ilmu_id' => 'nullable|uuid',
             'no_sertifikasi' => 'required|string|max:50',
             'tgl_sertifikasi' => 'required|date',
             'no_registrasi' => 'required|string|max:20',

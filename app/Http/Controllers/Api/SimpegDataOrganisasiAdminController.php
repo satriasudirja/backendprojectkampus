@@ -539,7 +539,7 @@ class SimpegDataOrganisasiAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_organisasi,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_organisasi,id'
         ]);
 
         if ($validator->fails()) {
@@ -608,7 +608,7 @@ class SimpegDataOrganisasiAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_organisasi,id' // Pastikan exists validation di sini
+            'ids.*' => 'required|uuid|exists:simpeg_data_organisasi,id' // Pastikan exists validation di sini
         ]);
 
         if ($validator->fails()) {
@@ -676,7 +676,7 @@ class SimpegDataOrganisasiAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_organisasi,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_organisasi,id',
             'keterangan_penolakan' => 'nullable|string|max:500', // Pastikan kolom ada di DB
         ]);
 

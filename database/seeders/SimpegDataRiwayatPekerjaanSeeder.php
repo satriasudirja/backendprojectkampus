@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class SimpegDataRiwayatPekerjaanSeeder extends Seeder
 {
@@ -13,10 +14,29 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
      */
     public function run(): void
     {
-        // Dummy data untuk riwayat pekerjaan
+        // --- SOLUSI ---
+        // 1. Ambil UUID dari beberapa pegawai yang ada di database untuk dijadikan data dummy.
+        // Kita ambil 5 pegawai pertama sebagai contoh.
+        $pegawai = DB::table('simpeg_pegawai')->select('id')->take(5)->get();
+
+        // Pastikan ada cukup data pegawai untuk di-seed.
+        if ($pegawai->count() < 5) {
+            $this->command->info('Tidak cukup data pegawai untuk menjalankan seeder riwayat pekerjaan. Harap jalankan seeder pegawai terlebih dahulu.');
+            return; // Hentikan seeder jika data tidak cukup.
+        }
+
+        // 2. Petakan UUID pegawai ke variabel agar mudah digunakan.
+        $pegawai1Id = $pegawai[0]->id;
+        $pegawai2Id = $pegawai[1]->id;
+        $pegawai3Id = $pegawai[2]->id;
+        $pegawai4Id = $pegawai[3]->id;
+        $pegawai5Id = $pegawai[4]->id;
+
+        // 3. Ganti 'pegawai_id' dari integer ke UUID yang sudah diambil.
         $riwayatPekerjaan = [
             [
-                'pegawai_id' => 1,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai1Id, // Menggunakan UUID
                 'bidang_usaha' => 'Pendidikan Tinggi',
                 'jenis_pekerjaan' => 'Full Time',
                 'jabatan' => 'Dosen',
@@ -29,7 +49,8 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
                 'tgl_input' => Carbon::now()->format('Y-m-d'),
             ],
             [
-                'pegawai_id' => 1,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai1Id, // Menggunakan UUID
                 'bidang_usaha' => 'Teknologi Informasi',
                 'jenis_pekerjaan' => 'Part Time',
                 'jabatan' => 'Web Developer',
@@ -42,7 +63,8 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
                 'tgl_input' => Carbon::now()->format('Y-m-d'),
             ],
             [
-                'pegawai_id' => 2,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai2Id, // Menggunakan UUID
                 'bidang_usaha' => 'Pendidikan Tinggi',
                 'jenis_pekerjaan' => 'Full Time',
                 'jabatan' => 'Asisten Dosen',
@@ -55,7 +77,8 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
                 'tgl_input' => Carbon::now()->format('Y-m-d'),
             ],
             [
-                'pegawai_id' => 2,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai2Id, // Menggunakan UUID
                 'bidang_usaha' => 'Konsultan Keuangan',
                 'jenis_pekerjaan' => 'Full Time',
                 'jabatan' => 'Financial Analyst',
@@ -68,7 +91,8 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
                 'tgl_input' => Carbon::now()->format('Y-m-d'),
             ],
             [
-                'pegawai_id' => 3,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai3Id, // Menggunakan UUID
                 'bidang_usaha' => 'Teknologi Informasi',
                 'jenis_pekerjaan' => 'Full Time',
                 'jabatan' => 'System Analyst',
@@ -81,7 +105,8 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
                 'tgl_input' => Carbon::now()->format('Y-m-d'),
             ],
             [
-                'pegawai_id' => 3,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai3Id, // Menggunakan UUID
                 'bidang_usaha' => 'Pendidikan Tinggi',
                 'jenis_pekerjaan' => 'Full Time',
                 'jabatan' => 'Kepala Laboratorium',
@@ -94,7 +119,8 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
                 'tgl_input' => Carbon::now()->format('Y-m-d'),
             ],
             [
-                'pegawai_id' => 4,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai4Id, // Menggunakan UUID
                 'bidang_usaha' => 'Kesehatan',
                 'jenis_pekerjaan' => 'Full Time',
                 'jabatan' => 'Staf Administrasi',
@@ -107,7 +133,8 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
                 'tgl_input' => Carbon::now()->format('Y-m-d'),
             ],
             [
-                'pegawai_id' => 4,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai4Id, // Menggunakan UUID
                 'bidang_usaha' => 'Pendidikan Tinggi',
                 'jenis_pekerjaan' => 'Full Time',
                 'jabatan' => 'Staf Akademik',
@@ -120,7 +147,8 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
                 'tgl_input' => Carbon::now()->format('Y-m-d'),
             ],
             [
-                'pegawai_id' => 5,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai5Id, // Menggunakan UUID
                 'bidang_usaha' => 'Riset dan Pengembangan',
                 'jenis_pekerjaan' => 'Full Time',
                 'jabatan' => 'Peneliti',
@@ -133,7 +161,8 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
                 'tgl_input' => Carbon::now()->format('Y-m-d'),
             ],
             [
-                'pegawai_id' => 5,
+                'id' => Str::uuid(),
+                'pegawai_id' => $pegawai5Id, // Menggunakan UUID
                 'bidang_usaha' => 'Pendidikan Tinggi',
                 'jenis_pekerjaan' => 'Full Time',
                 'jabatan' => 'Dosen',
@@ -153,6 +182,9 @@ class SimpegDataRiwayatPekerjaanSeeder extends Seeder
             $data['updated_at'] = Carbon::now();
         }
 
+        // Kosongkan tabel sebelum insert
+        DB::table('simpeg_data_riwayat_pekerjaan')->truncate();
+        
         // Insert data ke database
         DB::table('simpeg_data_riwayat_pekerjaan')->insert($riwayatPekerjaan);
     }

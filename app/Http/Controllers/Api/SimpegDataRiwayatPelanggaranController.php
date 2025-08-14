@@ -114,7 +114,7 @@ class SimpegDataRiwayatPelanggaranController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'jenis_pelanggaran_id' => 'required|integer|exists:simpeg_jenis_pelanggaran,id',
+            'jenis_pelanggaran_id' => 'required|uuid|exists:simpeg_jenis_pelanggaran,id',
             'tgl_pelanggaran' => 'required|date|before_or_equal:today',
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date|before_or_equal:today',
@@ -163,7 +163,7 @@ class SimpegDataRiwayatPelanggaranController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'jenis_pelanggaran_id' => 'sometimes|required|integer|exists:simpeg_jenis_pelanggaran,id',
+            'jenis_pelanggaran_id' => 'sometimes|required|uuid|exists:simpeg_jenis_pelanggaran,id',
             'tgl_pelanggaran' => 'sometimes|required|date|before_or_equal:today',
             'no_sk' => 'sometimes|required|string|max:100',
             'tgl_sk' => 'sometimes|required|date|before_or_equal:today',
@@ -233,7 +233,7 @@ class SimpegDataRiwayatPelanggaranController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pelanggaran,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_pelanggaran,id'
         ]);
 
         if ($validator->fails()) {

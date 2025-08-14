@@ -277,10 +277,10 @@ class SimpegPendidikanFormalDosenController extends Controller
 
         $validator = Validator::make($request->all(), [
             'lokasi_studi' => 'required|in:dalam_negeri,luar_negeri',
-            'jenjang_pendidikan_id' => 'required|integer|exists:simpeg_jenjang_pendidikan,id',
-            'perguruan_tinggi_id' => 'nullable|integer|exists:simpeg_master_perguruan_tinggi,id',
-            'prodi_perguruan_tinggi_id' => 'nullable|integer|exists:simpeg_master_prodi_perguruan_tinggi,id',
-            'gelar_akademik_id' => 'nullable|integer|exists:simpeg_master_gelar_akademik,id',
+            'jenjang_pendidikan_id' => 'required|uuid|exists:simpeg_jenjang_pendidikan,id',
+            'perguruan_tinggi_id' => 'nullable|uuid|exists:simpeg_master_perguruan_tinggi,id',
+            'prodi_perguruan_tinggi_id' => 'nullable|uuid|exists:simpeg_master_prodi_perguruan_tinggi,id',
+            'gelar_akademik_id' => 'nullable|uuid|exists:simpeg_master_gelar_akademik,id',
             'bidang_studi' => 'required|string|max:100',
             'nisn' => 'nullable|string|max:30',
             'konsentrasi' => 'nullable|string|max:100',
@@ -385,10 +385,10 @@ class SimpegPendidikanFormalDosenController extends Controller
 
         $validator = Validator::make($request->all(), [
             'lokasi_studi' => 'sometimes|in:dalam_negeri,luar_negeri',
-            'jenjang_pendidikan_id' => 'sometimes|integer|exists:simpeg_jenjang_pendidikan,id',
-            'perguruan_tinggi_id' => 'nullable|integer|exists:simpeg_master_perguruan_tinggi,id',
-            'prodi_perguruan_tinggi_id' => 'nullable|integer|exists:simpeg_master_prodi_perguruan_tinggi,id',
-            'gelar_akademik_id' => 'nullable|integer|exists:simpeg_master_gelar_akademik,id',
+            'jenjang_pendidikan_id' => 'sometimes|uuid|exists:simpeg_jenjang_pendidikan,id',
+            'perguruan_tinggi_id' => 'nullable|uuid|exists:simpeg_master_perguruan_tinggi,id',
+            'prodi_perguruan_tinggi_id' => 'nullable|uuid|exists:simpeg_master_prodi_perguruan_tinggi,id',
+            'gelar_akademik_id' => 'nullable|uuid|exists:simpeg_master_gelar_akademik,id',
             'bidang_studi' => 'sometimes|string|max:100',
             'nisn' => 'nullable|string|max:30',
             'konsentrasi' => 'nullable|string|max:100',
@@ -556,7 +556,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pendidikan_formal,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_pendidikan_formal,id'
         ]);
 
         if ($validator->fails()) {
@@ -635,7 +635,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer'
+            'ids.*' => 'required|uuid'
         ]);
 
         if ($validator->fails()) {

@@ -281,7 +281,7 @@ class SimpegRiwayatDiklatController extends Controller
             'files.*.file' => 'required|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
             'files.*.tipe_dokumen' => 'required|string|max:100',
             'files.*.nama_dokumen' => 'required|string|max:255',
-            'files.*.jenis_dokumen_id' => 'nullable|integer',
+            'files.*.jenis_dokumen_id' => 'nullable|uuid',
             'files.*.keterangan' => 'nullable|string'
         ]);
 
@@ -403,11 +403,11 @@ class SimpegRiwayatDiklatController extends Controller
             'files.*.file' => 'required|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
             'files.*.tipe_dokumen' => 'required|string|max:100',
             'files.*.nama_dokumen' => 'required|string|max:255',
-            'files.*.jenis_dokumen_id' => 'nullable|integer',
+            'files.*.jenis_dokumen_id' => 'nullable|uuid',
             'files.*.keterangan' => 'nullable|string',
             // Untuk menghapus file yang sudah ada
             'remove_files' => 'nullable|array',
-            'remove_files.*' => 'nullable|integer|exists:simpeg_data_pendukung,id'
+            'remove_files.*' => 'nullable|uuid|exists:simpeg_data_pendukung,id'
         ]);
 
         if ($validator->fails()) {
@@ -575,7 +575,7 @@ class SimpegRiwayatDiklatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_diklat,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_diklat,id'
         ]);
 
         if ($validator->fails()) {

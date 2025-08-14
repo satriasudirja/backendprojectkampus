@@ -10,7 +10,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('simpeg_suku', function (Blueprint $table) {
-             $table->bigIncrements('id'); 
+            $table->uuid('id')->primary(); 
             $table->text('nama_suku'); 
             $table->timestamps(); 
         });

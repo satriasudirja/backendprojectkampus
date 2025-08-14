@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_gaji_komponen', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             $table->string('kode_komponen', 20)->unique();
             $table->string('nama_komponen', 100);
             $table->string('jenis', 20); // contoh: tunjangan, potongan, benefit

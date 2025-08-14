@@ -443,7 +443,7 @@ class AnggotaProfesiController extends Controller
         $request->validate([
             'action' => ['required', Rule::in(['delete', 'restore', 'force_delete', 'update_status'])],
             'ids' => 'required|array',
-            'ids.*' => 'integer|exists:anggota_profesi,id',
+            'ids.*' => 'uuid|exists:anggota_profesi,id',
             'status_pengajuan' => 'required_if:action,update_status|in:draft,pending,approved,rejected'
         ]);
 

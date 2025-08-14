@@ -12,9 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_izin_record', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->integer('pegawai_id');
-            $table->integer('jenis_izin_id');
+            $table->uuid('id')->primary();
+            $table->uuid('pegawai_id');
+            $table->uuid('jenis_izin_id');
+            
             $table->string('alasan_izin', 255)->nullable();
             $table->date('tgl_mulai')->nullable();
             $table->date('tgl_selesai')->nullable();

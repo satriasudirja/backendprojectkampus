@@ -77,7 +77,7 @@ class AdminSimpegRiwayatTesController extends Controller
         $pegawai = SimpegPegawai::findOrFail($pegawai_id);
 
         $validator = Validator::make($request->all(), [
-            'jenis_tes_id' => 'required|integer|exists:simpeg_daftar_jenis_test,id',
+            'jenis_tes_id' => 'required|uuid|exists:simpeg_daftar_jenis_test,id',
             'nama_tes' => 'required|string|max:255',
             'penyelenggara' => 'required|string|max:255',
             'tgl_tes' => 'required|date',
@@ -135,7 +135,7 @@ class AdminSimpegRiwayatTesController extends Controller
         $riwayatTes = SimpegDataTes::where('pegawai_id', $pegawai_id)->findOrFail($riwayat_id);
             
         $validator = Validator::make($request->all(), [
-            'jenis_tes_id' => 'required|integer|exists:simpeg_daftar_jenis_test,id',
+            'jenis_tes_id' => 'required|uuid|exists:simpeg_daftar_jenis_test,id',
             'nama_tes' => 'required|string|max:255',
             'penyelenggara' => 'required|string|max:255',
             'tgl_tes' => 'required|date',

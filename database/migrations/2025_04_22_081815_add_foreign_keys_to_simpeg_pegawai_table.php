@@ -10,8 +10,8 @@ return new class extends Migration
         Schema::table('simpeg_pegawai', function (Blueprint $table) {
             // Pastikan kolom tujuan ada di tabel lain
 
-            $table->foreign('user_id')
-                  ->references('id')->on('simpeg_jabatan_akademik')
+            $table->foreign('role_id')
+                  ->references('id')->on('simpeg_users_roles')
                   ->onDelete('set null');
 
             $table->foreign('unit_kerja_id')
@@ -39,7 +39,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('simpeg_pegawai', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
+            $table->dropForeign(['role_id']);
             $table->dropForeign(['unit_kerja_id']);
             $table->dropForeign(['kode_status_pernikahan']);
             $table->dropForeign(['status_aktif_id']);

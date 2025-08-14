@@ -476,7 +476,7 @@ class SimpegDataJabatanAkademikController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_akademik,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_akademik,id'
         ]);
 
         if ($validator->fails()) {
@@ -552,7 +552,7 @@ class SimpegDataJabatanAkademikController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer'
+            'ids.*' => 'required|uuid'
         ]);
 
         if ($validator->fails()) {

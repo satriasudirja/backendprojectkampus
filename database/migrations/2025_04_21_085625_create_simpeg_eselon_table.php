@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_eselon', function (Blueprint $table) {
-             $table->bigIncrements('id');
+             $table->uuid('id')->primary();
             $table->string('kode', 2);
             $table->string('nama_eselon', 5);
             $table->boolean('status');

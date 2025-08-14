@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_penelitian', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             
             // Foreign key
-            $table->integer('pegawai_id');
+            $table->uuid('pegawai_id');
             
             // Data pengajuan
             $table->string('jenis_kegiatan', 50);

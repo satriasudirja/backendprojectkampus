@@ -275,8 +275,8 @@ class SimpegDataSertifikasidosenController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'jenis_sertifikasi_id' => 'required|integer|exists:simpeg_master_jenis_sertifikasi,id',
-            'bidang_ilmu_id' => 'required|integer|exists:simpeg_rumpun_bidang_ilmu,id',
+            'jenis_sertifikasi_id' => 'required|uuid|exists:simpeg_master_jenis_sertifikasi,id',
+            'bidang_ilmu_id' => 'required|uuid|exists:simpeg_rumpun_bidang_ilmu,id',
             'no_sertifikasi' => 'required|string|max:50',
             'tgl_sertifikasi' => 'required|date|before_or_equal:today',
             'no_registrasi' => 'required|string|max:20',
@@ -291,7 +291,7 @@ class SimpegDataSertifikasidosenController extends Controller
             'dokumen_pendukung' => 'nullable|array',
             'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string',
             'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer',
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid',
             'dokumen_pendukung.*.keterangan' => 'nullable|string',
             'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120'
         ]);
@@ -389,8 +389,8 @@ class SimpegDataSertifikasidosenController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'jenis_sertifikasi_id' => 'sometimes|integer|exists:simpeg_master_jenis_sertifikasi,id',
-            'bidang_ilmu_id' => 'sometimes|integer|exists:simpeg_rumpun_bidang_ilmu,id',
+            'jenis_sertifikasi_id' => 'sometimes|uuid|exists:simpeg_master_jenis_sertifikasi,id',
+            'bidang_ilmu_id' => 'sometimes|uuid|exists:simpeg_rumpun_bidang_ilmu,id',
             'no_sertifikasi' => 'sometimes|string|max:50',
             'tgl_sertifikasi' => 'sometimes|date|before_or_equal:today',
             'no_registrasi' => 'sometimes|string|max:20',
@@ -570,7 +570,7 @@ class SimpegDataSertifikasidosenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_sertifikasi,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_sertifikasi,id'
         ]);
 
         if ($validator->fails()) {
@@ -663,7 +663,7 @@ class SimpegDataSertifikasidosenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer'
+            'ids.*' => 'required|uuid'
         ]);
 
         if ($validator->fails()) {

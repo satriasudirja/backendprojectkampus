@@ -193,8 +193,8 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jabatan_struktural_id' => 'required|integer|exists:simpeg_jabatan_struktural,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'jabatan_struktural_id' => 'required|uuid|exists:simpeg_jabatan_struktural,id',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'nullable|date|after_or_equal:tgl_mulai',
             'no_sk' => 'required|string|max:100',
@@ -285,8 +285,8 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
-            'jabatan_struktural_id' => 'sometimes|integer|exists:simpeg_jabatan_struktural,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id',
+            'jabatan_struktural_id' => 'sometimes|uuid|exists:simpeg_jabatan_struktural,id',
             'tgl_mulai' => 'sometimes|date',
             'tgl_selesai' => 'nullable|date|after_or_equal:tgl_mulai',
             'no_sk' => 'sometimes|string|max:100',
@@ -541,7 +541,7 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_struktural,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_struktural,id',
         ]);
 
         if ($validator->fails()) {
@@ -621,7 +621,7 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_struktural,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_struktural,id'
         ]);
 
         if ($validator->fails()) {
@@ -684,7 +684,7 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_struktural,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_struktural,id',
             // No rejection reason field is expected
         ]);
 
@@ -748,7 +748,7 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_struktural,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_struktural,id',
         ]);
 
         if ($validator->fails()) {
@@ -961,8 +961,8 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
                 'status_pengajuan' => $statusPengajuanOptions,
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
-                'jabatan_struktural_id' => 'required|integer',
+                'pegawai_id' => 'required|uuid',
+                'jabatan_struktural_id' => 'required|uuid',
                 'tgl_mulai' => 'required|date',
                 'tgl_selesai' => 'nullable|date|after_or_equal:tgl_mulai',
                 'no_sk' => 'required|string|max:100',

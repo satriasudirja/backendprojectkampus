@@ -522,7 +522,7 @@ private function createTempFileFromMultipart($fileData)
         }
 
         $validator = Validator::make($request->all(), [
-            'jenis_izin_id' => 'required|integer|exists:simpeg_jenis_izin,id',
+            'jenis_izin_id' => 'required|uuid|exists:simpeg_jenis_izin,id',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'required|date|after_or_equal:tgl_mulai',
             'jumlah_izin' => 'nullable|integer|min:1',
@@ -689,7 +689,7 @@ public function update(Request $request, $id)
 
         // Validation
         $validator = Validator::make($validationData, [
-            'jenis_izin_id' => 'sometimes|integer|exists:simpeg_jenis_izin,id',
+            'jenis_izin_id' => 'sometimes|uuid|exists:simpeg_jenis_izin,id',
             'tgl_mulai' => 'sometimes|date',
             'tgl_selesai' => 'sometimes|date|after_or_equal:tgl_mulai',
             'jumlah_izin' => 'sometimes|integer|min:1',
@@ -937,7 +937,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
         try {
             $validator = Validator::make($request->all(), [
                 'ids' => 'required|array|min:1',
-                'ids.*' => 'required|integer'
+                'ids.*' => 'required|uuid'
             ]);
 
             if ($validator->fails()) {
@@ -1024,7 +1024,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
         try {
             $validator = Validator::make($request->all(), [
                 'ids' => 'required|array|min:1',
-                'ids.*' => 'required|integer'
+                'ids.*' => 'required|uuid'
             ]);
 
             if ($validator->fails()) {

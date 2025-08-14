@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_diklat', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->integer('pegawai_id');
+            $table->uuid('id')->primary();
+            $table->uuid('pegawai_id');
             $table->string('jenis_diklat', 100);
             $table->string('kategori_diklat', 150);
             $table->string('tingkat_diklat', 50);
