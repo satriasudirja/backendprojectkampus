@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -22,21 +21,12 @@ class SimpegJabatanAkademik extends Model
         'jabatan_akademik',
     ];
 
-
-    /**
-     * Relasi ke model Pegawai (one to many)
-     */
-    public function pegawai(): HasMany
+    // REMOVED: Semua relasi ke pegawai dan jabatan fungsional
+    // Jabatan akademik sekarang menjadi entitas terpisah
+    
+    // Jika masih ada riwayat jabatan akademik terpisah, bisa tetap ada relasi ini
+    public function dataJabatanAkademik(): HasMany
     {
-        return $this->hasMany(SimpegPegawai::class, 'jabatan_akademik_id');
-    }
-
-    /**
-     * Relasi ke model Jabatan Fungsional melalui jabatan_akademik_id
-     * Sesuai dengan penjelasan: simpeg_jabatan_fungsional berelasi dengan jabatan_akademik_id dari simpeg_jabatan_akademik
-     */
-    public function jabatanFungsional(): HasMany
-    {
-        return $this->hasMany(SimpegJabatanFungsional::class, 'jabatan_akademik_id');
+        return $this->hasMany(SimpegDataJabatanAkademik::class, 'jabatan_akademik_id');
     }
 }

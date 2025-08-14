@@ -22,21 +22,20 @@ return new class extends Migration
             $table->uuid('unit_kerja_id')->nullable();
             $table->uuid('kode_status_pernikahan')->nullable();
             $table->uuid('status_aktif_id')->nullable();
-            $table->uuid('jabatan_akademik_id')->nullable();
+            $table->uuid('jabatan_fungsional_id')->nullable(); // CHANGED: dari jabatan_akademik_id
             $table->uuid('suku_id')->nullable();
             
             // Data pribadi
             $table->string('nama', 305);
             $table->string('nip', 30)->unique();
             $table->string('nuptk', 30)->unique();
-            // $table->string('password', 100);
             $table->string('nidn', 30)->nullable();
             $table->string('gelar_depan', 30)->nullable();
             $table->string('gelar_belakang', 30)->nullable();
             $table->string('jenis_kelamin', 30)->nullable();
             $table->string('tempat_lahir', 30)->nullable();
             $table->date('tanggal_lahir')->nullable();
-            $table->string('nama_ibu_kandung', 50)->nullable(); // Sudah nullable dari awal
+            $table->string('nama_ibu_kandung', 50)->nullable();
             
             // Data kepegawaian
             $table->string('no_sk_capeg', 50)->nullable();
@@ -56,13 +55,13 @@ return new class extends Migration
             $table->string('provinsi', 30)->nullable();
             $table->string('kode_pos', 5)->nullable();
             $table->string('no_handphone', 20)->nullable();
-            $table->string('no_whatsapp', 20)->nullable(); // Kolom baru
-            $table->string('nomor_polisi', 20)->nullable(); // Kolom baru
-            $table->string('jenis_kendaraan', 50)->nullable(); // Kolom baru
-            $table->string('merk_kendaraan', 50)->nullable(); // Kolom baru
+            $table->string('no_whatsapp', 20)->nullable();
+            $table->string('nomor_polisi', 20)->nullable();
+            $table->string('jenis_kendaraan', 50)->nullable();
+            $table->string('merk_kendaraan', 50)->nullable();
             $table->string('no_kk', 16)->nullable();
             $table->string('email_pribadi', 50)->nullable();
-            $table->string('email_pegawai', 50)->nullable(); // Kolom baru
+            $table->string('email_pegawai', 50)->nullable();
             
             // Data tambahan (lanjutan)
             $table->string('no_ktp', 30)->nullable();
@@ -94,14 +93,10 @@ return new class extends Migration
             $table->integer('tinggi_badan')->nullable();
             $table->integer('berat_badan')->nullable();
             $table->string('file_tanda_tangan', 100)->nullable();
-              $table->string('file_foto')->nullable();
+            $table->string('file_foto')->nullable();
+            
             // Audit trail
-             $table->boolean('is_admin')->default(false);
-
-
-
-
-             
+            $table->boolean('is_admin')->default(false);
             $table->string('modified_by', 30)->nullable();
             $table->timestamp('modified_dt')->nullable();
             

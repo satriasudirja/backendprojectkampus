@@ -28,7 +28,7 @@ class SimpegPegawai extends Model
         'unit_kerja_id',
         'kode_status_pernikahan',
         'status_aktif_id',
-        'jabatan_akademik_id',
+        'jabatan_fungsional_id', // CHANGED: dari jabatan_akademik_id
         'suku_id',
         'nama',
         'nip',
@@ -129,9 +129,10 @@ class SimpegPegawai extends Model
         return $this->belongsTo(SimpegStatusAktif::class, 'status_aktif_id');
     }
 
-    public function jabatanAkademik(): BelongsTo
+    // CHANGED: Relasi ke jabatan fungsional
+    public function jabatanFungsional(): BelongsTo
     {
-        return $this->belongsTo(SimpegJabatanAkademik::class, 'jabatan_akademik_id');
+        return $this->belongsTo(SimpegJabatanFungsional::class, 'jabatan_fungsional_id');
     }
 
     public function suku(): BelongsTo
