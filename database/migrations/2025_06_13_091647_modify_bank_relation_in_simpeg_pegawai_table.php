@@ -12,7 +12,7 @@ public function up()
 {
     Schema::table('simpeg_pegawai', function (Blueprint $table) {
         // 1. Tambah kolom baru untuk foreign key
-        $table->unsignedBigInteger('bank_id')->nullable()->after('nama_bank');
+        $table->uuid('bank_id')->nullable()->after('nama_bank');
 
         // 2. Tambah relasi
         $table->foreign('bank_id')->references('id')->on('simpeg_bank')->onDelete('set null');

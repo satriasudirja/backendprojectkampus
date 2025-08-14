@@ -215,12 +215,12 @@ class SimpegDataPendidikanFormalAdminController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id', // Required for admin
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id', // Required for admin
             'lokasi_studi' => 'required|string|max:100',
-            'jenjang_pendidikan_id' => 'required|integer|exists:simpeg_jenjang_pendidikan,id',
-            'perguruan_tinggi_id' => 'required|integer|exists:simpeg_master_perguruan_tinggi,id',
-            'prodi_perguruan_tinggi_id' => 'required|integer|exists:simpeg_master_prodi_perguruan_tinggi,id',
-            'gelar_akademik_id' => 'nullable|integer|exists:simpeg_master_gelar_akademik,id',
+            'jenjang_pendidikan_id' => 'required|uuid|exists:simpeg_jenjang_pendidikan,id',
+            'perguruan_tinggi_id' => 'required|uuid|exists:simpeg_master_perguruan_tinggi,id',
+            'prodi_perguruan_tinggi_id' => 'required|uuid|exists:simpeg_master_prodi_perguruan_tinggi,id',
+            'gelar_akademik_id' => 'nullable|uuid|exists:simpeg_master_gelar_akademik,id',
             'bidang_studi' => 'nullable|string|max:255',
             'nisn' => 'nullable|string|max:20',
             'konsentrasi' => 'nullable|string|max:100',
@@ -246,7 +246,7 @@ class SimpegDataPendidikanFormalAdminController extends Controller
             'dokumen_pendukung' => 'nullable|array',
             'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string|in:Ijazah,Transkrip,Surat_Keterangan,Dokumen_Lainnya', // Sesuaikan dengan CHECK constraint di DB Anda
             'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string|max:255',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer', // Optional, if you have a master for jenis_dokumen
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid', // Optional, if you have a master for jenis_dokumen
             'dokumen_pendukung.*.keterangan' => 'nullable|string|max:1000',
             'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120'
         ]);
@@ -367,12 +367,12 @@ class SimpegDataPendidikanFormalAdminController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id',
             'lokasi_studi' => 'sometimes|string|max:100',
-            'jenjang_pendidikan_id' => 'sometimes|integer|exists:simpeg_jenjang_pendidikan,id',
-            'perguruan_tinggi_id' => 'sometimes|integer|exists:simpeg_master_perguruan_tinggi,id',
-            'prodi_perguruan_tinggi_id' => 'sometimes|integer|exists:simpeg_master_prodi_perguruan_tinggi,id',
-            'gelar_akademik_id' => 'nullable|integer|exists:simpeg_master_gelar_akademik,id',
+            'jenjang_pendidikan_id' => 'sometimes|uuid|exists:simpeg_jenjang_pendidikan,id',
+            'perguruan_tinggi_id' => 'sometimes|uuid|exists:simpeg_master_perguruan_tinggi,id',
+            'prodi_perguruan_tinggi_id' => 'sometimes|uuid|exists:simpeg_master_prodi_perguruan_tinggi,id',
+            'gelar_akademik_id' => 'nullable|uuid|exists:simpeg_master_gelar_akademik,id',
             'bidang_studi' => 'nullable|string|max:255',
             'nisn' => 'nullable|string|max:20',
             'konsentrasi' => 'nullable|string|max:100',
@@ -396,14 +396,14 @@ class SimpegDataPendidikanFormalAdminController extends Controller
             'keterangan_penolakan' => 'nullable|string|max:500',
             // Dokumen pendukung (polymorphic)
             'dokumen_pendukung' => 'nullable|array',
-            'dokumen_pendukung.*.id' => 'nullable|integer|exists:simpeg_data_pendukung,id', // For existing documents
+            'dokumen_pendukung.*.id' => 'nullable|uuid|exists:simpeg_data_pendukung,id', // For existing documents
             'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string|in:Ijazah,Transkrip,Surat_Keterangan,Dokumen_Lainnya', // Sesuaikan dengan CHECK constraint di DB Anda
             'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string|max:255',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer',
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid',
             'dokumen_pendukung.*.keterangan' => 'nullable|string|max:1000',
             'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
             'dokumen_pendukung_to_delete' => 'nullable|array', // Array of IDs to delete
-            'dokumen_pendukung_to_delete.*' => 'nullable|integer|exists:simpeg_data_pendukung,id'
+            'dokumen_pendukung_to_delete.*' => 'nullable|uuid|exists:simpeg_data_pendukung,id'
         ]);
 
         if ($validator->fails()) {
@@ -748,7 +748,7 @@ class SimpegDataPendidikanFormalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pendidikan_formal,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_pendidikan_formal,id',
         ]);
 
         if ($validator->fails()) {
@@ -842,7 +842,7 @@ class SimpegDataPendidikanFormalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pendidikan_formal,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_pendidikan_formal,id'
         ]);
 
         if ($validator->fails()) {
@@ -911,7 +911,7 @@ class SimpegDataPendidikanFormalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pendidikan_formal,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_pendidikan_formal,id',
             'keterangan_penolakan' => 'nullable|string|max:500',
         ]);
 
@@ -981,7 +981,7 @@ class SimpegDataPendidikanFormalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pendidikan_formal,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_pendidikan_formal,id',
         ]);
 
         if ($validator->fails()) {
@@ -1206,12 +1206,12 @@ class SimpegDataPendidikanFormalAdminController extends Controller
                 'tipe_dokumen_options' => $tipeDokumenOptions, // For dynamic document upload form
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
+                'pegawai_id' => 'required|uuid',
                 'lokasi_studi' => 'required|string|max:100',
-                'jenjang_pendidikan_id' => 'required|integer|exists:simpeg_jenjang_pendidikan,id',
-                'perguruan_tinggi_id' => 'required|integer|exists:simpeg_master_perguruan_tinggi,id',
-                'prodi_perguruan_tinggi_id' => 'required|integer|exists:simpeg_master_prodi_perguruan_tinggi,id',
-                'gelar_akademik_id' => 'nullable|integer|exists:simpeg_master_gelar_akademik,id',
+                'jenjang_pendidikan_id' => 'required|uuid|exists:simpeg_jenjang_pendidikan,id',
+                'perguruan_tinggi_id' => 'required|uuid|exists:simpeg_master_perguruan_tinggi,id',
+                'prodi_perguruan_tinggi_id' => 'required|uuid|exists:simpeg_master_prodi_perguruan_tinggi,id',
+                'gelar_akademik_id' => 'nullable|uuid|exists:simpeg_master_gelar_akademik,id',
                 'bidang_studi' => 'nullable|string|max:255',
                 'nisn' => 'nullable|string|max:20',
                 'konsentrasi' => 'nullable|string|max:100',
@@ -1234,14 +1234,14 @@ class SimpegDataPendidikanFormalAdminController extends Controller
                 'status_pengajuan' => 'sometimes|in:draft,diajukan,disetujui,ditolak,ditangguhkan',
                 'keterangan_penolakan' => 'nullable|string|max:500',
                 'dokumen_pendukung' => 'nullable|array',
-                'dokumen_pendukung.*.id' => 'nullable|integer|exists:simpeg_data_pendukung,id',
+                'dokumen_pendukung.*.id' => 'nullable|uuid|exists:simpeg_data_pendukung,id',
                 'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string|in:Ijazah,Transkrip,Surat_Keterangan,Dokumen_Lainnya', // SESUAIKAN
                 'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string|max:255',
-                'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer',
+                'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid',
                 'dokumen_pendukung.*.keterangan' => 'nullable|string|max:1000',
                 'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
                 'dokumen_pendukung_to_delete' => 'nullable|array',
-                'dokumen_pendukung_to_delete.*' => 'nullable|integer|exists:simpeg_data_pendukung,id'
+                'dokumen_pendukung_to_delete.*' => 'nullable|uuid|exists:simpeg_data_pendukung,id'
             ],
             'field_notes' => [
                 'pegawai_id' => 'Pilih pegawai yang bersangkutan.',

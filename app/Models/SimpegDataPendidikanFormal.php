@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder; // Import for type-hinting scopes
 use Carbon\Carbon; // Ensure Carbon is imported if you use it for date handling
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class SimpegDataPendidikanFormal extends Model
 {
+    use HasUuids;
     use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_data_pendidikan_formal';

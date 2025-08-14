@@ -9,7 +9,8 @@ return new class extends Migration
     public function up()
     {
         Schema::create('statusnikah', function (Blueprint $table) {
-            $table->string('kode', 1)->primary();
+            $table->uuid('id')->primary();
+            $table->string('kode', 1);
             $table->string('status', 20);
             $table->timestamps();
         });

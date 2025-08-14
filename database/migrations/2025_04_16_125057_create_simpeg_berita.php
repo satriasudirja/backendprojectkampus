@@ -15,7 +15,7 @@ return new class extends Migration
     {
         // Buat tabel simpeg_berita dari awal dengan struktur yang benar
         Schema::create('simpeg_berita', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             $table->text('unit_kerja_id'); // Langsung gunakan TEXT untuk menyimpan array unit kerja
             $table->string('judul', 100);
             $table->text('konten')->nullable();
@@ -31,19 +31,23 @@ return new class extends Migration
 
         // Buat tabel pivot untuk hubungan many-to-many dengan jabatan akademik
         Schema::create('simpeg_berita_jabatan_akademik', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('berita_id');
-            $table->unsignedBigInteger('jabatan_akademik_id');
+            // Definisikan kolom terlebih dahulu
+            $table->uuid('id')->primary(); // Tambahkan ->primary() agar konsisten
+            $table->uuid('berita_id');
+            $table->uuid('jabatan_akademik_id');
             $table->timestamps();
 
-            // Buat indeks untuk performa query
+            // Buat indeks untuk performa query.
+            // Walaupun foreign key secara otomatis membuat indeks di beberapa DB,
+            // mendefinisikannya secara eksplisit adalah praktik yang baik.
             $table->index('berita_id');
             $table->index('jabatan_akademik_id');
             
             // Buat unique constraint untuk mencegah duplikasi
             $table->unique(['berita_id', 'jabatan_akademik_id'], 'berita_jabatan_unique');
             
-            // Tambahkan foreign key constraints dengan cascade delete
+            // PERBAIKAN: Gunakan metode foreign() untuk menambahkan constraint ke kolom yang sudah ada.
+            // Ini akan menghindari error "Duplicate column".
             $table->foreign('berita_id', 'fk_berita_jabatan_berita_id')
                   ->references('id')
                   ->on('simpeg_berita')
@@ -63,6 +67,7 @@ return new class extends Migration
      */
     public function down()
     {
+        // Urutan drop harus dibalik dari pembuatan untuk menjaga integritas referensial
         Schema::dropIfExists('simpeg_berita_jabatan_akademik');
         Schema::dropIfExists('simpeg_berita');
     }

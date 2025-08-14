@@ -50,8 +50,8 @@ class SimpegGajiSlipController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'pegawai_id' => 'required|integer',
-            'periode_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid',
+            'periode_id' => 'required|uuid',
             'total_pendapatan' => 'required|numeric|min:0',
             'total_potongan' => 'required|numeric|min:0',
             'gaji_bersih' => 'required|numeric|min:0',
@@ -87,8 +87,8 @@ class SimpegGajiSlipController extends Controller
         }
 
         $request->validate([
-            'pegawai_id' => 'required|integer',
-            'periode_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid',
+            'periode_id' => 'required|uuid',
             'total_pendapatan' => 'required|numeric|min:0',
             'total_potongan' => 'required|numeric|min:0',
             'gaji_bersih' => 'required|numeric|min:0',

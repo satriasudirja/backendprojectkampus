@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegDataDiklat extends Model
 {
+    use HasUuids;
     use HasFactory,SoftDeletes;
 
     protected $table = 'simpeg_data_diklat';

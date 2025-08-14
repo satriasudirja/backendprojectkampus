@@ -52,7 +52,7 @@ class SimpegDataRiwayatPekerjaanController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'pegawai_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid',
             'bidang_usaha' => 'required|string|max:200',
             'jenis_pekerjaan' => 'required|string|max:50',
             'jabatan' => 'required|string|max:50',
@@ -97,7 +97,7 @@ class SimpegDataRiwayatPekerjaanController extends Controller
         }
 
         $request->validate([
-            'pegawai_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid',
             'bidang_usaha' => 'required|string|max:200',
             'jenis_pekerjaan' => 'required|string|max:50',
             'jabatan' => 'required|string|max:50',

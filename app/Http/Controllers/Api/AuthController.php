@@ -6,9 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
 use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Models\SimpegPegawai;
+use App\Models\SimpegUser;
 use App\Services\SlideCaptchaService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -68,7 +69,11 @@ class AuthController extends Controller
             ], 422);
         }
         
-        $credentials = $request->only('nip', 'password');
+        // Login menggunakan username (yang berasal dari NIP) dan password
+        $credentials = [
+            'username' => $request->nip, // NIP dari request akan dicari di kolom username
+            'password' => $request->password
+        ];
 
         if (!$token = JWTAuth::attempt($credentials)) {
             return response()->json([
@@ -77,11 +82,14 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = Auth::user();
+        $user = Auth::user(); // Ini akan mengembalikan SimpegUser instance
         
-        // Log login activity
-        \DB::table('simpeg_login_logs')->insert([
-            'pegawai_id' => $user->id,
+        // Load relasi pegawai untuk mendapatkan data lengkap
+        $user->load('pegawai.jabatanAkademik', 'pegawai.role');
+        
+        // Log login activity - gunakan pegawai_id dari user
+        DB::table('simpeg_login_logs')->insert([
+            'pegawai_id' => $user->pegawai_id,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'logged_in_at' => now(),
@@ -94,13 +102,20 @@ class AuthController extends Controller
      * Get the token array structure.
      *
      * @param  string $token
-     * @param  \App\Models\SimpegPegawai $user
+     * @param  \App\Models\SimpegUser $user
      * @return \Illuminate\Http\JsonResponse
      */
     protected function respondWithToken($token, $user)
     {
-        // Tentukan role berdasarkan flag is_admin
-        $roleName = $user->is_admin ? 'Admin' : ($user->jabatanAkademik->role->nama ?? 'Pegawai');
+        // Pastikan relasi pegawai sudah di-load
+        if (!$user->relationLoaded('pegawai')) {
+            $user->load('pegawai.jabatanAkademik', 'pegawai.role');
+        }
+        
+        $pegawai = $user->pegawai;
+        
+        // Tentukan role berdasarkan flag is_admin di pegawai
+        $roleName = $pegawai->is_admin ? 'Admin' : ($pegawai->role->nama ?? 'Pegawai');
 
         return response()->json([
             'success' => true,
@@ -109,49 +124,61 @@ class AuthController extends Controller
             'expires_in' => auth('api')->factory()->getTTL() * 60,
             'user' => [
                 'id' => $user->id,
-                'nip' => $user->nip,
-                'nama' => $user->nama,
-                'email' => $user->email_pribadi,
+                'pegawai_id' => $pegawai->id,
+                'nip' => $pegawai->nip,
+                'nama' => $pegawai->nama,
+                'email' => $pegawai->email_pribadi,
+                'username' => $user->username,
             ],
             'role' => $roleName,
-            'jabatan' => $user->jabatanAkademik->jabatan_akademik ?? '-',
+            'jabatan' => $pegawai->jabatanAkademik->jabatan_akademik ?? '-',
         ]);
     }
 
     public function me()
     {
-        $user = Auth::user();
-        $roleName = $user->is_admin ? 'Admin' : ($user->jabatanAkademik->role->nama ?? 'Pegawai');
+        $user = Auth::user(); // SimpegUser instance
+        
+        // Load relasi pegawai jika belum di-load
+        if (!$user->relationLoaded('pegawai')) {
+            $user->load('pegawai.jabatanAkademik', 'pegawai.role');
+        }
+        
+        $pegawai = $user->pegawai;
+        $roleName = $pegawai->is_admin ? 'Admin' : ($pegawai->role->nama ?? 'Pegawai');
         
         return response()->json([
             'success' => true,
             'data' => [
                 'user' => [
                     'id' => $user->id,
-                    'nip' => $user->nip,
-                    'nama' => $user->nama,
-                    'email' => $user->email_pribadi,
+                    'pegawai_id' => $pegawai->id,
+                    'nip' => $pegawai->nip,
+                    'nama' => $pegawai->nama,
+                    'email' => $pegawai->email_pribadi,
+                    'username' => $user->username,
                 ],
                 'role' => $roleName,
-                'jabatan' => $user->jabatanAkademik->jabatan_akademik ?? '-',
+                'jabatan' => $pegawai->jabatanAkademik->jabatan_akademik ?? '-',
             ]
         ]);
     }
     
     public function logout()
     {
-        $user = Auth::user(); // Mendapatkan user yang sedang login
+        $user = Auth::user(); // SimpegUser instance
         
         if ($user) {
+            // Gunakan pegawai_id dari user untuk mencari log
             $log_id = \DB::table('simpeg_login_logs')
-                ->where('pegawai_id', $user->id)
-                ->whereNull('logged_out_at') // Pastikan belum ada waktu logout
+                ->where('pegawai_id', $user->pegawai_id)
+                ->whereNull('logged_out_at')
                 ->orderBy('logged_in_at', 'desc')
                 ->value('id');
         
             // Update waktu logout di login log
             if ($log_id) {
-                \DB::table('simpeg_login_logs')
+                DB::table('simpeg_login_logs')
                     ->where('id', $log_id)
                     ->update(['logged_out_at' => now()]);
             }
@@ -176,8 +203,15 @@ class AuthController extends Controller
 
     public function getMenu()
     {
-        $user = Auth::user();
-        $roleName = $user->is_admin ? 'Admin' : ($user->jabatanAkademik->role->nama ?? 'Pegawai');
+        $user = Auth::user(); // SimpegUser instance
+        
+        // Load relasi pegawai jika belum di-load
+        if (!$user->relationLoaded('pegawai')) {
+            $user->load('pegawai.jabatanAkademik.role');
+        }
+        
+        $pegawai = $user->pegawai;
+        $roleName = $pegawai->is_admin ? 'Admin' : ($pegawai->jabatanAkademik->role->nama ?? 'Pegawai');
         
         $menus = [];
         

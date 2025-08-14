@@ -50,8 +50,8 @@ class SimpegGajiDetailController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'gaji_slip_id' => 'required|integer',
-            'komponen_id' => 'required|integer',
+            'gaji_slip_id' => 'required|uuid',
+            'komponen_id' => 'required|uuid',
             'jumlah' => 'required|numeric|min:0',
             'keterangan' => 'nullable|string',
         ]);
@@ -81,8 +81,8 @@ class SimpegGajiDetailController extends Controller
         }
 
         $request->validate([
-            'gaji_slip_id' => 'required|integer',
-            'komponen_id' => 'required|integer',
+            'gaji_slip_id' => 'required|uuid',
+            'komponen_id' => 'required|uuid',
             'jumlah' => 'required|numeric|min:0',
             'keterangan' => 'nullable|string',
         ]);
@@ -153,8 +153,8 @@ class SimpegGajiDetailController extends Controller
     {
         $request->validate([
             'details' => 'required|array',
-            'details.*.gaji_slip_id' => 'required|integer',
-            'details.*.komponen_id' => 'required|integer',
+            'details.*.gaji_slip_id' => 'required|uuid',
+            'details.*.komponen_id' => 'required|uuid',
             'details.*.jumlah' => 'required|numeric|min:0',
             'details.*.keterangan' => 'nullable|string',
         ]);

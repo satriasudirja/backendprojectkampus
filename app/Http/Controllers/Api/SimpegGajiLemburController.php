@@ -50,7 +50,7 @@ class SimpegGajiLemburController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'pegawai_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid',
             'tanggal' => 'required|date',
             'jam_mulai' => 'required|date_format:H:i',
             'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
@@ -89,7 +89,7 @@ class SimpegGajiLemburController extends Controller
         }
 
         $request->validate([
-            'pegawai_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid',
             'tanggal' => 'required|date',
             'jam_mulai' => 'required|date_format:H:i',
             'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
@@ -239,7 +239,7 @@ class SimpegGajiLemburController extends Controller
     public function hitungTotalByPegawai(Request $request)
     {
         $request->validate([
-            'pegawai_id' => 'required|integer',
+            'pegawai_id' => 'required|uuid',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
         ]);

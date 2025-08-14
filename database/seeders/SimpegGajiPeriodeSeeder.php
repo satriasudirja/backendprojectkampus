@@ -62,6 +62,7 @@ class SimpegGajiPeriodeSeeder extends Seeder
             
             // Insert dengan Query Builder untuk menyesuaikan dengan model yang menggunakan auto-increment
             DB::table('simpeg_gaji_periode')->insert([
+                'id'=>Str::uuid(),
                 'nama_periode' => "Periode Gaji {$monthName} {$year}",
                 'tgl_mulai' => $startDate,
                 'tgl_selesai' => $endDate,

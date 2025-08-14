@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class SimpegDataOrganisasi extends Model
 {
+    use HasUuids;
     use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_data_organisasi';

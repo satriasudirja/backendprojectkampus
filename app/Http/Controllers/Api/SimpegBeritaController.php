@@ -94,7 +94,7 @@ class SimpegBeritaController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'unit_kerja_id' => 'required|array',
-            'unit_kerja_id.*' => 'required|integer', // Tidak validasi ke tabel unit_kerja
+            'unit_kerja_id.*' => 'required|uuid', // Tidak validasi ke tabel unit_kerja
             'judul' => 'required|string|max:100',
             'konten' => 'nullable|string',
             'tgl_posting' => 'required|date',
@@ -103,7 +103,7 @@ class SimpegBeritaController extends Controller
             'gambar_berita' => 'nullable|image|max:2048', // Max 2MB
             'file_berita' => 'nullable|file|max:5120', // Max 5MB
             'jabatan_akademik_id' => 'required|array',
-            'jabatan_akademik_id.*' => 'required|integer|exists:simpeg_jabatan_akademik,id',
+            'jabatan_akademik_id.*' => 'required|uuid|exists:simpeg_jabatan_akademik,id',
         ]);
 
         if ($validator->fails()) {
@@ -232,7 +232,7 @@ class SimpegBeritaController extends Controller
 
         $validator = Validator::make($request->all(), [
             'unit_kerja_id' => 'required|array',
-            'unit_kerja_id.*' => 'required|integer',
+            'unit_kerja_id.*' => 'required|uuid',
             'judul' => 'required|string|max:100',
             'konten' => 'nullable|string',
             'tgl_posting' => 'required|date',
@@ -241,7 +241,7 @@ class SimpegBeritaController extends Controller
             'gambar_berita' => 'nullable|image|max:2048',
             'file_berita' => 'nullable|file|max:5120',
             'jabatan_akademik_id' => 'required|array',
-            'jabatan_akademik_id.*' => 'required|integer|exists:simpeg_jabatan_akademik,id',
+            'jabatan_akademik_id.*' => 'required|uuid|exists:simpeg_jabatan_akademik,id',
             'gambar_berita_clear' => 'nullable|boolean', // Added for clear flag
             'file_berita_clear' => 'nullable|boolean', // Added for clear flag
         ]);

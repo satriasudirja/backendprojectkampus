@@ -63,7 +63,7 @@ class AdminSimpegRiwayatPelanggaranController extends Controller
         $pegawai = SimpegPegawai::findOrFail($pegawai_id);
 
         $validator = Validator::make($request->all(), [
-            'jenis_pelanggaran_id' => 'required|integer|exists:simpeg_jenis_pelanggaran,id',
+            'jenis_pelanggaran_id' => 'required|uuid|exists:simpeg_jenis_pelanggaran,id',
             'tgl_pelanggaran' => 'required|date',
             'no_sk' => 'required|string|max:255',
             'tgl_sk' => 'required|date',
@@ -119,7 +119,7 @@ class AdminSimpegRiwayatPelanggaranController extends Controller
         $pelanggaran = SimpegDataPelanggaran::where('pegawai_id', $pegawai_id)->findOrFail($riwayat_id);
             
         $validator = Validator::make($request->all(), [
-            'jenis_pelanggaran_id' => 'required|integer|exists:simpeg_jenis_pelanggaran,id',
+            'jenis_pelanggaran_id' => 'required|uuid|exists:simpeg_jenis_pelanggaran,id',
             'tgl_pelanggaran' => 'required|date',
             'no_sk' => 'required|string|max:255',
             'tgl_sk' => 'required|date',

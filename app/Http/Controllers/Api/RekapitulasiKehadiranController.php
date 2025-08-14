@@ -33,7 +33,7 @@ class RekapitulasiKehadiranController extends Controller
         $request->validate([
             'tanggal_awal' => 'nullable|date_format:Y-m-d',
             'tanggal_akhir' => 'nullable|date_format:Y-m-d|after_or_equal:tanggal_awal',
-            'unit_kerja_id' => 'nullable|integer|exists:simpeg_unit_kerja,id',
+            'unit_kerja_id' => 'nullable|uuid|exists:simpeg_unit_kerja,id',
             'per_page' => 'nullable|integer|min:1|max:100',
             'search' => 'nullable|string|max:100',
         ]);

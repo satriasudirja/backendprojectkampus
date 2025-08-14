@@ -13,11 +13,11 @@ return new class extends Migration
     {
         // Perintah untuk MEMBUAT tabel baru
         Schema::create('simpeg_data_jabatan_fungsional', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             
             // Kolom untuk foreign key (relasi akan dibuat di file migrasi terpisah)
-            $table->unsignedBigInteger('jabatan_fungsional_id');
-            $table->unsignedBigInteger('pegawai_id');
+            $table->uuid('jabatan_fungsional_id');
+            $table->uuid('pegawai_id');
 
             // Kolom utama sesuai model
             $table->date('tmt_jabatan');

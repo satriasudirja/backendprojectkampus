@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\SimpegUnitKerja;
+use App\Models\SimpegJenjangPendidikan;
+// PERBAIKAN: Tambahkan DB facade untuk menggunakan Query Builder
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class SimpegUnitKerjaSeeder extends Seeder
@@ -101,6 +104,13 @@ class SimpegUnitKerjaSeeder extends Seeder
             ['kode_unit' => 'AU0102', 'nama_unit' => 'Bank Amanah Ummah', 'parent' => '041001'],
         ];
 
+        // PERBAIKAN: Gunakan DB::table() jika Model tidak ada
+        // Pastikan seeder untuk tabel-tabel ini sudah dijalankan sebelumnya.
+
+
+
+        $jenjangPendidikanIds = SimpegJenjangPendidikan::pluck('id');
+
         foreach ($data as $unit) {
             // Mencari parent_id berdasarkan kode_unit parent
             $parent = null;
@@ -116,13 +126,12 @@ class SimpegUnitKerjaSeeder extends Seeder
                 [ // Data untuk di-create atau di-update
                     'nama_unit' => $unit['nama_unit'],
                     'parent_unit_id' => $parent,
-                    'jenis_unit_id' => $faker->numberBetween(1, 5),
-                    'tk_pendidikan_id' => $faker->numberBetween(1, 3),
+                    // Ambil ID UUID acak dari data yang sudah ada
+                    'tk_pendidikan_id' => $jenjangPendidikanIds->isNotEmpty()? $jenjangPendidikanIds->random() : null,
                     'alamat' => $faker->address,
                     'telepon' => $faker->phoneNumber,
                     'website' => $faker->url,
                     'alamat_email' => $faker->unique()->safeEmail,
-                    'akreditasi_id' => $faker->numberBetween(1, 4),
                     'no_sk_akreditasi' => strtoupper(Str::random(10)),
                     'tanggal_akreditasi' => $faker->date(),
                     'no_sk_pendirian' => strtoupper(Str::random(10)),

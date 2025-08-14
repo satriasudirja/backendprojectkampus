@@ -248,7 +248,7 @@ class SimpegPenghargaanDosenController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'jenis_penghargaan_id' => 'required|integer|exists:simpeg_jenis_penghargaan,id',
+            'jenis_penghargaan_id' => 'required|uuid|exists:simpeg_jenis_penghargaan,id',
             'nama_penghargaan' => 'required|string|max:100',
             'instansi_pemberi' => 'required|string|max:255',
             'tanggal_penghargaan' => 'required|date|before_or_equal:today',
@@ -332,7 +332,7 @@ class SimpegPenghargaanDosenController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'jenis_penghargaan_id' => 'sometimes|integer|exists:simpeg_jenis_penghargaan,id',
+            'jenis_penghargaan_id' => 'sometimes|uuid|exists:simpeg_jenis_penghargaan,id',
             'nama_penghargaan' => 'sometimes|string|max:100',
             'instansi_pemberi' => 'sometimes|string|max:255',
             'tanggal_penghargaan' => 'sometimes|date|before_or_equal:today',
@@ -473,7 +473,7 @@ class SimpegPenghargaanDosenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_penghargaan,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_penghargaan,id'
         ]);
 
         if ($validator->fails()) {
@@ -549,7 +549,7 @@ class SimpegPenghargaanDosenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer'
+            'ids.*' => 'required|uuid'
         ]);
 
         if ($validator->fails()) {

@@ -2,7 +2,10 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str; // Import Str untuk generate UUID
+use Carbon\Carbon; // Import Carbon untuk timestamps
 
 return new class extends Migration
 {
@@ -14,7 +17,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('captcha_puzzles', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name')->unique();
             $table->string('image_path');
             $table->integer('grid_size')->default(3);
@@ -70,7 +73,19 @@ return new class extends Migration
             ],
         ];
 
-        DB::table('captcha_puzzles')->insert($puzzles);
+        // PERBAIKAN: Loop melalui setiap puzzle untuk menambahkan UUID dan timestamps
+        $dataToInsert = [];
+        $now = Carbon::now();
+
+        foreach ($puzzles as $puzzle) {
+            $dataToInsert[] = array_merge($puzzle, [
+                'id' => Str::uuid(),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        DB::table('captcha_puzzles')->insert($dataToInsert);
     }
 
     /**

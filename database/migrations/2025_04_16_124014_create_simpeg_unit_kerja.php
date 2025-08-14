@@ -13,16 +13,16 @@ return new class extends Migration
     {
         Schema::create('simpeg_unit_kerja', function (Blueprint $table) {
             // Kolom utama
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
 
-            $table->string('kode_unit', 20)->unique();
+            $table->string('kode_unit', 20);
 
             $table->string('nama_unit', 150);
             
             // Relasi hierarkis
-            $table->string('parent_unit_id', 50)->nullable();
-            $table->string('jenis_unit_id', 50)->nullable();
-            $table->string('tk_pendidikan_id', 50)->nullable();
+            $table->uuid('parent_unit_id')->nullable();
+            $table->string('jenis_unit_id')->nullable(); // 1. Universitas, 2. Fakultas, 3. Program Studi
+            $table->uuid('tk_pendidikan_id')->nullable();
             
             // Kontak dan alamat
             $table->string('alamat', 255)->nullable();
@@ -48,6 +48,9 @@ return new class extends Migration
             $table->index('kode_unit');
             $table->index('parent_unit_id');
             $table->index('jenis_unit_id');
+
+            // Relasi
+            $table->foreign('tk_pendidikan_id')->references('id')->on('simpeg_jenjang_pendidikan')->onDelete('set null');
         });
     }
 

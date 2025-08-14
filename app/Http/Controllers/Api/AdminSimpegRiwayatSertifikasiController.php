@@ -82,8 +82,8 @@ class AdminSimpegRiwayatSertifikasiController extends Controller
         $pegawai = SimpegPegawai::findOrFail($pegawai_id);
 
         $validator = Validator::make($request->all(), [
-            'jenis_sertifikasi_id' => 'required|integer|exists:simpeg_master_jenis_sertifikasi,id',
-            'bidang_ilmu_id' => 'required|integer|exists:simpeg_rumpun_bidang_ilmu,id',
+            'jenis_sertifikasi_id' => 'required|uuid|exists:simpeg_master_jenis_sertifikasi,id',
+            'bidang_ilmu_id' => 'required|uuid|exists:simpeg_rumpun_bidang_ilmu,id',
             'no_sertifikasi' => 'required|string|max:255',
             'tgl_sertifikasi' => 'required|date',
             'no_registrasi' => 'nullable|string|max:255',
@@ -96,7 +96,7 @@ class AdminSimpegRiwayatSertifikasiController extends Controller
             'keterangan' => 'nullable|string',
             'dokumen_pendukung' => 'nullable|array',
             'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string|max:255',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'required_with:dokumen_pendukung|integer',
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'required_with:dokumen_pendukung|uuid',
             'dokumen_pendukung.*.file' => 'required_with:dokumen_pendukung|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'dokumen_pendukung.*.keterangan' => 'nullable|string',
         ]);
@@ -166,8 +166,8 @@ class AdminSimpegRiwayatSertifikasiController extends Controller
         $sertifikasi = SimpegDataSertifikasi::where('pegawai_id', $pegawai_id)->findOrFail($riwayat_id);
             
         $validator = Validator::make($request->all(), [
-            'jenis_sertifikasi_id' => 'required|integer|exists:simpeg_master_jenis_sertifikasi,id',
-            'bidang_ilmu_id' => 'required|integer|exists:simpeg_rumpun_bidang_ilmu,id',
+            'jenis_sertifikasi_id' => 'required|uuid|exists:simpeg_master_jenis_sertifikasi,id',
+            'bidang_ilmu_id' => 'required|uuid|exists:simpeg_rumpun_bidang_ilmu,id',
             'no_sertifikasi' => 'required|string|max:255',
             'tgl_sertifikasi' => 'required|date',
             'no_registrasi' => 'nullable|string|max:255',

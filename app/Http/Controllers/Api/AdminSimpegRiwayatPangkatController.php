@@ -74,9 +74,9 @@ class AdminSimpegRiwayatPangkatController extends Controller
         $pegawai = SimpegPegawai::findOrFail($pegawai_id);
 
         $validator = Validator::make($request->all(), [
-            'jenis_sk_id' => 'required|integer|exists:simpeg_daftar_jenis_sk,id',
-            'jenis_kenaikan_pangkat_id' => 'required|integer|exists:simpeg_jenis_kenaikan_pangkat,id',
-            'pangkat_id' => 'required|integer|exists:simpeg_master_pangkat,id',
+            'jenis_sk_id' => 'required|uuid|exists:simpeg_daftar_jenis_sk,id',
+            'jenis_kenaikan_pangkat_id' => 'required|uuid|exists:simpeg_jenis_kenaikan_pangkat,id',
+            'pangkat_id' => 'required|uuid|exists:simpeg_master_pangkat,id',
             'tmt_pangkat' => 'required|date',
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date',
@@ -134,9 +134,9 @@ class AdminSimpegRiwayatPangkatController extends Controller
         $dataPangkat = SimpegDataPangkat::where('pegawai_id', $pegawai_id)->findOrFail($pangkat_id);
             
         $validator = Validator::make($request->all(), [
-            'jenis_sk_id' => 'required|integer|exists:simpeg_daftar_jenis_sk,id',
-            'jenis_kenaikan_pangkat_id' => 'required|integer|exists:simpeg_jenis_kenaikan_pangkat,id',
-            'pangkat_id' => 'required|integer|exists:simpeg_master_pangkat,id',
+            'jenis_sk_id' => 'required|uuid|exists:simpeg_daftar_jenis_sk,id',
+            'jenis_kenaikan_pangkat_id' => 'required|uuid|exists:simpeg_jenis_kenaikan_pangkat,id',
+            'pangkat_id' => 'required|uuid|exists:simpeg_master_pangkat,id',
             'tmt_pangkat' => 'required|date',
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date',

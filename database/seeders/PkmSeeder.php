@@ -4,12 +4,15 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class PkmSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('daftar_jenis_pkm')->insert([
+        $now = Carbon::now();
+        $pkmData = [
             ['kode' => 'P001', 'nama_pkm' => 'Menduduki jabatan pada lembaga pemerintah'],
             ['kode' => 'P002', 'nama_pkm' => 'Melaksanakan pengembangan hasil pendidikan dan penelitian'],
             ['kode' => 'P003', 'nama_pkm' => 'Memberi latihan/ penyuluhan/ penataran/ ceramah (Tingkat Internasional dalam satu semester / lebih)'],
@@ -23,6 +26,17 @@ class PkmSeeder extends Seeder
             ['kode' => 'P011', 'nama_pkm' => 'Memberi pelayanan kepada masyarakat atau kegiatan lain (Penugasan Perguruan Tinggi)'],
             ['kode' => 'P012', 'nama_pkm' => 'Memberi pelayanan kepada masyarakat atau kegiatan lain (Fungsi jabatan)'],
             ['kode' => 'P013', 'nama_pkm' => 'Membuat/ menulis karya pengabdian yang tidak di publikasikan (Tiap karya)'],
-        ]);
+        ];
+
+        // PERBAIKAN: Loop melalui data untuk menambahkan id dan timestamps
+        $dataToInsert = array_map(function ($item) use ($now) {
+            return array_merge($item, [
+                'id' => Str::uuid(),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }, $pkmData);
+
+        DB::table('daftar_jenis_pkm')->insert($dataToInsert);
     }
 }

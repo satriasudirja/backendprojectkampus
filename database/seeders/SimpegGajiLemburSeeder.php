@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\SimpegGajiLembur;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -17,11 +16,15 @@ class SimpegGajiLemburSeeder extends Seeder
      */
     public function run()
     {
-        // Truncate table terlebih dahulu (opsional)
-        // DB::table('simpeg_gaji_lembur')->truncate();
-        
-        // Data sample pegawai IDs (asumsikan sudah ada di tabel simpeg_pegawai)
-        $pegawaiIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        // --- PERBAIKAN 1: Ambil UUID pegawai yang sebenarnya dari database ---
+        // Bukan lagi array integer [1, 2, 3, ...].
+        $pegawaiIds = DB::table('simpeg_pegawai')->pluck('id')->toArray();
+
+        // Validasi: Hentikan seeder jika tidak ada data pegawai.
+        if (empty($pegawaiIds)) {
+            $this->command->error('Tabel pegawai kosong. Harap jalankan SimpegPegawaiSeeder terlebih dahulu.');
+            return;
+        }
         
         // Status yang mungkin
         $statuses = ['pending', 'approved', 'rejected', 'paid'];
@@ -29,6 +32,9 @@ class SimpegGajiLemburSeeder extends Seeder
         // Tanggal sekarang
         $now = Carbon::now();
         
+        // Buat data dalam satu batch untuk efisiensi
+        $dataLembur = [];
+
         // Generate data lembur untuk 3 bulan terakhir
         for ($i = 0; $i < 3; $i++) {
             $month = $now->copy()->subMonths($i);
@@ -39,6 +45,7 @@ class SimpegGajiLemburSeeder extends Seeder
                 $lemburCount = rand(0, 5);  // 0-5 lembur per bulan
                 
                 for ($j = 0; $j < $lemburCount; $j++) {
+                    
                     // Tanggal acak dalam bulan tersebut
                     $day = rand(1, $month->daysInMonth);
                     $tanggal = Carbon::createFromDate($month->year, $month->month, $day);
@@ -60,24 +67,13 @@ class SimpegGajiLemburSeeder extends Seeder
                     $totalUpah = $upahPerjam * $durasi;
                     
                     // Status acak
-                    // Jika bulan terbaru, lebih banyak status pending
-                    if ($i == 0) {
-                        $statusIndex = rand(0, min(1, count($statuses) - 1));  // Lebih banyak pending dan approved
-                    }
-                    // Jika bulan menengah, lebih banyak approved
-                    else if ($i == 1) {
-                        $statusIndex = rand(min(1, count($statuses) - 1), min(2, count($statuses) - 1)); // Lebih banyak approved
-                    }
-                    // Jika bulan lama, lebih banyak paid
-                    else {
-                        $statusIndex = rand(min(2, count($statuses) - 1), count($statuses) - 1); // Lebih banyak approved dan paid
-                    }
+                    $status = $statuses[array_rand($statuses)];
                     
-                    $status = $statuses[$statusIndex];
-                    
-                    // Insert ke database menggunakan Query Builder
-                    DB::table('simpeg_gaji_lembur')->insert([
-                        'pegawai_id' => $pegawaiId,
+                    // --- PERBAIKAN 2: Buat UUID baru untuk SETIAP baris lembur ---
+                    // dan kumpulkan data ke dalam array $dataLembur
+                    $dataLembur[] = [
+                        'id' => Str::uuid(), // UUID baru di setiap iterasi
+                        'pegawai_id' => $pegawaiId, // Gunakan UUID pegawai
                         'tanggal' => $tanggal,
                         'jam_mulai' => $jamMulai,
                         'jam_selesai' => $jamSelesai,
@@ -87,9 +83,13 @@ class SimpegGajiLemburSeeder extends Seeder
                         'status' => $status,
                         'created_at' => now(),
                         'updated_at' => now()
-                    ]);
+                    ];
                 }
             }
         }
+
+        // --- PERBAIKAN 3: Insert semua data sekaligus di luar loop ---
+        // Ini jauh lebih cepat dan efisien daripada insert satu per satu.
+        DB::table('simpeg_gaji_lembur')->insert($dataLembur);
     }
 }

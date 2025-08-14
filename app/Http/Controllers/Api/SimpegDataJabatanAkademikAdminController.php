@@ -184,8 +184,8 @@ class SimpegDataJabatanAkademikAdminController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jabatan_akademik_id' => 'required|integer|exists:simpeg_jabatan_akademik,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'jabatan_akademik_id' => 'required|uuid|exists:simpeg_jabatan_akademik,id',
             'tmt_jabatan' => 'required|date',
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date',
@@ -276,8 +276,8 @@ class SimpegDataJabatanAkademikAdminController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
-            'jabatan_akademik_id' => 'sometimes|integer|exists:simpeg_jabatan_akademik,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id',
+            'jabatan_akademik_id' => 'sometimes|uuid|exists:simpeg_jabatan_akademik,id',
             'tmt_jabatan' => 'sometimes|date',
             'no_sk' => 'sometimes|string|max:100',
             'tgl_sk' => 'sometimes|date',
@@ -541,7 +541,7 @@ class SimpegDataJabatanAkademikAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_akademik,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_akademik,id',
         ]);
 
         if ($validator->fails()) {
@@ -621,7 +621,7 @@ class SimpegDataJabatanAkademikAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_akademik,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_akademik,id'
         ]);
 
         if ($validator->fails()) {
@@ -684,7 +684,7 @@ class SimpegDataJabatanAkademikAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_akademik,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_akademik,id',
             // 'alasan_penolakan' => 'nullable|string|max:500', // Dihapus
         ]);
 
@@ -749,7 +749,7 @@ class SimpegDataJabatanAkademikAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_akademik,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_akademik,id',
         ]);
 
         if ($validator->fails()) {
@@ -918,8 +918,8 @@ class SimpegDataJabatanAkademikAdminController extends Controller
                 'status_pengajuan' => $statusPengajuanOptions,
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
-                'jabatan_akademik_id' => 'required|integer',
+                'pegawai_id' => 'required|uuid',
+                'jabatan_akademik_id' => 'required|uuid',
                 'tmt_jabatan' => 'required|date',
                 'no_sk' => 'required|string|max:100',
                 'tgl_sk' => 'required|date',

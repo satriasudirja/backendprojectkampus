@@ -81,7 +81,7 @@ class AdminSimpegRiwayatJabatanStrukturalController extends Controller
         $pegawai = SimpegPegawai::findOrFail($pegawai_id);
 
         $validator = Validator::make($request->all(), [
-            'jabatan_struktural_id' => 'required|integer|exists:simpeg_jabatan_struktural,id',
+            'jabatan_struktural_id' => 'required|uuid|exists:simpeg_jabatan_struktural,id',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'nullable|date|after_or_equal:tgl_mulai',
             'no_sk' => 'required|string|max:100',
@@ -138,7 +138,7 @@ class AdminSimpegRiwayatJabatanStrukturalController extends Controller
         $dataJabatan = SimpegDataJabatanStruktural::where('pegawai_id', $pegawai_id)->findOrFail($riwayat_id);
             
         $validator = Validator::make($request->all(), [
-            'jabatan_struktural_id' => 'required|integer|exists:simpeg_jabatan_struktural,id',
+            'jabatan_struktural_id' => 'required|uuid|exists:simpeg_jabatan_struktural,id',
             'tgl_mulai' => 'required|date',
             'tgl_selesai' => 'nullable|date|after_or_equal:tgl_mulai',
             'no_sk' => 'required|string|max:100',

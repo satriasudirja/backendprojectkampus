@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class SimpegGajiTunjanganKhusus extends Model
 {
     use HasFactory;
+    use HasUuids;
 
     protected $table = 'simpeg_gaji_tunjangan_khusus';
     protected $primaryKey = 'id';
@@ -32,7 +34,7 @@ class SimpegGajiTunjanganKhusus extends Model
     // Relasi ke pegawai
     public function pegawai()
     {
-        return $this->belongsTo(Pegawai::class);
+        return $this->belongsTo(SimpegPegawai::class);
     }
 
     // Relasi ke komponen gaji

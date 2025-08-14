@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,22 +13,15 @@ class SimpegJabatanAkademik extends Model
 {
     use HasFactory;
     use SoftDeletes;
+    use HasUuids;
     
     protected $table = 'simpeg_jabatan_akademik';
     protected $primaryKey = 'id';
     protected $fillable = [
-        'role_id',
         'kode',
         'jabatan_akademik',
     ];
 
-    /**
-     * Relasi ke model Role (jika ada model terkait, misalnya UserRole)
-     */
-    public function role()
-    {
-        return $this->belongsTo(SimpegUserRole::class, 'role_id');
-    }
 
     /**
      * Relasi ke model Pegawai (one to many)

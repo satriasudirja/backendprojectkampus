@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_data_pendukung', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             $table->enum('tipe_dokumen', ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'png', 'jpeg'])->nullable();
             $table->string('file_path')->nullable();
             $table->string('nama_dokumen')->nullable();
-            $table->integer('jenis_dokumen_id');
+            $table->uuid('jenis_dokumen_id');
             $table->text('keterangan')->nullable();
             $table->string('pendukungable_type')->nullable();
-            $table->unsignedBigInteger('pendukungable_id')->nullable();
+            $table->uuid('pendukungable_id')->nullable();
             
             $table->timestamps();
             $table->index(['pendukungable_type', 'pendukungable_id']);

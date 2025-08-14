@@ -91,7 +91,7 @@ class AdminSimpegRiwayatDiklatController extends Controller
             'sk_penugasan' => 'nullable|string|max:255',
             'status_pengajuan' => 'required|in:draft,diajukan,disetujui,ditolak',
             'dokumen_pendukung' => 'nullable|array',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'required_with:dokumen_pendukung|integer', 
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'required_with:dokumen_pendukung|uuid', 
             'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string|max:255',
             'dokumen_pendukung.*.file' => 'required_with:dokumen_pendukung|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'dokumen_pendukung.*.keterangan' => 'nullable|string',

@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SimpegPegawai;
+use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
 
 class BiodataController extends Controller
 {
@@ -560,4 +563,97 @@ class BiodataController extends Controller
             ], 500);
         }
     }
+  public function updateBiodata(Request $request)
+    {
+        // 1. Dapatkan model Pegawai yang sedang terotentikasi secara langsung
+        $pegawai = Auth::user();
+
+        // Cukup periksa apakah autentikasi berhasil
+        if (!$pegawai) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Data pegawai untuk pengguna ini tidak ditemukan atau tidak terautentikasi.'
+            ], 404);
+        }
+        // Variabel $pegawai sudah merupakan model yang benar, tidak perlu mencari $user->pegawai lagi.
+
+        // 2. Definisikan aturan validasi
+        $validationRules = [
+            // Field yang wajib diisi (tidak boleh kosong)
+            'nama' => 'required|string|max:255',
+            'tanggal_lahir' => 'required|date',
+            'tempat_lahir' => 'required|string|max:30',
+            'agama' => 'required|string|max:20',
+            'jenis_kelamin' => 'required|string|max:30',
+            // Pastikan tabel simpeg_status_pernikahan juga menggunakan UUID untuk kolom 'id'
+            'email_pribadi' => 'required|email|max:50',
+            'no_ktp' => 'required|string|max:30',
+            'no_kk' => 'required|string|max:16',
+            'alamat_domisili' => 'required|string|max:255',
+            'no_handphone' => 'required|string|max:20',
+
+            // Field yang boleh kosong (nullable)
+            'email_pegawai' => 'nullable|email|max:50',
+            'golongan_darah' => 'nullable|string|max:10',
+            'warga_negara' => 'nullable|string|max:30',
+            'kecamatan' => 'nullable|string|max:50',
+            'kota' => 'nullable|string|max:30',
+            'provinsi' => 'nullable|string|max:30',
+            'kode_pos' => 'nullable|string|max:5',
+            'no_whatsapp' => 'nullable|string|max:20',
+            'cabang_bank' => 'nullable|string|max:100',
+            'nama_bank' => 'nullable|string|max:100',
+            'no_rekening' => 'nullable|string|max:50',
+            'atas_nama_rekening' => 'nullable|string|max:100',
+        ];
+
+        // 3. Lakukan validasi
+        $validator = Validator::make($request->all(), $validationRules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data yang dikirim tidak valid.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Ambil data yang sudah tervalidasi
+        $validatedData = $validator->validated();
+        
+        // Simpan data lama untuk logging
+        $oldData = $pegawai->getAttributes();
+
+        DB::beginTransaction();
+        try {
+            // 4. Update data pegawai
+            $pegawai->update($validatedData);
+
+            // 5. Log aktivitas
+            $changes = array_diff_assoc($pegawai->getAttributes(), $oldData);
+            if (!empty($changes)) {
+                ActivityLogger::log('update-biodata', $pegawai, $changes);
+            }
+            
+            // 6. Commit transaksi
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Biodata berhasil diperbarui.',
+                'data' => $pegawai->fresh() // Kirim kembali data terbaru
+            ]);
+
+        } catch (\Exception $e) {
+            // 7. Rollback jika terjadi error
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui biodata: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    
 }

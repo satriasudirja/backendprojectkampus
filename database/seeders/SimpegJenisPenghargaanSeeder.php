@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\SimpegJenisPenghargaan;
+use Illuminate\Support\Str;
 
 class SimpegJenisPenghargaanSeeder extends Seeder
 {
@@ -15,10 +16,10 @@ class SimpegJenisPenghargaanSeeder extends Seeder
     public function run()
     {
         $data = [
-            ['kode' => 'P1', 'nama' => 'Emas'],
-            ['kode' => 'P2', 'nama' => 'Umroh'],
-            ['kode' => 'P3', 'nama' => 'Sertifikat'],
-            ['kode' => 'P4', 'nama' => 'Dosen/Pegawai Teladan'],
+            ['id'=>Str::uuid(),'kode' => 'P1', 'nama' => 'Emas'],
+            ['id'=>Str::uuid(),'kode' => 'P2', 'nama' => 'Umroh'],
+            ['id'=>Str::uuid(),'kode' => 'P3', 'nama' => 'Sertifikat'],
+            ['id'=>Str::uuid(),'kode' => 'P4', 'nama' => 'Dosen/Pegawai Teladan'],
         ];
 
         foreach ($data as $item) {

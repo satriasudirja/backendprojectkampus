@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_gaji_slip', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->integer('pegawai_id');
-            $table->integer('periode_id');
+            $table->uuid('id')->primary();
+            $table->uuid('pegawai_id');
+            $table->uuid('periode_id');
             $table->decimal('total_pendapatan', 12, 2)->default(0);
             $table->decimal('total_potongan', 12, 2)->default(0);
             $table->decimal('gaji_bersih', 12, 2)->default(0);

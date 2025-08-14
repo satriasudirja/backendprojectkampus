@@ -14,7 +14,7 @@ return new class extends Migration
     {
         // Tabel untuk mengelola periode penggajian
         Schema::create('penggajian_periode', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->year('tahun');
             $table->unsignedTinyInteger('bulan'); // 1-12
             $table->string('nama_periode'); // Contoh: "Penggajian Juni 2025"
@@ -26,10 +26,10 @@ return new class extends Migration
 
         // Tabel untuk "slip gaji" setiap pegawai per periode
         Schema::create('penggajian_pegawai', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('periode_id')->constrained('penggajian_periode')->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->foreignUuid('periode_id')->constrained('penggajian_periode')->onDelete('cascade');
             // FIX: Mengubah foreignUuid menjadi foreignId agar cocok dengan tipe BIGINT dari tabel simpeg_pegawai
-            $table->foreignId('pegawai_id')->constrained('simpeg_pegawai')->onDelete('cascade');
+            $table->foreignUuid('pegawai_id')->constrained('simpeg_pegawai')->onDelete('cascade');
             $table->decimal('total_pendapatan', 15, 2)->default(0);
             $table->decimal('total_potongan', 15, 2)->default(0);
             $table->decimal('gaji_bersih', 15, 2)->default(0); // take-home pay
@@ -39,8 +39,8 @@ return new class extends Migration
 
         // Tabel untuk rincian semua komponen pendapatan
         Schema::create('penggajian_komponen_pendapatan', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('penggajian_pegawai_id')->constrained('penggajian_pegawai')->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->foreignUuid('penggajian_pegawai_id')->constrained('penggajian_pegawai')->onDelete('cascade');
             $table->string('kode_komponen'); // Contoh: 'GAPOK', 'TUNJ_STRUKTURAL', 'THR'
             $table->string('deskripsi'); // Contoh: "Gaji Pokok Golongan III/a", "Tunjangan Jabatan Struktural", "Tunjangan Hari Raya"
             $table->decimal('nominal', 15, 2);
@@ -49,8 +49,8 @@ return new class extends Migration
 
         // Tabel untuk rincian semua komponen potongan
         Schema::create('penggajian_komponen_potongan', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('penggajian_pegawai_id')->constrained('penggajian_pegawai')->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->foreignUuid('penggajian_pegawai_id')->constrained('penggajian_pegawai')->onDelete('cascade');
             $table->string('kode_komponen'); // Contoh: 'PPH21', 'BPJS_KES'
             $table->string('deskripsi'); // Contoh: "Pajak PPh 21", "Potongan BPJS Kesehatan"
             $table->decimal('nominal', 15, 2);
@@ -59,7 +59,7 @@ return new class extends Migration
 
         // Tabel untuk mengelola tunjangan yang bersifat insidentil / tidak tetap
         Schema::create('master_tunjangan_tambahan', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('kode_tunjangan')->unique();
             $table->string('nama_tunjangan');
             $table->text('deskripsi')->nullable();
@@ -69,7 +69,7 @@ return new class extends Migration
 
         // Tabel untuk mengelola jenis-jenis potongan
         Schema::create('master_potongan', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('kode_potongan')->unique();
             $table->string('nama_potongan');
             $table->text('deskripsi')->nullable();

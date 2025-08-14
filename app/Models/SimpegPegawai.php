@@ -2,26 +2,29 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Tymon\JWTAuth\Contracts\JWTSubject;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class SimpegPegawai extends Authenticatable implements JWTSubject
+class SimpegPegawai extends Model
 {
-    // Nama tabel (jika tidak mengikuti konvensi Laravel)
-    protected $table = 'simpeg_pegawai';
-
-    // Karena primary key-nya bukan 'id' auto-increment
-    protected $primaryKey = 'id';
-    protected $hidden = ['password'];
-    protected $guarded = [];
+    use HasUuids;
     
-
-    // Mass assignable attributes - Updated
+    // Nama tabel
+    protected $table = 'simpeg_pegawai';
+    
+    // Primary key
+    protected $primaryKey = 'id';
+    protected $guarded = [];
+    public $incrementing = false;
+    protected $keyType = 'string';
+    
+    // Mass assignable attributes
     protected $fillable = [
         'id',
-        'user_id',
+        'role_id',
         'unit_kerja_id',
         'kode_status_pernikahan',
         'status_aktif_id',
@@ -30,7 +33,6 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
         'nama',
         'nip',
         'nuptk',
-        'password',
         'nidn',
         'gelar_depan',
         'gelar_belakang',
@@ -46,15 +48,18 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
         'tanggal_sk_pegawai',
         'alamat_domisili',
         'agama',
+        'atas_nama_rekening',
         'golongan_darah',
+        'warga_negara',
+        'kecamatan',
         'kota',
         'provinsi',
         'kode_pos',
         'no_handphone',
-        'no_whatsapp',           // Added
+        'no_whatsapp',
         'no_kk',
         'email_pribadi',
-        'email_pegawai',         // Added
+        'email_pegawai',
         'no_ktp',
         'jarak_rumah_domisili',
         'npwp',
@@ -79,74 +84,118 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
         'tinggi_badan',
         'berat_badan',
         'file_tanda_tangan',
-        'nomor_polisi',          // Added
-        'jenis_kendaraan',       // Added
+        'nomor_polisi',
+        'jenis_kendaraan',
         'merk_kendaraan', 
-        'file_foto',       // Added
+        'file_foto',
+        'is_admin',
         'modified_by',
         'modified_dt',
-        
-        // Removed fields:
-        // 'no_kartu_bpjs',
-        // 'no_bpjs_pensiun',
-        // 'file_bpjs_pensiun',
-        // 'no_telepon_domisili_kontak',
-        // 'no_telephone_kantor'
     ];
 
-    // Tanggal yang akan diperlakukan sebagai Carbon instance
-    protected $dates = [
-        'tanggal_lahir',
-        'tanggal_sk_capeg',
-        'tmt_capeg',
-        'tanggal_sk_pegawai',
-        'modified_dt',
+    // Cast attributes
+    protected $casts = [
+        'tanggal_lahir' => 'date',
+        'tanggal_sk_capeg' => 'date',
+        'tmt_capeg' => 'date',
+        'tanggal_sk_pegawai' => 'date',
+        'modified_dt' => 'datetime',
+        'is_admin' => 'boolean',
     ];
 
-    // Relasi-relasi bisa ditambahkan di bawah sini
+    // Relations
     public function user()
     {
-        return $this->belongsTo(SimpegJabatanAkademik::class, 'user_id');
+        return $this->hasOne(SimpegUser::class, 'pegawai_id');
     }
 
-    // public function unitKerja()
-    // {
-    //     return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id', 'id');
-    // }
-     public function absensiRecords()
+    public function role(): BelongsTo
     {
-        return $this->hasMany(SimpegAbsensiRecord::class, 'pegawai_id');
+        return $this->belongsTo(SimpegUserRole::class, 'role_id');
     }
-    // public function unitKerja()
-    // {
-    //     return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id', 'kode_unit');
-    // }
 
-    public function unitKerja()
-{
-    return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id');
-}
+    public function unitKerja(): BelongsTo
+    {
+        return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id');
+    }
 
-    public function statusPernikahan()
+    public function statusPernikahan(): BelongsTo
     {
         return $this->belongsTo(SimpegStatusPernikahan::class, 'kode_status_pernikahan');
     }
 
-    public function statusAktif()
+    public function statusAktif(): BelongsTo
     {
         return $this->belongsTo(SimpegStatusAktif::class, 'status_aktif_id');
     }
 
-    public function jabatanAkademik()
+    public function jabatanAkademik(): BelongsTo
     {
         return $this->belongsTo(SimpegJabatanAkademik::class, 'jabatan_akademik_id');
     }
 
-    public function suku()
+    public function suku(): BelongsTo
     {
         return $this->belongsTo(SimpegSuku::class, 'suku_id');
     }
     
+    // HasMany relations
+    public function absensiRecords(): HasMany
+    {
+        return $this->hasMany(SimpegAbsensiRecord::class, 'pegawai_id');
+    }
+    
+    public function dataHubunganKerja(): HasMany
+    {
+        return $this->hasMany(SimpegDataHubunganKerja::class, 'pegawai_id');
+    }
+    
+    public function dataPendidikanFormal(): HasMany
+    {
+        return $this->hasMany(SimpegDataPendidikanFormal::class, 'pegawai_id');
+    }
+
+    public function dataJabatanFungsional(): HasMany
+    {
+        return $this->hasMany(SimpegDataJabatanFungsional::class, 'pegawai_id');
+    }
+
+    public function dataPangkat(): HasMany
+    {
+        return $this->hasMany(SimpegDataPangkat::class, 'pegawai_id');
+    }
+
+    public function dataJabatanAkademik(): HasMany
+    {
+        return $this->hasMany(SimpegDataJabatanAkademik::class, 'pegawai_id');
+    }
+
+    public function dataJabatanStruktural(): HasMany
+    {
+        return $this->hasMany(SimpegDataJabatanStruktural::class, 'pegawai_id');
+    }
+
+    public function riwayatUnitKerja(): HasMany
+    {
+        return $this->hasMany(SimpegUnitKerja::class, 'pegawai_id');
+    }
+
+    public function evaluasiKinerja(): HasMany
+    {
+        return $this->hasMany(SimpegEvaluasiKinerja::class, 'pegawai_id');
+    }
+
+    public function evaluasiSebagaiPenilai(): HasMany
+    {
+        return $this->hasMany(SimpegEvaluasiKinerja::class, 'penilai_id');
+    }
+
+    public function evaluasiSebagaiAtasanPenilai(): HasMany
+    {
+        return $this->hasMany(SimpegEvaluasiKinerja::class, 'atasan_penilai_id');
+    }
+    
+    // JWT methods
     public function getJWTIdentifier()
     {
         return $this->getKey();
@@ -156,76 +205,4 @@ class SimpegPegawai extends Authenticatable implements JWTSubject
     {
         return [];
     }
-    
-    public function dataHubunganKerja()
-    {
-        return $this->hasMany(SimpegDataHubunganKerja::class, 'pegawai_id');
-    }
-    
-    public function dataPendidikanFormal()
-    {
-        return $this->hasMany(SimpegDataPendidikanFormal::class, 'pegawai_id');
-    }
-
-    // Relationship to DataJabatanFungsional
-    public function dataJabatanFungsional()
-    {
-        return $this->hasMany(SimpegDataJabatanFungsional::class, 'pegawai_id');
-    }
-
-    // Relationship to DataPendidikanFormal
-    // public function dataPendidikanFormal()
-    // {
-    //     return $this->hasMany(SimpegDataPendidikanFormal::class, 'pegawai_id');
-    // }
-
-    // Relationship to DataPangkat
-    public function dataPangkat()
-    {
-        return $this->hasMany(SimpegDataPangkat::class, 'pegawai_id');
-    }
-
-    // Relationship to DataJabatanAkademik
-    public function dataJabatanAkademik()
-    {
-        return $this->hasMany(SimpegDataJabatanAkademik::class, 'pegawai_id');
-    }
-
-    // Relationship to DataJabatanStruktural
-    public function dataJabatanStruktural()
-    {
-        return $this->hasMany(SimpegDataJabatanStruktural::class, 'pegawai_id');
-    }
-
-    // Relationship to AbsensiRecord
-    public function absensiRecord()
-    {
-        return $this->hasMany(SimpegAbsensiRecord::class, 'pegawai_id');
-    }
-
-    // Relationship to RiwayatUnitKerja
-    public function riwayatUnitKerja()
-    {
-        return $this->hasMany(SimpegUnitKerja::class, 'pegawai_id');
-    }
-    public function evaluasiKinerja()
-{
-    return $this->hasMany(SimpegEvaluasiKinerja::class, 'pegawai_id');
-}
-
-/**
- * Relasi ke evaluasi kinerja sebagai penilai
- */
-public function evaluasiSebagaiPenilai()
-{
-    return $this->hasMany(SimpegEvaluasiKinerja::class, 'penilai_id');
-}
-
-/**
- * Relasi ke evaluasi kinerja sebagai atasan penilai
- */
-public function evaluasiSebagaiAtasanPenilai()
-{
-    return $this->hasMany(SimpegEvaluasiKinerja::class, 'atasan_penilai_id');
-}
 }

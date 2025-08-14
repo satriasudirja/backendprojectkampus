@@ -76,7 +76,7 @@ class AdminSimpegRiwayatKemampuanBahasaController extends Controller
 
         $validator = Validator::make($request->all(), [
             'tahun' => 'required|integer|digits:4',
-            'bahasa_id' => 'required|integer|exists:bahasa,id',
+            'bahasa_id' => 'required|uuid|exists:bahasa,id',
             'nama_lembaga' => 'nullable|string|max:255',
             'kemampuan_mendengar' => 'required|integer|digits_between:1,3',
             'kemampuan_bicara' => 'required|integer|digits_between:1,3',
@@ -136,7 +136,7 @@ class AdminSimpegRiwayatKemampuanBahasaController extends Controller
             
         $validator = Validator::make($request->all(), [
             'tahun' => 'required|integer|digits:4',
-            'bahasa_id' => 'required|integer|exists:bahasa,id',
+            'bahasa_id' => 'required|uuid|exists:bahasa,id',
             'nama_lembaga' => 'nullable|string|max:255',
             'kemampuan_mendengar' => 'required|integer|digits_between:1,3',
             'kemampuan_bicara' => 'required|integer|digits_between:1,3',

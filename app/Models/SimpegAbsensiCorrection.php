@@ -1,10 +1,13 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class SimpegAbsensiCorrection extends Model
 {
+    use HasUuids;
+    
     protected $table = 'simpeg_absensi_correction';
     
     protected $fillable = [

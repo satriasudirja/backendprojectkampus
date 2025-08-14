@@ -166,6 +166,7 @@ use App\Http\Controllers\Api\PayrollDosenController;
 use App\Http\Controllers\Api\ProfilesController;
 use App\Http\Controllers\Api\RekapitulasiKehadiranController;
 use App\Http\Controllers\Api\SimpegMasterGelarAkademikController;
+use App\Http\Controllers\Api\SimpegSearchPegawaiController;
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -188,42 +189,44 @@ Route::middleware('auth:api')->group(function () {
             return response()->json(['message' => 'Admin Dashboard']);
         });
 
+        Route::get('pegawai/search', [SimpegSearchPegawaiController::class, 'search'])->name('pegawai.search');
+
         Route::apiResource('gelar-akademik', SimpegMasterGelarAkademikController::class);
         Route::get('/rekapitulasi/kehadiran', [RekapitulasiKehadiranController::class, 'index']);
          Route::get('/rekapitulasi/kehadiran/pegawai/{id}', [RekapitulasiKehadiranController::class, 'show']);
          Route::get('/profiles', [ProfilesController::class, 'getProfile']);
 
-    /**
-     * Memperbarui email dan/atau foto profil pengguna.
-     * Method: POST
-     * URL: {{base_url}}/api/profile/update
-     */
-    Route::post('/profiles/update', [ProfilesController::class, 'updateProfile']);
+            /**
+             * Memperbarui email dan/atau foto profil pengguna.
+             * Method: POST
+             * URL: {{base_url}}/api/profile/update
+             */
+            Route::post('/profiles/update', [ProfilesController::class, 'updateProfile']);
 
-    /**
-     * Mengubah password pengguna.
-     * Method: POST
-     * URL: {{base_url}}/api/profile/change-password
-     */
-    Route::post('/profiles/change-password', [ProfilesController::class, 'changePassword']);
+            /**
+             * Mengubah password pengguna.
+             * Method: POST
+             * URL: {{base_url}}/api/profile/change-password
+             */
+            Route::post('/profiles/change-password', [ProfilesController::class, 'changePassword']);
 
 
-        Route::prefix('payroll')->name('payroll.api.')->group(function () {
-    // Memicu pembuatan payroll
-    Route::post('/generate', [PayrollController::class, 'generate'])->name('generate');
-    
-    // Melihat daftar periode
-    Route::get('/periods', [PayrollController::class, 'indexPeriods'])->name('periods.index');
-    
-    // Melihat detail satu periode, menggunakan route model binding
-    Route::get('/periods/{periode}', [PayrollController::class, 'showPeriod'])->name('periods.show');
-    
-    // Melihat detail slip gaji berdasarkan ID slip-nya, menggunakan route model binding
-    Route::get('/slips/{slip}', [PayrollController::class, 'showSlip'])->name('slips.show');
-});
+                Route::prefix('payroll')->name('payroll.api.')->group(function () {
+            // Memicu pembuatan payroll
+            Route::post('/generate', [PayrollController::class, 'generate'])->name('generate');
+            
+            // Melihat daftar periode
+            Route::get('/periods', [PayrollController::class, 'indexPeriods'])->name('periods.index');
+            
+            // Melihat detail satu periode, menggunakan route model binding
+            Route::get('/periods/{periode}', [PayrollController::class, 'showPeriod'])->name('periods.show');
+            
+            // Melihat detail slip gaji berdasarkan ID slip-nya, menggunakan route model binding
+            Route::get('/slips/{slip}', [PayrollController::class, 'showSlip'])->name('slips.show');
+        });
 
-        Route::get('/pegawai/search', [AdminSimpegDataAnakController::class, 'searchPegawai'])
-            ->name('admin.pegawai.search');
+        // Route::get('/pegawai/search', [AdminSimpegDataAnakController::class, 'searchPegawai'])
+        //     ->name('admin.pegawai.search');
 
 
 
@@ -1114,7 +1117,7 @@ Route::prefix('validasi-cuti')->middleware('auth:api')->group(function () {
             // Route::post('/export', [SimpegDataPenghargaanAdmController::class, 'export']);
         });
         Route::get('pegawai/info-pendidikan/{pegawaiId}', [SimpegRiwayatPendidikanController::class, 'getPegawaiWithPendidikan']);
-        Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchPegawai']);
+        // Route::get('pegawai/search', [SimpegRiwayatPendidikanController::class, 'searchPegawai']);
         //dashboard nav pegawai
         Route::get('pegawai', [PegawaiController::class, 'index']);
         Route::get('pegawai/{id}', [PegawaiController::class, 'show']);
@@ -1543,6 +1546,7 @@ Route::apiResource('univ-luar', SimpegUnivLuarController::class);
         });
         Route::prefix('biodata')->group(function () {
             Route::get('/', [BiodataController::class, 'index']);
+            Route::put('/update', [BiodataController::class, 'updateBiodata']);
             Route::get('/riwayat-pendidikan', [BiodataController::class, 'riwayatPendidikan']);
             Route::get('/riwayat-pangkat', [BiodataController::class, 'riwayatPangkat']);
             Route::get('/riwayat-unit-kerja', [BiodataController::class, 'riwayatUnitKerja']);

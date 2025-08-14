@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class RumpunBidangIlmuSeeder extends Seeder
 {
@@ -456,6 +457,7 @@ class RumpunBidangIlmuSeeder extends Seeder
         // Insert data
         foreach ($data as $item) {
             DB::table('simpeg_rumpun_bidang_ilmu')->insert([
+                'id' => Str::uuid(),
                 'kode' => $item['kode'],
                 'nama_bidang' => $item['nama_bidang'],
                 'parent_category' => $item['parent_category'],

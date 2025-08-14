@@ -12,9 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_jabatan_akademik', function (Blueprint $table) {
-             $table->bigIncrements('id');
+            $table->uuid('id')->primary();
         
-            $table->integer('role_id'); 
             $table->string('kode', 2); 
             $table->string('jabatan_akademik', 50); 
             $table->timestamps();

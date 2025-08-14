@@ -16,7 +16,7 @@ return new class extends Migration
             $table->uuid('id')->primary(); 
             
             // Diperbaiki dari integer ke unsignedBigInteger untuk konsistensi
-            $table->unsignedBigInteger('pegawai_id'); 
+            $table->uuid('pegawai_id'); 
             
             // Kolom utama dengan perbaikan typo
             $table->string('jenis_kegiatan', 50);

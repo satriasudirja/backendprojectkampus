@@ -32,7 +32,7 @@ class KehadiranController extends Controller
      */
     public function index(Request $request)
     {
-        $validator = Validator::make($request->all(), ['pegawai_id' => 'required|integer|exists:simpeg_pegawai,id']);
+        $validator = Validator::make($request->all(), ['pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id']);
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Parameter pegawai_id wajib diisi dan valid.'], 400);
         }
@@ -69,7 +69,7 @@ class KehadiranController extends Controller
     public function detail(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
             'tahun' => 'required|integer|digits:4',
             'bulan' => 'required|integer|between:1,12',
         ]);
@@ -96,7 +96,7 @@ class KehadiranController extends Controller
     public function print(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
             'tahun' => 'required|integer|digits:4',
             'bulan' => 'required|integer|between:1,12',
         ]);

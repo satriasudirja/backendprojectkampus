@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class SimpegMasterPerguruanTinggiSeeder extends Seeder
 {
@@ -15,6 +16,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
         // Data perguruan tinggi
         $perguruanTinggi = [
             [
+                'id'=>Str::uuid(),
                 'kode' => 'UIKA',
                 'nama_universitas' => 'Universitas Ibn Khaldun Bogor',
                 'alamat' => 'Jl. K.H. Sholeh Iskandar Km. 2, Kedung Badak, Kota Bogor, Jawa Barat 16162',
@@ -27,6 +29,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
                 'updated_at' => $now
             ],
             [
+                'id'=>Str::uuid(),
                 'kode' => 'UI',
                 'nama_universitas' => 'Universitas Indonesia',
                 'alamat' => 'Jl. Margonda Raya, Pondok Cina, Beji, Kota Depok, Jawa Barat 16424',
@@ -39,6 +42,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
                 'updated_at' => $now
             ],
             [
+                'id'=>Str::uuid(),
                 'kode' => 'ITB',
                 'nama_universitas' => 'Institut Teknologi Bandung',
                 'alamat' => 'Jl. Ganesa No.10, Lb. Siliwangi, Kecamatan Coblong, Kota Bandung, Jawa Barat 40132',
@@ -51,6 +55,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
                 'updated_at' => $now
             ],
             [
+                'id'=>Str::uuid(),
                 'kode' => 'UGM',
                 'nama_universitas' => 'Universitas Gadjah Mada',
                 'alamat' => 'Bulaksumur, Caturtunggal, Kec. Depok, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55281',
@@ -63,6 +68,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
                 'updated_at' => $now
             ],
             [
+                'id'=>Str::uuid(),
                 'kode' => 'IPB',
                 'nama_universitas' => 'Institut Pertanian Bogor',
                 'alamat' => 'Jl. Raya Dramaga, Babakan, Kec. Dramaga, Kabupaten Bogor, Jawa Barat 16680',
@@ -75,6 +81,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
                 'updated_at' => $now
             ],
             [
+                'id'=>Str::uuid(),
                 'kode' => 'UNPAD',
                 'nama_universitas' => 'Universitas Padjadjaran',
                 'alamat' => 'Jl. Raya Bandung Sumedang KM.21, Hegarmanah, Kec. Jatinangor, Kabupaten Sumedang, Jawa Barat 45363',
@@ -87,6 +94,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
                 'updated_at' => $now
             ],
             [
+                'id'=>Str::uuid(),
                 'kode' => 'UNDIP',
                 'nama_universitas' => 'Universitas Diponegoro',
                 'alamat' => 'Jl. Prof. Sudarto, Tembalang, Kec. Tembalang, Kota Semarang, Jawa Tengah 50275',
@@ -99,6 +107,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
                 'updated_at' => $now
             ],
             [
+                'id'=>Str::uuid(),
                 'kode' => 'UNHAS',
                 'nama_universitas' => 'Universitas Hasanuddin',
                 'alamat' => 'Jl. Perintis Kemerdekaan KM.10, Tamalanrea Indah, Kec. Tamalanrea, Kota Makassar, Sulawesi Selatan 90245',
@@ -111,6 +120,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
                 'updated_at' => $now
             ],
             [
+                'id'=>Str::uuid(),
                 'kode' => 'UIN-JKT',
                 'nama_universitas' => 'UIN Syarif Hidayatullah Jakarta',
                 'alamat' => 'Jl. Ir H. Juanda No.95, Cemp. Putih, Kec. Ciputat, Kota Tangerang Selatan, Banten 15412',
@@ -123,6 +133,7 @@ class SimpegMasterPerguruanTinggiSeeder extends Seeder
                 'updated_at' => $now
             ],
             [
+                'id'=>Str::uuid(),
                 'kode' => 'UNAIR',
                 'nama_universitas' => 'Universitas Airlangga',
                 'alamat' => 'Jl. Airlangga No.4 - 6, Airlangga, Kec. Gubeng, Kota Surabaya, Jawa Timur 60115',

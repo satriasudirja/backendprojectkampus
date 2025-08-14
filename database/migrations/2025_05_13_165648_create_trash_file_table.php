@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('trash_files', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('file_path');
             $table->timestamp('delete_at');
             $table->timestamps();

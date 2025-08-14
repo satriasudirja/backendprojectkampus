@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class SimpegMasterGelarAkademikSeeder extends Seeder
 {
@@ -214,6 +215,7 @@ class SimpegMasterGelarAkademikSeeder extends Seeder
         
         // Add created_at and updated_at to each record
         $dataToInsert = array_map(function ($item) use ($now) {
+            $item['id'] = Str::uuid();
             $item['created_at'] = $now;
             $item['updated_at'] = $now;
             return $item;

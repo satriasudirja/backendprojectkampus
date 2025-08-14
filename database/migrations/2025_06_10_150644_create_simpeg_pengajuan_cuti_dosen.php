@@ -12,12 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_pengajuan_cuti_dosen', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
 
             // Foreign key ke tabel pegawai
             // Pastikan Anda memiliki tabel 'simpeg_pegawais' dari model SimpegPegawai
-            $table->foreignId('pegawai_id')->constrained('simpeg_pegawai')->onDelete('cascade');
-            
+            $table->foreignUuid('pegawai_id')
+                  ->nullable() // Jadikan kolom ini opsional (bisa NULL)
+                  ->constrained('simpeg_pegawai') // Tambahkan constraint ke tabel simpeg_pegawai
+                  ->onDelete('cascade'); // Aksi saat data pegawai dihapus
+
             $table->integer('no_urut_cuti')->unsigned();
             $table->string('jenis_cuti');
             $table->date('tgl_mulai');

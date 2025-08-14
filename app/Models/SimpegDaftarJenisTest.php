@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegDaftarJenisTest extends Model
 {
+    use HasUuids;
     use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_daftar_jenis_test';

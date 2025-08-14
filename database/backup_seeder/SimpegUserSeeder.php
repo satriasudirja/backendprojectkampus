@@ -43,15 +43,7 @@ class SimpegUserSeeder extends Seeder
                 'updated_at' => now()
             ],
             
-            // Dosen Industri
-            [
-                'role_id' => SimpegUserRole::DOSEN_INDUSTRI,
-                'username' => '200014',
-                
-                'password' => Hash::make('Industri123!'),
-                'created_at' => now(),
-                'updated_at' => now()
-            ]
+        
         ];
 
         // Insert data user

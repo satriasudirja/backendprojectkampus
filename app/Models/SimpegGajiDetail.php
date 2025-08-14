@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\gajiSlip;
 
 class SimpegGajiDetail extends Model
 {
+    use HasUuids;
     use HasFactory;
 
     protected $table = 'simpeg_gaji_detail';
@@ -26,7 +29,8 @@ class SimpegGajiDetail extends Model
 
     public function gajiSlip()
     {
-        return $this->belongsTo(GajiSlip::class, 'gaji_slip_id');
+        
+        return $this->belongsTo(SlipGaji::class, 'gaji_slip_id');
     }
 
     public function komponen()

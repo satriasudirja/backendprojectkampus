@@ -70,7 +70,7 @@ return new class extends Migration
         // Create simpeg_hari_libur table for holidays management
         if (!Schema::hasTable('simpeg_hari_libur')) {
             Schema::create('simpeg_hari_libur', function (Blueprint $table) {
-                $table->bigIncrements('id');
+                $table->uuid('id')->primary();
                 $table->date('tanggal_libur');
                 $table->string('nama_libur', 100);
                 $table->text('keterangan')->nullable();
@@ -87,7 +87,7 @@ return new class extends Migration
         // Create simpeg_jam_kerja table for working hours settings
         if (!Schema::hasTable('simpeg_jam_kerja')) {
             Schema::create('simpeg_jam_kerja', function (Blueprint $table) {
-                $table->bigIncrements('id');
+                $table->uuid('id')->primary();
                 $table->string('nama_shift', 50);
                 $table->time('jam_masuk');
                 $table->time('jam_keluar');
@@ -106,7 +106,7 @@ return new class extends Migration
         // Add relation to simpeg_absensi_record for jam_kerja
         Schema::table('simpeg_absensi_record', function (Blueprint $table) {
             if (!Schema::hasColumn('simpeg_absensi_record', 'jam_kerja_id')) {
-                $table->unsignedBigInteger('jam_kerja_id')->nullable()->after('setting_kehadiran_id');
+                $table->uuid('jam_kerja_id')->nullable()->after('setting_kehadiran_id');
                 $table->foreign('jam_kerja_id')->references('id')->on('simpeg_jam_kerja')->onDelete('set null');
             }
         });
@@ -114,9 +114,9 @@ return new class extends Migration
         // Create simpeg_absensi_correction table for attendance correction requests
         if (!Schema::hasTable('simpeg_absensi_correction')) {
             Schema::create('simpeg_absensi_correction', function (Blueprint $table) {
-                $table->bigIncrements('id');
-                $table->unsignedBigInteger('absensi_record_id');
-                $table->unsignedBigInteger('pegawai_id');
+                $table->uuid('id');
+                $table->uuid('absensi_record_id');
+                $table->uuid('pegawai_id');
                 $table->date('tanggal_koreksi');
                 $table->time('jam_masuk_asli')->nullable();
                 $table->time('jam_keluar_asli')->nullable();
@@ -125,7 +125,7 @@ return new class extends Migration
                 $table->text('alasan_koreksi');
                 $table->text('bukti_pendukung')->nullable();
                 $table->enum('status_koreksi', ['pending', 'approved', 'rejected'])->default('pending');
-                $table->unsignedBigInteger('approved_by')->nullable();
+                $table->uuid('approved_by')->nullable();
                 $table->timestamp('approved_at')->nullable();
                 $table->text('catatan_approval')->nullable();
                 $table->timestamps();
@@ -142,8 +142,8 @@ return new class extends Migration
         // Create simpeg_attendance_summary table for monthly/yearly summary cache
         if (!Schema::hasTable('simpeg_attendance_summary')) {
             Schema::create('simpeg_attendance_summary', function (Blueprint $table) {
-                $table->bigIncrements('id');
-                $table->unsignedBigInteger('pegawai_id');
+                $table->uuid('id');
+                $table->uuid('pegawai_id');
                 $table->integer('tahun');
                 $table->smallInteger('bulan');
                 $table->integer('total_hari_kerja');

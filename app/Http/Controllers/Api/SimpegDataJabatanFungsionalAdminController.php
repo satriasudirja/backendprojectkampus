@@ -18,6 +18,7 @@ use App\Services\ActivityLogger; // Assuming this service exists
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 class SimpegDataJabatanFungsionalAdminController extends Controller
 {
@@ -189,8 +190,8 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
-            'jabatan_fungsional_id' => 'required|integer|exists:simpeg_jabatan_fungsional,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
+            'jabatan_fungsional_id' => 'required|uuid|exists:simpeg_jabatan_fungsional,id',
             'tmt_jabatan' => 'required|date',
             'pejabat_penetap' => 'nullable|string|max:255',
             'no_sk' => 'required|string|max:100',
@@ -280,8 +281,8 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
-            'jabatan_fungsional_id' => 'sometimes|integer|exists:simpeg_jabatan_fungsional,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id',
+            'jabatan_fungsional_id' => 'sometimes|uuid|exists:simpeg_jabatan_fungsional,id',
             'tmt_jabatan' => 'sometimes|date',
             'pejabat_penetap' => 'nullable|string|max:255',
             'no_sk' => 'sometimes|string|max:100',
@@ -484,7 +485,7 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
         //     ], 422);
         // }
 
-        if ($dataJabatanFungsional->reject(/* $request->alasan_penolakan */)) { // Pass null or no argument as $reason is removed
+        if ($dataJabatanFungsional->reject(/* $request->alasanw_penolakan */)) { // Pass null or no argument as $reason is removed
             if (class_exists('App\Services\ActivityLogger')) {
                 ActivityLogger::log('admin_reject_jabatan_fungsional', $dataJabatanFungsional, $dataJabatanFungsional->getOriginal());
             }
@@ -543,7 +544,7 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_fungsional,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_fungsional,id',
         ]);
 
         if ($validator->fails()) {
@@ -589,7 +590,7 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('Error during batch delete jabatan fungsional: ' . $e->getMessage());
+            Log::error('Error during batch delete jabatan fungsional: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data secara batch: ' . $e->getMessage(),
@@ -623,7 +624,7 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_fungsional,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_fungsional,id'
         ]);
 
         if ($validator->fails()) {
@@ -661,7 +662,7 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('Error during batch approve jabatan fungsional: ' . $e->getMessage());
+            Log::error('Error during batch approve jabatan fungsional: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menyetujui data secara batch: ' . $e->getMessage()
@@ -686,7 +687,7 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_fungsional,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_fungsional,id',
             // 'alasan_penolakan' => 'nullable|string|max:500', // Uncomment if you have this field
         ]);
 
@@ -725,7 +726,7 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('Error during batch reject jabatan fungsional: ' . $e->getMessage());
+            Log::error('Error during batch reject jabatan fungsional: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menolak data secara batch: ' . $e->getMessage()
@@ -750,7 +751,7 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_jabatan_fungsional,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_jabatan_fungsional,id',
         ]);
 
         if ($validator->fails()) {
@@ -788,7 +789,7 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('Error during batch change to draft for jabatan fungsional: ' . $e->getMessage());
+            Log::error('Error during batch change to draft for jabatan fungsional: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengubah status ke draft secara batch: ' . $e->getMessage()
@@ -950,8 +951,8 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
                 'status_pengajuan' => $statusPengajuanOptions,
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
-                'jabatan_fungsional_id' => 'required|integer',
+                'pegawai_id' => 'required|uuid',
+                'jabatan_fungsional_id' => 'required|uuid',
                 'tmt_jabatan' => 'required|date',
                 'pejabat_penetap' => 'nullable|string|max:255',
                 'no_sk' => 'required|string|max:100',

@@ -492,7 +492,7 @@ class SimpegDataOrganisasiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_organisasi,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_organisasi,id'
         ]);
 
         if ($validator->fails()) {
@@ -568,7 +568,7 @@ class SimpegDataOrganisasiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer'
+            'ids.*' => 'required|uuid'
         ]);
 
         if ($validator->fails()) {

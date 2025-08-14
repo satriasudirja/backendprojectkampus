@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class SimpegAbsensiRecord extends Model
 {
+    use HasUuids;
     protected $table = 'simpeg_absensi_record';
     protected $primaryKey = 'id';
 

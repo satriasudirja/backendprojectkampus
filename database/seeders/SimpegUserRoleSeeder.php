@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class SimpegUserRoleSeeder extends Seeder
 {
@@ -17,16 +18,19 @@ class SimpegUserRoleSeeder extends Seeder
 
         DB::table('simpeg_users_roles')->insert([
             [
+                'id' => Str::uuid(),
                 'nama' => 'Dosen',
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
             [
-                'nama' => 'Dosen Praktisi/Industri',
+                'id' => Str::uuid(),
+                'nama' => 'Dosen LB',
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
             [
+                'id' => Str::uuid(),
                 'nama' => 'Tenaga Kependidikan',
                 'created_at' => $now,
                 'updated_at' => $now,

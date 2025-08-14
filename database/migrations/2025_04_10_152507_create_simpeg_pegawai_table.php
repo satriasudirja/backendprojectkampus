@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -14,21 +15,21 @@ return new class extends Migration
     public function up()
     {
         Schema::create('simpeg_pegawai', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            
+            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+
             // Kolom relasi (tanpa foreign key constraint)
-            $table->integer('user_id')->nullable();
-            $table->integer('unit_kerja_id')->nullable();
-            $table->integer('kode_status_pernikahan')->nullable();
-            $table->integer('status_aktif_id')->nullable();
-            $table->integer('jabatan_akademik_id')->nullable();
-            $table->integer('suku_id')->nullable();
+            $table->uuid('role_id')->nullable();
+            $table->uuid('unit_kerja_id')->nullable();
+            $table->uuid('kode_status_pernikahan')->nullable();
+            $table->uuid('status_aktif_id')->nullable();
+            $table->uuid('jabatan_akademik_id')->nullable();
+            $table->uuid('suku_id')->nullable();
             
             // Data pribadi
             $table->string('nama', 305);
             $table->string('nip', 30)->unique();
             $table->string('nuptk', 30)->unique();
-            $table->string('password', 100);
+            // $table->string('password', 100);
             $table->string('nidn', 30)->nullable();
             $table->string('gelar_depan', 30)->nullable();
             $table->string('gelar_belakang', 30)->nullable();
@@ -49,6 +50,8 @@ return new class extends Migration
             $table->string('alamat_domisili', 255)->nullable();
             $table->string('agama', 20)->nullable();
             $table->string('golongan_darah', 5)->nullable();
+            $table->string('warga_negara', 30)->nullable();
+            $table->string('kecamatan', 50)->nullable();
             $table->string('kota', 30)->nullable();
             $table->string('provinsi', 30)->nullable();
             $table->string('kode_pos', 5)->nullable();
@@ -75,6 +78,7 @@ return new class extends Migration
             $table->string('file_ktp', 100)->nullable();
             $table->string('file_kk', 100)->nullable();
             $table->string('no_rekening', 30)->nullable();
+            $table->string('atas_nama_rekening', 100)->nullable();
             $table->string('cabang_bank', 100)->nullable();
             $table->string('nama_bank', 100)->nullable();
             $table->string('file_rekening', 100)->nullable();

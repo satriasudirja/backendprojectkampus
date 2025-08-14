@@ -346,7 +346,7 @@ class AdminDataKeluargaController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'ids' => 'required|array|min:1',
-                'ids.*' => 'required|integer|exists:simpeg_data_keluarga_pegawai,id',
+                'ids.*' => 'required|uuid|exists:simpeg_data_keluarga_pegawai,id',
                 'keterangan' => 'nullable|string|max:500'
             ]);
 
@@ -417,7 +417,7 @@ class AdminDataKeluargaController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'ids' => 'required|array|min:1',
-                'ids.*' => 'required|integer|exists:simpeg_data_keluarga_pegawai,id',
+                'ids.*' => 'required|uuid|exists:simpeg_data_keluarga_pegawai,id',
                 'keterangan' => 'required|string|max:500'
             ]);
 

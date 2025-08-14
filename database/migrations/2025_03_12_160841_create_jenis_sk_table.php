@@ -8,7 +8,7 @@ class CreateJenisSkTable extends Migration
     public function up()
     {
         Schema::create('simpeg_daftar_jenis_sk', function (Blueprint $table) {
-             $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             $table->string('kode', 5);
             $table->string('jenis_sk', 20);
             $table->timestamps();

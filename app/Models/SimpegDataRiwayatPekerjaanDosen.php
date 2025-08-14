@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder; 
 use Illuminate\Support\Facades\Validator;// Import for type-hinting scopes
 use Carbon\Carbon; // Ensure Carbon is imported if you use it for date handling
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class SimpegDataRiwayatPekerjaanDosen extends Model
 {
+    use HasUuids;
     use SoftDeletes;
 
     protected $table = 'simpeg_data_riwayat_pekerjaan';

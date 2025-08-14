@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_pangkat', function (Blueprint $table) {
             // Kolom utama
-            $table->bigIncrements('id'); // Diubah dari FK ke PK karena ini tabel utama
-            $table->integer('pegawai_id');
+            $table->uuid('id')->primary(); // Diubah dari FK ke PK karena ini tabel utama
+            $table->uuid('pegawai_id');
             
             // Referensi
-            $table->integer('jenis_sk_id');
-            $table->integer('jenis_kenaikan_pangkat_id'); // Diperbaiki dari 'jenis_kenalkan_pangkat_id'
-            $table->integer('pangkat_id');
+            $table->uuid('jenis_sk_id');
+            $table->uuid('jenis_kenaikan_pangkat_id'); // Diperbaiki dari 'jenis_kenalkan_pangkat_id'
+            $table->uuid('pangkat_id');
             
             // Data kepangkatan
             $table->date('tmt_pangkat');

@@ -77,7 +77,7 @@ class AdminSimpegRiwayatJabatanAkademikController extends Controller
         $pegawai = SimpegPegawai::findOrFail($pegawai_id);
 
         $validator = Validator::make($request->all(), [
-            'jabatan_akademik_id' => 'required|integer|exists:simpeg_jabatan_akademik,id',
+            'jabatan_akademik_id' => 'required|uuid|exists:simpeg_jabatan_akademik,id',
             'tmt_jabatan' => 'required|date',
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date',
@@ -133,7 +133,7 @@ class AdminSimpegRiwayatJabatanAkademikController extends Controller
         $dataJabatan = SimpegDataJabatanAkademik::where('pegawai_id', $pegawai_id)->findOrFail($riwayat_id);
             
         $validator = Validator::make($request->all(), [
-            'jabatan_akademik_id' => 'required|integer|exists:simpeg_jabatan_akademik,id',
+            'jabatan_akademik_id' => 'required|uuid|exists:simpeg_jabatan_akademik,id',
             'tmt_jabatan' => 'required|date',
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date',

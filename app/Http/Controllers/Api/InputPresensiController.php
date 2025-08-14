@@ -184,11 +184,11 @@ class InputPresensiController extends Controller
         try {
             // Simplified validation - hanya field yang diperlukan
             $validator = Validator::make($request->all(), [
-                'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
+                'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
                 'tanggal_absensi' => 'required|date',
                 'jam_masuk' => 'nullable|date_format:H:i',
                 'jam_keluar' => 'nullable|date_format:H:i',
-                'jenis_kehadiran_id' => 'required|integer|exists:simpeg_jenis_kehadiran,id',
+                'jenis_kehadiran_id' => 'required|uuid|exists:simpeg_jenis_kehadiran,id',
                 'keterangan' => 'nullable|string|max:500'
             ]);
 
@@ -379,10 +379,10 @@ class InputPresensiController extends Controller
             $validator = Validator::make($request->all(), [
                 'jam_masuk' => 'nullable|date_format:H:i',
                 'jam_keluar' => 'nullable|date_format:H:i',
-                'jenis_kehadiran_id' => 'sometimes|integer|exists:simpeg_jenis_kehadiran,id',
+                'jenis_kehadiran_id' => 'sometimes|uuid|exists:simpeg_jenis_kehadiran,id',
                 'keterangan' => 'nullable|string|max:500',
-                'jam_kerja_id' => 'nullable|integer|exists:simpeg_jam_kerja,id',
-                'setting_kehadiran_id' => 'nullable|integer|exists:simpeg_setting_kehadiran,id',
+                'jam_kerja_id' => 'nullable|uuid|exists:simpeg_jam_kerja,id',
+                'setting_kehadiran_id' => 'nullable|uuid|exists:simpeg_setting_kehadiran,id',
                 'lokasi_masuk' => 'nullable|string|max:255',
                 'lokasi_keluar' => 'nullable|string|max:255'
             ]);
@@ -456,7 +456,7 @@ class InputPresensiController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'ids' => 'required|array|min:1',
-                'ids.*' => 'required|integer|exists:simpeg_absensi_record,id'
+                'ids.*' => 'required|uuid|exists:simpeg_absensi_record,id'
             ]);
 
             if ($validator->fails()) {

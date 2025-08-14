@@ -267,9 +267,9 @@ class SimpegDataSertifikasiAdminController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id', // Required for admin
-            'jenis_sertifikasi_id' => 'required|integer|exists:simpeg_master_jenis_sertifikasi,id',
-            'bidang_ilmu_id' => 'required|integer|exists:simpeg_rumpun_bidang_ilmu,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id', // Required for admin
+            'jenis_sertifikasi_id' => 'required|uuid|exists:simpeg_master_jenis_sertifikasi,id',
+            'bidang_ilmu_id' => 'required|uuid|exists:simpeg_rumpun_bidang_ilmu,id',
             'no_sertifikasi' => 'required|string|max:50',
             'tgl_sertifikasi' => 'required|date|before_or_equal:today',
             'no_registrasi' => 'required|string|max:20',
@@ -284,7 +284,7 @@ class SimpegDataSertifikasiAdminController extends Controller
             'dokumen_pendukung' => 'nullable|array',
             'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string|in:Sertifikat_Contoh1,Sertifikat_Contoh2,Sertifikat_Contoh3', // <-- UPDATED VALIDATION
             'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer',
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid',
             'dokumen_pendukung.*.keterangan' => 'nullable|string',
             'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120'
         ]);
@@ -388,9 +388,9 @@ class SimpegDataSertifikasiAdminController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id', // Can update pegawai_id
-            'jenis_sertifikasi_id' => 'sometimes|integer|exists:simpeg_master_jenis_sertifikasi,id',
-            'bidang_ilmu_id' => 'sometimes|integer|exists:simpeg_rumpun_bidang_ilmu,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id', // Can update pegawai_id
+            'jenis_sertifikasi_id' => 'sometimes|uuid|exists:simpeg_master_jenis_sertifikasi,id',
+            'bidang_ilmu_id' => 'sometimes|uuid|exists:simpeg_rumpun_bidang_ilmu,id',
             'no_sertifikasi' => 'sometimes|string|max:50',
             'tgl_sertifikasi' => 'sometimes|date|before_or_equal:today',
             'no_registrasi' => 'sometimes|string|max:20',
@@ -403,14 +403,14 @@ class SimpegDataSertifikasiAdminController extends Controller
             'keterangan' => 'nullable|string',
             'keterangan_penolakan' => 'nullable|string|max:500', // Added for admin reject notes
             'dokumen_pendukung' => 'nullable|array',
-            'dokumen_pendukung.*.id' => 'nullable|integer', // For existing documents
+            'dokumen_pendukung.*.id' => 'nullable|uuid', // For existing documents
             'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string|in:Sertifikat_Contoh1,Sertifikat_Contoh2,Sertifikat_Contoh3', // <-- UPDATED VALIDATION
             'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string',
-            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer',
+            'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid',
             'dokumen_pendukung.*.keterangan' => 'nullable|string',
             'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
             'dokumen_pendukung_to_delete' => 'nullable|array', // Array of IDs to delete
-            'dokumen_pendukung_to_delete.*' => 'nullable|integer|exists:simpeg_data_pendukung,id'
+            'dokumen_pendukung_to_delete.*' => 'nullable|uuid|exists:simpeg_data_pendukung,id'
         ]);
 
         if ($validator->fails()) {
@@ -726,7 +726,7 @@ class SimpegDataSertifikasiAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_sertifikasi,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_sertifikasi,id'
         ]);
 
         if ($validator->fails()) {
@@ -820,7 +820,7 @@ class SimpegDataSertifikasiAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_sertifikasi,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_sertifikasi,id'
         ]);
 
         if ($validator->fails()) {
@@ -889,7 +889,7 @@ class SimpegDataSertifikasiAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_sertifikasi,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_sertifikasi,id',
             'keterangan_penolakan' => 'nullable|string|max:500',
         ]);
 
@@ -959,7 +959,7 @@ class SimpegDataSertifikasiAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_sertifikasi,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_sertifikasi,id',
         ]);
 
         if ($validator->fails()) {
@@ -1161,9 +1161,9 @@ class SimpegDataSertifikasiAdminController extends Controller
                 ]
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
-                'jenis_sertifikasi_id' => 'required|integer|exists:simpeg_master_jenis_sertifikasi,id',
-                'bidang_ilmu_id' => 'required|integer|exists:simpeg_rumpun_bidang_ilmu,id',
+                'pegawai_id' => 'required|uuid',
+                'jenis_sertifikasi_id' => 'required|uuid|exists:simpeg_master_jenis_sertifikasi,id',
+                'bidang_ilmu_id' => 'required|uuid|exists:simpeg_rumpun_bidang_ilmu,id',
                 'no_sertifikasi' => 'required|string|max:50',
                 'tgl_sertifikasi' => 'required|date|before_or_equal:today',
                 'no_registrasi' => 'required|string|max:20',
@@ -1177,7 +1177,7 @@ class SimpegDataSertifikasiAdminController extends Controller
                 'dokumen_pendukung' => 'nullable|array',
                 'dokumen_pendukung.*.tipe_dokumen' => 'required_with:dokumen_pendukung|string|in:Sertifikat_Contoh1,Sertifikat_Contoh2,Sertifikat_Contoh3', // <-- UPDATED VALIDATION
                 'dokumen_pendukung.*.nama_dokumen' => 'required_with:dokumen_pendukung|string',
-                'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|integer',
+                'dokumen_pendukung.*.jenis_dokumen_id' => 'nullable|uuid',
                 'dokumen_pendukung.*.keterangan' => 'nullable|string',
                 'dokumen_pendukung.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120'
             ],

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('simpeg_univ_luar', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             $table->string('kode', 10);
             $table->string('nama_universitas', 50); 
             $table->text('alamat'); 

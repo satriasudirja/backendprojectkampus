@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('simpeg_data_publikasi', function (Blueprint $table) {
             // Kolom utama
-            $table->bigIncrements('id');
-            $table->integer('pegawai_id');
+            $table->uuid('id')->primary();
+            $table->uuid('pegawai_id');
             
             // Referensi
-            $table->integer('jenis_publikasi_id');
-            $table->integer('jenis_luaran_id'); // Diperbaiki dari 'jenis_luanan_id'
+            $table->uuid('jenis_publikasi_id');
+            $table->uuid('jenis_luaran_id'); // Diperbaiki dari 'jenis_luanan_id'
             
             // Data publikasi
             $table->text('judul');

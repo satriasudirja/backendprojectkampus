@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegUserRole extends Model
 {
+    use HasUuids;
     use HasFactory;
     use SoftDeletes;
 
@@ -25,8 +27,8 @@ class SimpegUserRole extends Model
     // {
     //     return $this->hasMany(SimpegJabatanAkademik::class, 'role_id');
     // }
-    public function jabatanAkademik(): HasMany
+    public function pegawai(): HasMany
     {
-        return $this->hasMany(SimpegJabatanAkademik::class, 'role_id');
+        return $this->hasMany(SimpegPegawai::class, 'pegawai_id');
     }
 }

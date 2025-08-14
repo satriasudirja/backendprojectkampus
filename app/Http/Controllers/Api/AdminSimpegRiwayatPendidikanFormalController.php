@@ -79,8 +79,8 @@ class AdminSimpegRiwayatPendidikanFormalController extends Controller
         $pegawai = SimpegPegawai::findOrFail($pegawai_id);
 
         $validator = Validator::make($request->all(), [
-            'jenjang_pendidikan_id' => 'required|integer|exists:simpeg_jenjang_pendidikan,id',
-            'perguruan_tinggi_id' => 'required|integer|exists:simpeg_master_perguruan_tinggi,id',
+            'jenjang_pendidikan_id' => 'required|uuid|exists:simpeg_jenjang_pendidikan,id',
+            'perguruan_tinggi_id' => 'required|uuid|exists:simpeg_master_perguruan_tinggi,id',
             'lokasi_studi' => 'required|in:Dalam Negeri,Luar Negeri',
             'tahun_masuk' => 'required|integer|digits:4',
             'tanggal_kelulusan' => 'required|date',
@@ -156,8 +156,8 @@ class AdminSimpegRiwayatPendidikanFormalController extends Controller
         $pendidikan = SimpegDataPendidikanFormal::where('pegawai_id', $pegawai_id)->findOrFail($riwayat_id);
             
         $validator = Validator::make($request->all(), [
-            'jenjang_pendidikan_id' => 'required|integer|exists:simpeg_jenjang_pendidikan,id',
-            'perguruan_tinggi_id' => 'required|integer|exists:simpeg_master_perguruan_tinggi,id',
+            'jenjang_pendidikan_id' => 'required|uuid|exists:simpeg_jenjang_pendidikan,id',
+            'perguruan_tinggi_id' => 'required|uuid|exists:simpeg_master_perguruan_tinggi,id',
             'lokasi_studi' => 'required|in:Dalam Negeri,Luar Negeri',
             'tahun_masuk' => 'required|integer|digits:4',
             'tanggal_kelulusan' => 'required|date',

@@ -9,8 +9,8 @@ class CreateSimpegJenisPenghargaanTable extends Migration
     public function up()
 {
     Schema::create('simpeg_jenis_penghargaan', function (Blueprint $table) {
-        $table->id();
-        $table->string('kode')->unique();
+        $table->uuid('id')->primary();
+        $table->string('kode');
         $table->string('nama');
         $table->timestamps();
     });

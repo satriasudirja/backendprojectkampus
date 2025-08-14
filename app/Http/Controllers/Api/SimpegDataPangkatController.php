@@ -505,7 +505,7 @@ class SimpegDataPangkatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_pangkat,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_pangkat,id'
         ]);
 
         if ($validator->fails()) {
@@ -581,7 +581,7 @@ class SimpegDataPangkatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer'
+            'ids.*' => 'required|uuid'
         ]);
 
         if ($validator->fails()) {

@@ -22,8 +22,9 @@ class PegawaiController extends Controller
         $query = SimpegPegawai::with([
             'unitKerja',
             'statusAktif',
+            'role',
             'dataHubunganKerja.hubunganKerja',
-            'dataJabatanFungsional.jabatanFungsional.jabatanAkademik'
+            'dataJabatanFungsional.jabatanFungsional.jabatanAkademik',
         ]);
 
         // Filtering
@@ -77,11 +78,36 @@ class PegawaiController extends Controller
         $perPage = $request->has('per_page') ? (int)$request->per_page : 10;
         $pegawai = $query->orderBy('nama', 'asc')->paginate($perPage);
 
+        $pegawaiIds = $pegawai->pluck('id')->all();
+
+        $pendidikanTerakhir = collect();
+        if (!empty($pegawaiIds)) {
+            // Subquery untuk mencari ID riwayat pendidikan yang paling relevan untuk setiap pegawai
+            $subQuery = DB::table('simpeg_data_pendidikan_formal as sub_sdpf')
+                ->select('sub_sdpf.id')
+                ->join('simpeg_jenjang_pendidikan as sub_sjp', 'sub_sdpf.jenjang_pendidikan_id', '=', 'sub_sjp.id')
+                ->whereColumn('sub_sdpf.pegawai_id', 'sdpf.pegawai_id')
+                ->orderByDesc('sub_sjp.urutan_jenjang_pendidikan')
+                ->orderByDesc('sub_sdpf.tahun_lulus')
+                ->limit(1);
+
+            // Query utama yang menggunakan subquery di atas
+            $pendidikanTerakhir = DB::table('simpeg_data_pendidikan_formal as sdpf')
+                ->join('simpeg_jenjang_pendidikan as sjp', 'sdpf.jenjang_pendidikan_id', '=', 'sjp.id')
+                // PERBAIKAN: Mengambil kolom 'jenjang_singkatan' sesuai permintaan
+                ->select('sdpf.pegawai_id', 'sjp.jenjang_singkatan')
+                ->whereIn('sdpf.pegawai_id', $pegawaiIds)
+                ->where('sdpf.id', '=', $subQuery)
+                ->get()
+                ->keyBy('pegawai_id'); // Jadikan ID pegawai sebagai key untuk pencarian mudah
+        }
+
+
         // Get prefix from URL
         $prefix = $request->segment(2);
 
         // Transform data to simplified table view
-        $pegawaiData = $pegawai->getCollection()->map(function ($item) use ($prefix) {
+        $pegawaiData = $pegawai->getCollection()->map(function ($item) use ($prefix, $pendidikanTerakhir) {
             $terhubung_sister = false; // Placeholder, replace with actual logic
             
             // Debug the unitKerja relationship
@@ -95,6 +121,10 @@ class PegawaiController extends Controller
             } else {
                 $unit_kerja_nama = 'Tidak Ada';
             }
+
+            $pendidikan = $pendidikanTerakhir->get($item->id);
+
+
             
             return [
                 'id' => $item->id, // Keep the ID for action purposes
@@ -103,24 +133,26 @@ class PegawaiController extends Controller
                 'nuptk' => $item->nuptk ?? '',
                 'nama_pegawai' => $item->nama,
                 'unit_kerja' => $unit_kerja_nama,
+                'unit_kerja' => $unit_kerja_nama,
+                'pendidikan_terakhir' => $pendidikan? $pendidikan->jenjang_singkatan: '-',
                 'status' => $item->statusAktif ? $item->statusAktif->kode : '-',
                 'aksi' => [
                     'detail_url' => url("/api/{$prefix}/pegawai/" . $item->id),
                     'delete_url' => url("/api/{$prefix}/pegawai/" . $item->id),
                     'update_status_url' => url("/api/{$prefix}/pegawai/update-status/" . $item->id),
-                  'riwayat' => [
-    'riwayat_pendidikan' => url("/api/pegawai/$item->id/riwayat-pendidikan-formal"),
-    'riwayat_pekerjaan' => url("/api/pegawai/$item->id/riwayat-pekerjaan"),
-    'riwayat_diklat' => url("/api/pegawai/$item->id/riwayat-diklat"),
-    'riwayat_pangkat' => url("/api/pegawai/$item->id/riwayat-pangkat"),
-    'riwayat_jabatan_struktural' => url("/api/pegawai/$item->id/riwayat-jabatan-struktural"),
-    'riwayat_jabatan_akademik' => url("/api/pegawai/$item->id/riwayat-jabatan-akademik"),
-    'riwayat_hubungan_kerja' => url("/api/pegawai/$item->id/riwayat-hubungan-kerja"),
-    'riwayat_data_orang_tua' => url("/api/pegawai/$item->id/riwayat-data-orang-tua"),
-    'riwayat_data_pasangan' => url("/api/pegawai/$item->id/riwayat-data-pasangan"),
-    'riwayat_data_anak' => url("/api/pegawai/$item->id/riwayat-data-anak"),
-    'rekap_kehadiran' => url("/api/pegawai/$item->id/rekap-kehadiran") // Tambahkan jika ada route-nya
-]
+                    'riwayat' => [
+                        'riwayat_pendidikan' => url("/api/pegawai/$item->id/riwayat-pendidikan-formal"),
+                        'riwayat_pekerjaan' => url("/api/pegawai/$item->id/riwayat-pekerjaan"),
+                        'riwayat_diklat' => url("/api/pegawai/$item->id/riwayat-diklat"),
+                        'riwayat_pangkat' => url("/api/pegawai/$item->id/riwayat-pangkat"),
+                        'riwayat_jabatan_struktural' => url("/api/pegawai/$item->id/riwayat-jabatan-struktural"),
+                        'riwayat_jabatan_akademik' => url("/api/pegawai/$item->id/riwayat-jabatan-akademik"),
+                        'riwayat_hubungan_kerja' => url("/api/pegawai/$item->id/riwayat-hubungan-kerja"),
+                        'riwayat_data_orang_tua' => url("/api/pegawai/$item->id/riwayat-data-orang-tua"),
+                        'riwayat_data_pasangan' => url("/api/pegawai/$item->id/riwayat-data-pasangan"),
+                        'riwayat_data_anak' => url("/api/pegawai/$item->id/riwayat-data-anak"),
+                        'rekap_kehadiran' => url("/api/pegawai/$item->id/rekap-kehadiran") // Tambahkan jika ada route-nya
+                    ]
                 ]
             ];
         });
@@ -149,6 +181,7 @@ class PegawaiController extends Controller
                 ['field' => 'nuptk', 'label' => 'NUPTK'],
                 ['field' => 'nama_pegawai', 'label' => 'Nama Pegawai'],
                 ['field' => 'unit_kerja', 'label' => 'Unit Kerja'],
+                ['field' => 'pendidikan_terakhir', 'label' => 'Pendidikan Terakhir'],
                 ['field' => 'status', 'label' => 'Status'],
                 ['field' => 'terhubung_sister', 'label' => 'Terhubung Sister'],
                 ['field' => 'aksi', 'label' => 'Aksi'],
@@ -162,6 +195,7 @@ class PegawaiController extends Controller
         $pegawai = SimpegPegawai::with([
             'unitKerja',
             'statusAktif',
+            'role',
             'dataHubunganKerja.hubunganKerja',
             'dataJabatanFungsional.jabatanFungsional.jabatanAkademik',
             'dataPendidikanFormal',
@@ -196,6 +230,7 @@ class PegawaiController extends Controller
             'nama' => 'required|string|max:255',
             'unit_kerja_id' => 'required|exists:simpeg_unit_kerja,id',
             'status_aktif_id' => 'required|exists:simpeg_status_aktif,id',
+            'role_id' => 'required|exists:simpeg_users_roles,id',
             'jenis_kelamin' => 'required|string|max:30',
             'tempat_lahir' => 'required|string|max:30',
             'tanggal_lahir' => 'required|date',
@@ -227,16 +262,6 @@ class PegawaiController extends Controller
 
         DB::beginTransaction();
         try {
-            $roleIdToStore = null;
-
-            if($request->has('jabatan_akademik_id') && !empty($request->jabatan_akademik_id)){
-                $jabatanAkademik = SimpegJabatanAkademik::find($request->jabatan_akademik_id);
-            
-                if($jabatanAkademik){
-                    $roleIdToStore = $jabatanAkademik->role_id;
-                }
-            }
-            
 
             // Create pegawai with updated fields
             $pegawai = SimpegPegawai::create([
@@ -244,6 +269,7 @@ class PegawaiController extends Controller
                 'nidn' => $request->nidn,
                 'nuptk' => $request->nuptk,
                 'nama' => $request->nama,
+                'role_id'=> $request->role_id,
                 'unit_kerja_id' => $request->unit_kerja_id,
                 'status_aktif_id' => $request->status_aktif_id,
                 'jenis_kelamin' => $request->jenis_kelamin,
@@ -297,6 +323,13 @@ class PegawaiController extends Controller
                 // 'no_bpjs_pensiun' => $request->no_bpjs_pensiun,
                 // 'no_telepon_domisili_kontak' => $request->no_telepon_domisili_kontak,
                 // 'no_telephone_kantor' => $request->no_telephone_kantor,
+            ]);
+
+            SimpegUser::create([
+            'pegawai_id' => $pegawai->id,
+            'username'   => $pegawai->nip,
+            'password'   => Hash::make(date('dmY', strtotime($pegawai->tanggal_lahir))),
+            'is_active'  => true,
             ]);
 
             // File uploads
@@ -453,6 +486,16 @@ class PegawaiController extends Controller
             
             // Update pegawai
             $pegawai->update($updateData);
+            
+            if ($request->has('nip') && $pegawai->user) {
+                // Jika NIP baru berbeda dengan username user saat ini
+                if ($pegawai->nip !== $pegawai->user->username) {
+                    $pegawai->user()->update([
+                        'username' => $pegawai->nip
+                    ]);
+                    $this->info('Username for user associated with NIP ' . $pegawai->nip . ' has been updated.');
+                }
+            }
 
             // Handle file uploads
             $this->handleFileUploads($request, $pegawai);

@@ -11,12 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('simpeg_jabatan_akademik', function (Blueprint $table) {
-            // Foreign key untuk role_id
-            $table->foreign('role_id')
-                ->references('id')->on('simpeg_users_roles')
-                ->onDelete('restrict');
-        });
+        
     }
 
     /**
@@ -24,8 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('simpeg_jabatan_akademik', function (Blueprint $table) {
-            $table->dropForeign(['role_id']);
-        });
+       
     }
 };

@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('simpeg_users_roles', function (Blueprint $table) {
-             $table->bigIncrements('id');
-            $table->string('nama', 50); 
+             $table->uuid('id')->primary();
+            $table->string('nama', 50)->comment('Example : Dosen, Dosen LB, Tenaga Kependidikan'); 
             $table->timestamps();
         });
     }

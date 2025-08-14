@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('simpeg_bank', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             $table->string('kode', 10)->unique();
             $table->string('nama_bank', 100);
             $table->timestamps();

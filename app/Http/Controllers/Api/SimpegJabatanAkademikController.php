@@ -50,7 +50,7 @@ class SimpegJabatanAkademikController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'role_id' => 'required|integer',
+            'role_id' => 'required|uuid',
             'kode' => 'required|string|max:2',
             'jabatan_akademik' => 'required|string|max:50',
         ]);
@@ -79,7 +79,7 @@ class SimpegJabatanAkademikController extends Controller
         }
 
         $request->validate([
-            'role_id' => 'required|integer',
+            'role_id' => 'required|uuid',
             'kode' => 'required|string|max:2',
             'jabatan_akademik' => 'required|string|max:50',
         ]);

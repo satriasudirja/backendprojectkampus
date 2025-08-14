@@ -507,7 +507,7 @@ class SimpegDataHubunganKerjaController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_hubungan_kerja,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_hubungan_kerja,id'
         ]);
 
         if ($validator->fails()) {

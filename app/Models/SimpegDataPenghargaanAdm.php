@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder; // Import untuk type-hinting scope
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Support\Facades\Storage;
 
 
 class SimpegDataPenghargaanAdm extends Model
 {
+    use HasUuids;
     use HasFactory, SoftDeletes;
 
     protected $table = 'simpeg_data_penghargaan'; // Asumsi nama tabelnya ini

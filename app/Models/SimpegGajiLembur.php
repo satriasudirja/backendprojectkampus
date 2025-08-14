@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class SimpegGajiLembur extends Model
 {
+    use HasUuids;
     use HasFactory;
 
     protected $table = 'simpeg_gaji_lembur';
@@ -37,6 +39,6 @@ class SimpegGajiLembur extends Model
 
     public function pegawai()
     {
-        return $this->belongsTo(Pegawai::class, 'pegawai_id');
+        return $this->belongsTo(SimpegPegawai::class, 'pegawai_id');
     }
 }

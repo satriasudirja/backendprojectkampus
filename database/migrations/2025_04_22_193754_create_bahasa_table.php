@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasTable('bahasa')) {
             Schema::create('bahasa', function (Blueprint $table) {
-                $table->bigIncrements('id');
+                $table->uuid('id')->primary();
                 $table->string('kode', 5);
                 $table->string('nama_bahasa', 20);
                 $table->timestamps();
@@ -20,10 +20,10 @@ return new class extends Migration
 
         // Buat tabel simpeg_data_kemampuan_bahasa
         Schema::create('simpeg_data_kemampuan_bahasa', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('pegawai_id');
+            $table->uuid('id')->primary();
+            $table->uuid('pegawai_id');
             $table->year('tahun');
-            $table->unsignedBigInteger('bahasa_id');
+            $table->uuid('bahasa_id');
             $table->string('nama_lembaga', 100)->nullable();
             $table->integer('kemampuan_mendengar')->nullable();
             $table->integer('kemampuan_bicara')->nullable();

@@ -31,7 +31,9 @@ class PayrollService
             }
             
             $periode->penggajianPegawai()->delete();
-            $pegawais = SimpegPegawai::where('status_aktif_id', 1)->get();
+            $pegawais = SimpegPegawai::whereHas('statusAktif', function ($query) {
+                $query->where('kode', 'AA'); // 'AA' adalah kode untuk status 'Aktif'
+            })->get();
 
             if($pegawais->isEmpty()){
                 throw new Exception("Tidak ditemukan pegawai aktif untuk diproses.");

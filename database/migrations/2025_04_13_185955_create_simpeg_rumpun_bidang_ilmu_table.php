@@ -12,7 +12,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('simpeg_rumpun_bidang_ilmu', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             $table->string('kode', 5);
             $table->string('nama_bidang', 100);
             $table->string('parent_category', 100);

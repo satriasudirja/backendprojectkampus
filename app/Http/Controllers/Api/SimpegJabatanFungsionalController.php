@@ -38,8 +38,8 @@ class SimpegJabatanFungsionalController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'jabatan_akademik_id' => 'required|integer|exists:simpeg_jabatan_akademik,id',
-            'pangkat_id' => 'required|integer|exists:simpeg_master_pangkat,id',
+            'jabatan_akademik_id' => 'required|uuid|exists:simpeg_jabatan_akademik,id',
+            'pangkat_id' => 'required|uuid|exists:simpeg_master_pangkat,id',
             'kode' => 'required|string|max:5|unique:simpeg_jabatan_fungsional,kode',
             'nama_jabatan_fungsional' => 'required|string|max:30',
             'kode_jabatan_akademik' => 'required|string|max:3',
@@ -76,8 +76,8 @@ class SimpegJabatanFungsionalController extends Controller
     public function update(Request $request, SimpegJabatanFungsional $jabatanFungsional)
     {
         $validator = Validator::make($request->all(), [
-            'jabatan_akademik_id' => 'sometimes|required|integer|exists:simpeg_jabatan_akademik,id',
-            'pangkat_id' => 'sometimes|required|integer|exists:simpeg_master_pangkat,id',
+            'jabatan_akademik_id' => 'sometimes|required|uuid|exists:simpeg_jabatan_akademik,id',
+            'pangkat_id' => 'sometimes|required|uuid|exists:simpeg_master_pangkat,id',
             'kode' => ['sometimes', 'required', 'string', 'max:5', Rule::unique('simpeg_jabatan_fungsional')->ignore($jabatanFungsional->id)],
             'nama_jabatan_fungsional' => 'sometimes|required|string|max:30',
             'kode_jabatan_akademik' => 'sometimes|required|string|max:3',

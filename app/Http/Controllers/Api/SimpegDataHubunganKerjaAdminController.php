@@ -190,15 +190,15 @@ class SimpegDataHubunganKerjaAdminController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'required|integer|exists:simpeg_pegawai,id',
+            'pegawai_id' => 'required|uuid|exists:simpeg_pegawai,id',
             'no_sk' => 'required|string|max:100',
             'tgl_sk' => 'required|date',
             'tgl_awal' => 'required|date',
             'tgl_akhir' => 'nullable|date|after_or_equal:tgl_awal',
             'pejabat_penetap' => 'nullable|string|max:255',
             'file_hubungan_kerja' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'hubungan_kerja_id' => 'required|integer|exists:simpeg_hubungan_kerja,id',
-            'status_aktif_id' => 'nullable|integer|exists:simpeg_status_aktif,id',
+            'hubungan_kerja_id' => 'required|uuid|exists:simpeg_hubungan_kerja,id',
+            'status_aktif_id' => 'nullable|uuid|exists:simpeg_status_aktif,id',
             'is_aktif' => 'boolean', // Allow admin to set 'is_aktif' directly
             'status_pengajuan' => 'sometimes|in:draft,diajukan,disetujui,ditolak',
             'keterangan' => 'nullable|string|max:1000',
@@ -293,15 +293,15 @@ class SimpegDataHubunganKerjaAdminController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'pegawai_id' => 'sometimes|integer|exists:simpeg_pegawai,id',
+            'pegawai_id' => 'sometimes|uuid|exists:simpeg_pegawai,id',
             'no_sk' => 'sometimes|string|max:100',
             'tgl_sk' => 'sometimes|date',
             'tgl_awal' => 'sometimes|date',
             'tgl_akhir' => 'nullable|date|after_or_equal:tgl_awal',
             'pejabat_penetap' => 'nullable|string|max:255',
             'file_hubungan_kerja' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'hubungan_kerja_id' => 'sometimes|integer|exists:simpeg_hubungan_kerja,id',
-            'status_aktif_id' => 'nullable|integer|exists:simpeg_status_aktif,id',
+            'hubungan_kerja_id' => 'sometimes|uuid|exists:simpeg_hubungan_kerja,id',
+            'status_aktif_id' => 'nullable|uuid|exists:simpeg_status_aktif,id',
             'is_aktif' => 'sometimes|boolean',
             'status_pengajuan' => 'sometimes|in:draft,diajukan,disetujui,ditolak',
             'keterangan' => 'nullable|string|max:1000',
@@ -605,7 +605,7 @@ class SimpegDataHubunganKerjaAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_hubungan_kerja,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_hubungan_kerja,id',
         ]);
 
         if ($validator->fails()) {
@@ -689,7 +689,7 @@ class SimpegDataHubunganKerjaAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_hubungan_kerja,id'
+            'ids.*' => 'required|uuid|exists:simpeg_data_hubungan_kerja,id'
         ]);
 
         if ($validator->fails()) {
@@ -756,7 +756,7 @@ class SimpegDataHubunganKerjaAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_hubungan_kerja,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_hubungan_kerja,id',
             'keterangan_penolakan' => 'nullable|string|max:500',
         ]);
 
@@ -824,7 +824,7 @@ class SimpegDataHubunganKerjaAdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:simpeg_data_hubungan_kerja,id',
+            'ids.*' => 'required|uuid|exists:simpeg_data_hubungan_kerja,id',
         ]);
 
         if ($validator->fails()) {
@@ -1071,15 +1071,15 @@ class SimpegDataHubunganKerjaAdminController extends Controller
                 'status_pengajuan' => $statusPengajuanOptions,
             ],
             'validation_rules' => [
-                'pegawai_id' => 'required|integer',
+                'pegawai_id' => 'required|uuid',
                 'no_sk' => 'required|string|max:100',
                 'tgl_sk' => 'required|date',
                 'tgl_awal' => 'required|date',
                 'tgl_akhir' => 'nullable|date|after_or_equal:tgl_awal',
                 'pejabat_penetap' => 'nullable|string|max:255',
                 'file_hubungan_kerja' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'hubungan_kerja_id' => 'required|integer',
-                'status_aktif_id' => 'nullable|integer',
+                'hubungan_kerja_id' => 'required|uuid',
+                'status_aktif_id' => 'nullable|uuid',
                 'is_aktif' => 'boolean',
                 'status_pengajuan' => 'sometimes|in:draft,diajukan,disetujui,ditolak',
                 'keterangan' => 'nullable|string|max:1000',

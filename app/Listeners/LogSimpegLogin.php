@@ -5,6 +5,7 @@ namespace App\Listeners;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\DB;
 
 class LogSimpegLogin
 {
@@ -21,7 +22,7 @@ class LogSimpegLogin
      */
     public function handle(Login $event)
 {
-    \DB::table('simpeg_login_logs')->insert([
+    DB::table('simpeg_login_logs')->insert([
         'pegawai_id' => $event->user->id,
         'ip_address' => request()->ip(),
         'user_agent' => request()->userAgent(),
