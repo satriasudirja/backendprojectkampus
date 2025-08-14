@@ -13,29 +13,18 @@ return new class extends Migration
     {
         Schema::create('simpeg_jabatan_fungsional', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('jabatan_akademik_id');
             $table->uuid('pangkat_id');
             $table->string('kode', 5);
             $table->string('nama_jabatan_fungsional', 30);
-            $table->string('kode_jabatan_akademik', 2);
             $table->string('pangkat', 10);
             $table->string('angka_kredit', 6);
             $table->integer('usia_pensiun');
-             $table->decimal('tunjangan', 15, 2)->nullable();
+            $table->decimal('tunjangan', 15, 2)->nullable();
             $table->text('keterangan')->nullable();
 
-                 $table->timestamps();
+            $table->timestamps();
         $table->softDeletes();
-            // Foreign key constraints
-            // $table->foreign('jabatan_akademik_id')
-            //       ->references('id')
-            //       ->on('simpeg_jabatan_akademik')
-            //       ->onDelete('cascade');
 
-            // $table->foreign('pangkat_id')
-            //       ->references('id')
-            //       ->on('simpeg_pangkat')
-            //       ->onDelete('cascade');
         });
     }
 

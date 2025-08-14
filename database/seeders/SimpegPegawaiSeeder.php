@@ -8,7 +8,7 @@ use App\Models\SimpegUserRole;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegStatusAktif;
 use App\Models\SimpegStatusPernikahan;
-use App\Models\SimpegJabatanAkademik;
+use App\Models\SimpegJabatanFungsional; // CHANGED: Gunakan jabatan fungsional
 use App\Models\SimpegSuku;
 use Illuminate\Database\Seeder;
 use Faker\Factory as Faker;
@@ -47,7 +47,8 @@ class SimpegPegawaiSeeder extends Seeder
                 // Validasi dan ambil data referensi
                 $this->command->info('Loading reference data...');
                 
-                $jabatanAkademik = SimpegJabatanAkademik::all();
+                // CHANGED: Gunakan jabatan fungsional instead of jabatan akademik
+                $jabatanFungsional = SimpegJabatanFungsional::all();
                 $roles = SimpegUserRole::all();
                 $unitKerjaIds = SimpegUnitKerja::pluck('id');
                 $statusPernikahanIds = SimpegStatusPernikahan::pluck('id');
@@ -56,7 +57,7 @@ class SimpegPegawaiSeeder extends Seeder
 
                 // Log jumlah data referensi
                 $this->command->info("Reference data counts:");
-                $this->command->info("- Jabatan Akademik: {$jabatanAkademik->count()}");
+                $this->command->info("- Jabatan Fungsional: {$jabatanFungsional->count()}");
                 $this->command->info("- Roles: {$roles->count()}");
                 $this->command->info("- Unit Kerja: {$unitKerjaIds->count()}");
                 $this->command->info("- Status Pernikahan: {$statusPernikahanIds->count()}");
@@ -64,8 +65,8 @@ class SimpegPegawaiSeeder extends Seeder
                 $this->command->info("- Suku: {$sukuIds->count()}");
 
                 // Validasi data referensi
-                if ($jabatanAkademik->isEmpty()) {
-                    throw new Exception('Tabel simpeg_jabatan_akademik kosong!');
+                if ($jabatanFungsional->isEmpty()) {
+                    throw new Exception('Tabel simpeg_jabatan_fungsional kosong!');
                 }
                 if ($roles->isEmpty()) {
                     throw new Exception('Tabel simpeg_users_roles kosong!');
@@ -101,12 +102,16 @@ class SimpegPegawaiSeeder extends Seeder
                 $statusAktifFirst = SimpegStatusAktif::first();
                 $sukuFirst = SimpegSuku::first();
 
+                // Pilih jabatan fungsional untuk admin (bisa administrasi atau teknisi)
+                $adminJabatanFungsional = $jabatanFungsional->where('nama_jabatan_fungsional', 'like', '%Administrasi%')->first()
+                    ?? $jabatanFungsional->first(); // fallback ke yang pertama
+
                 // STEP 1: Buat pegawai khusus
                 $specialPegawai = [
                     [
                         'nama' => 'AdminSIMPEG',
                         'nip' => '085156411620',
-                        'jabatan_akademik' => 'Administrasi',
+                        'jabatan_fungsional' => $adminJabatanFungsional->nama_jabatan_fungsional,
                         'email' => 'admin@ft.uika-bogor.ac.id',
                         'role' => 'Tenaga Kependidikan',
                         'is_admin' => true
@@ -117,12 +122,12 @@ class SimpegPegawaiSeeder extends Seeder
 
                 foreach ($specialPegawai as $index => $pegawaiData) {
                     try {
-                        // Cari jabatan akademik
-                        $jabatanRecord = $jabatanAkademik->where('jabatan_akademik', $pegawaiData['jabatan_akademik'])->first();
+                        // CHANGED: Cari jabatan fungsional instead of jabatan akademik
+                        $jabatanRecord = $jabatanFungsional->where('nama_jabatan_fungsional', $pegawaiData['jabatan_fungsional'])->first();
                         if (!$jabatanRecord) {
                             // Jika tidak ditemukan, ambil yang pertama sebagai fallback
-                            $jabatanRecord = $jabatanAkademik->first();
-                            $this->command->warn("Jabatan '{$pegawaiData['jabatan_akademik']}' tidak ditemukan, menggunakan: {$jabatanRecord->jabatan_akademik}");
+                            $jabatanRecord = $jabatanFungsional->first();
+                            $this->command->warn("Jabatan '{$pegawaiData['jabatan_fungsional']}' tidak ditemukan, menggunakan: {$jabatanRecord->nama_jabatan_fungsional}");
                         }
 
                         $roleRecord = ($pegawaiData['role'] === 'Dosen') ? $dosenRole : $tendikRole;
@@ -132,7 +137,7 @@ class SimpegPegawaiSeeder extends Seeder
 
                         $pegawaiAttributes = [
                             'role_id' => $roleRecord->id,
-                            'jabatan_akademik_id' => $jabatanRecord->id,
+                            'jabatan_fungsional_id' => $jabatanRecord->id, // CHANGED: Use jabatan_fungsional_id
                             'unit_kerja_id' => $unitKerjaIds->first(),
                             'kode_status_pernikahan' => $statusPernikahanFirst->id,
                             'status_aktif_id' => $statusAktifFirst->id,
@@ -172,55 +177,78 @@ class SimpegPegawaiSeeder extends Seeder
                 $currentCount = SimpegPegawai::count();
                 $this->command->info("Special employees created. Current count: {$currentCount}");
 
-                // // STEP 2: Buat pegawai random
-                // $this->command->info('Creating random employees...');
+                // STEP 2: Buat pegawai random (uncomment jika diperlukan)
+                $this->command->info('Creating random employees...');
                 
-                // for ($i = 0; $i < 70; $i++) {
-                //     try {
-                //         $isDosen = $faker->boolean(70); // 70% kemungkinan dosen
-                //         $roleId = $isDosen ? $dosenRole->id : $tendikRole->id;
-                //         $tanggalLahir = $faker->date('Y-m-d', '-30 years');
-                //         $nip = $faker->unique()->numerify('19##############');
+                // Pisahkan jabatan fungsional untuk dosen dan tenaga kependidikan
+                $dosenJabatan = $jabatanFungsional->filter(function ($jabatan) {
+                    return stripos($jabatan->nama_jabatan_fungsional, 'Asisten Ahli') !== false ||
+                           stripos($jabatan->nama_jabatan_fungsional, 'Lektor') !== false ||
+                           stripos($jabatan->nama_jabatan_fungsional, 'Guru Besar') !== false;
+                });
+                
+                $tendikJabatan = $jabatanFungsional->filter(function ($jabatan) {
+                    return stripos($jabatan->nama_jabatan_fungsional, 'Administrasi') !== false ||
+                           stripos($jabatan->nama_jabatan_fungsional, 'Teknisi') !== false;
+                });
 
-                //         $pegawaiAttributes = [
-                //             'role_id' => $roleId,
-                //             'jabatan_akademik_id' => $isDosen ? $jabatanAkademik->random()->id : null,
-                //             'unit_kerja_id' => $unitKerjaIds->random(),
-                //             'kode_status_pernikahan' => $statusPernikahanIds->random(),
-                //             'status_aktif_id' => $statusAktifIds->random(),
-                //             'suku_id' => $sukuIds->random(),
-                //             'is_admin' => false,
-                //             'nama' => $faker->name,
-                //             'nip' => $nip,
-                //             'nuptk' => $nip,
-                //             'nidn' => $isDosen ? substr($nip, 0, 10) : null,
-                //             'email_pribadi' => $faker->unique()->safeEmail,
-                //             'tanggal_lahir' => $tanggalLahir,
-                //             'jenis_kelamin' => $faker->randomElement(['Laki-laki', 'Perempuan']),
-                //             'tempat_lahir' => $faker->city,
-                //             'agama' => $faker->randomElement(['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha']),
-                //         ];
+                for ($i = 0; $i < 50; $i++) {
+                    try {
+                        $isDosen = $faker->boolean(70); // 70% kemungkinan dosen
+                        $roleId = $isDosen ? $dosenRole->id : $tendikRole->id;
+                        $tanggalLahir = $faker->date('Y-m-d', '-30 years');
+                        $nip = $faker->unique()->numerify('19##############');
 
-                //         $pegawai = SimpegPegawai::create($pegawaiAttributes);
+                        // CHANGED: Pilih jabatan fungsional berdasarkan role
+                        $selectedJabatan = null;
+                        if ($isDosen && $dosenJabatan->isNotEmpty()) {
+                            $selectedJabatan = $dosenJabatan->random();
+                        } elseif (!$isDosen && $tendikJabatan->isNotEmpty()) {
+                            $selectedJabatan = $tendikJabatan->random();
+                        } else {
+                            // Fallback ke jabatan manapun
+                            $selectedJabatan = $jabatanFungsional->random();
+                        }
 
-                //         $userAttributes = [
-                //             'pegawai_id' => $pegawai->id,
-                //             'username' => $pegawai->nip,
-                //             'password' => Hash::make(date('dmY', strtotime($tanggalLahir))),
-                //             'is_active' => true,
-                //         ];
+                        $pegawaiAttributes = [
+                            'role_id' => $roleId,
+                            'jabatan_fungsional_id' => $selectedJabatan ? $selectedJabatan->id : null, // CHANGED
+                            'unit_kerja_id' => $unitKerjaIds->random(),
+                            'kode_status_pernikahan' => $statusPernikahanIds->random(),
+                            'status_aktif_id' => $statusAktifIds->random(),
+                            'suku_id' => $sukuIds->random(),
+                            'is_admin' => false,
+                            'nama' => $faker->name,
+                            'nip' => $nip,
+                            'nuptk' => $nip,
+                            'nidn' => $isDosen ? substr($nip, 0, 10) : null,
+                            'email_pribadi' => $faker->unique()->safeEmail,
+                            'tanggal_lahir' => $tanggalLahir,
+                            'jenis_kelamin' => $faker->randomElement(['Laki-laki', 'Perempuan']),
+                            'tempat_lahir' => $faker->city,
+                            'agama' => $faker->randomElement(['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha']),
+                        ];
 
-                //         SimpegUser::create($userAttributes);
+                        $pegawai = SimpegPegawai::create($pegawaiAttributes);
 
-                //         if (($i + 1) % 10 == 0) {
-                //             $this->command->info("Created " . ($i + 1) . " random employees...");
-                //         }
+                        $userAttributes = [
+                            'pegawai_id' => $pegawai->id,
+                            'username' => $pegawai->nip,
+                            'password' => Hash::make(date('dmY', strtotime($tanggalLahir))),
+                            'is_active' => true,
+                        ];
 
-                //     } catch (Exception $e) {
-                //         $this->command->error("✗ Failed to create random employee {$i}: " . $e->getMessage());
-                //         throw $e;
-                //     }
-                // }
+                        SimpegUser::create($userAttributes);
+
+                        if (($i + 1) % 10 == 0) {
+                            $this->command->info("Created " . ($i + 1) . " random employees...");
+                        }
+
+                    } catch (Exception $e) {
+                        $this->command->error("✗ Failed to create random employee {$i}: " . $e->getMessage());
+                        throw $e;
+                    }
+                }
 
                 // Final verification
                 $finalPegawaiCount = SimpegPegawai::count();
@@ -230,9 +258,9 @@ class SimpegPegawaiSeeder extends Seeder
                 $this->command->info("- Total Pegawai: {$finalPegawaiCount}");
                 $this->command->info("- Total Users: {$finalUserCount}");
                 
-                // if ($finalPegawaiCount != 73 || $finalUserCount != 73) {
-                //     throw new Exception("Expected 73 employees and users, got {$finalPegawaiCount} employees and {$finalUserCount} users");
-                // }
+                if ($finalPegawaiCount != $finalUserCount) {
+                    throw new Exception("Mismatch: {$finalPegawaiCount} employees but {$finalUserCount} users");
+                }
 
                 $this->command->info('✓ All employees and users created successfully!');
             });

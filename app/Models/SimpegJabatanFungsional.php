@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SimpegJabatanFungsional extends Model
@@ -19,7 +21,6 @@ class SimpegJabatanFungsional extends Model
         'pangkat_id',
         'kode',
         'nama_jabatan_fungsional',
-        'kode_jabatan_akademik',
         'pangkat',
         'angka_kredit',
         'usia_pensiun',
@@ -27,18 +28,27 @@ class SimpegJabatanFungsional extends Model
         'tunjangan',
     ];
 
-    // public function jabatanAkademik()
-    // {
-    //     return $this->belongsTo(JabatanAkademik::class, 'jabatan_akademik_id');
-    // }
-    public function jabatanAkademik()
-{
-    return $this->belongsTo(SimpegJabatanAkademik::class, 'jabatan_akademik_id');
-}
+    // Relasi ke jabatan akademik
+    public function jabatanAkademik(): BelongsTo
+    {
+        return $this->belongsTo(SimpegJabatanAkademik::class, 'jabatan_akademik_id');
+    }
 
-    public function pangkat()
+    // Relasi ke pangkat
+    public function pangkat(): BelongsTo
     {
         return $this->belongsTo(SimpegMasterPangkat::class, 'pangkat_id');
     }
     
+    // ADDED: Relasi ke pegawai yang menggunakan jabatan fungsional ini
+    public function pegawai(): HasMany
+    {
+        return $this->hasMany(SimpegPegawai::class, 'jabatan_fungsional_id');
+    }
+    
+    // ADDED: Relasi ke riwayat jabatan fungsional pegawai
+    public function dataJabatanFungsional(): HasMany
+    {
+        return $this->hasMany(SimpegDataJabatanFungsional::class, 'jabatan_fungsional_id');
+    }
 }
