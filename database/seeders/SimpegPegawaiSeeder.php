@@ -38,7 +38,7 @@ class SimpegPegawaiSeeder extends Seeder
         SimpegPegawai::truncate();
         
         // Enable triggers kembali
-        DB::statement('SET session_replication_role = DEFAULT;');
+        // DB::statement('SET session_replication_role = DEFAULT;');
 
         try {
             DB::transaction(function () use ($faker) {
