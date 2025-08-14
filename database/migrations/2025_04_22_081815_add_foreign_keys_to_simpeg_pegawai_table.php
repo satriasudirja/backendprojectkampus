@@ -27,7 +27,7 @@ return new class extends Migration
                   ->onDelete('set null');
 
             $table->foreign('jabatan_fungsional_id')
-                  ->references('id')->on('simpeg_fungsional_akademik')
+                  ->references('id')->on('simpeg_jabatan_fungsional')
                   ->onDelete('set null');
 
             $table->foreign('suku_id')
