@@ -60,6 +60,7 @@ class SimpegUnitKerjaSeeder extends Seeder
             ['kode_unit' => 'UIKA_KK', 'nama_unit' => 'KEPEG KESEK', 'parent' => 'UIKA'],
             ['kode_unit' => 'UIKA_AKA', 'nama_unit' => 'Akademik', 'parent' => 'UIKA'],
             ['kode_unit' => 'UIKA_PRO', 'nama_unit' => 'Properti', 'parent' => 'UIKA'],
+            ['kode_unit' => 'UIKA_SAT', 'nama_unit' => 'Satpam', 'parent' => 'UIKA'],
 
 
             // Unit di bawah YPIKA (Yayasan Pendidikan Islam Ibn Khaldun)
@@ -222,6 +223,7 @@ class SimpegUnitKerjaSeeder extends Seeder
             ['kode_unit' => 'FPASCA_TU', 'nama_unit' => 'Tata Usaha', 'parent' => 'FPASCA'],
             ['kode_unit' => 'FPASCA_AKA', 'nama_unit' => 'Akademik', 'parent' => 'FPASCA'],
             ['kode_unit' => 'FPASCA_PERPUS', 'nama_unit' => 'Perpusatakaan', 'parent' => 'FPASCA'],
+            ['kode_unit' => 'FPASCA_UMUM_KEU_FAS', 'nama_unit' => 'UMUM KEU FAS', 'parent' => 'FPASCA'],
             
             // Program Studi di bawah Fakultas Ilmu Kesehatan (FIKES)
             ['kode_unit' => 'FIKES_GZ', 'nama_unit' => 'Gizi', 'parent' => 'FIKES'],
@@ -233,6 +235,7 @@ class SimpegUnitKerjaSeeder extends Seeder
             ['kode_unit' => 'FIKES_PERPUS', 'nama_unit' => 'Perpustakaan', 'parent' => 'FIKES'],
             ['kode_unit' => 'FIKES_PERPUS', 'nama_unit' => 'Perpustakaan', 'parent' => 'FIKES'],
             ['kode_unit' => 'FIKES_AKA', 'nama_unit' => 'Akademik', 'parent' => 'FIKES'],
+            ['kode_unit' => 'FIKES_UMUM_KEU_FAS', 'nama_unit' => 'UMUM KEU FAS', 'parent' => 'FIKES'],
 
             // Unit Lain-lain (Anak dari Universitas)
             ['kode_unit' => 'KP', 'nama_unit' => 'Keuangan Dan Perbankan', 'parent' => 'UIKA'],
