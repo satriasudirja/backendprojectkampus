@@ -21,19 +21,19 @@ class SimpegUnitKerjaSeeder extends Seeder
         // Data unit kerja berdasarkan teks baru yang diberikan
         $data = [
             // Induk Utama
-            ['kode_unit' => '041001', 'nama_unit' => 'Universitas Ibn Khaldun', 'parent' => null],
+            ['kode_unit' => 'UIKA', 'nama_unit' => 'Universitas Ibn Khaldun', 'parent' => null],
 
             // Lembaga & Biro (Anak dari Universitas)
-            ['kode_unit' => 'YPIKA', 'nama_unit' => 'Yayasan Pendiidikan Islam Ibn Khaldun', 'parent' => '041001'],
-            ['kode_unit' => 'BAAK', 'nama_unit' => 'Biro Administrasi Akademik dan Kemahasiswaan', 'parent' => '041001'],
-            ['kode_unit' => 'BASK', 'nama_unit' => 'Biro Administrasi Sumberdaya dan Kerjasama', 'parent' => '041001'],
-            ['kode_unit' => 'BPPSI', 'nama_unit' => 'Biro Perencanaan, Pelaporan dan Sistem Informasi', 'parent' => '041001'],
-            ['kode_unit' => 'KPMA', 'nama_unit' => 'Kantor Penjaminan Mutu dan Audit Internal', 'parent' => '041001'],
-            ['kode_unit' => 'LPPM', 'nama_unit' => 'Lembaga Penelitian dan Pengabdian Kepada Masyarakat', 'parent' => '041001'],
+            ['kode_unit' => 'YPIKA', 'nama_unit' => 'Yayasan Pendiidikan Islam Ibn Khaldun', 'parent' => 'UIKA'],
+            ['kode_unit' => 'BAAK', 'nama_unit' => 'Biro Administrasi Akademik dan Kemahasiswaan', 'parent' => 'UIKA'],
+            ['kode_unit' => 'BASK', 'nama_unit' => 'Biro Administrasi Sumberdaya dan Kerjasama', 'parent' => 'UIKA'],
+            ['kode_unit' => 'BPPSI', 'nama_unit' => 'Biro Perencanaan, Pelaporan dan Sistem Informasi', 'parent' => 'UIKA'],
+            ['kode_unit' => 'KPMA', 'nama_unit' => 'Kantor Penjaminan Mutu dan Audit Internal', 'parent' => 'UIKA'],
+            ['kode_unit' => 'LPPM', 'nama_unit' => 'Lembaga Penelitian dan Pengabdian Kepada Masyarakat', 'parent' => 'UIKA'],
 
             // Unit di bawah Rektorat
-            ['kode_unit' => 'SEK_REKTORAT', 'nama_unit' => 'Sekretariat Rektorat', 'parent' => '041001'],
-            ['kode_unit' => 'KOPERASI_UIKA', 'nama_unit' => 'Koperasi UIKA', 'parent' => '041001'],
+            ['kode_unit' => 'SEK_REKTORAT', 'nama_unit' => 'Sekretariat Rektorat', 'parent' => 'UIKA'],
+            ['kode_unit' => 'KOPERASI_UIKA', 'nama_unit' => 'Koperasi UIKA', 'parent' => 'UIKA'],
 
             // Unit di bawah BAAK (Biro Akademik & Kemahasiswaan)
             ['kode_unit' => 'AKADEMIK', 'nama_unit' => 'Direktorat Akademik', 'parent' => 'BAAK'],
@@ -60,21 +60,21 @@ class SimpegUnitKerjaSeeder extends Seeder
             
 
             // Fakultas (Anak dari Universitas)
-            ['kode_unit' => '01', 'nama_unit' => 'Fakultas Keguruan dan Ilmu Pendidikan', 'parent' => '041001'],
-            ['kode_unit' => '02', 'nama_unit' => 'Fakultas Hukum', 'parent' => '041001'],
-            ['kode_unit' => '03', 'nama_unit' => 'Fakultas Ekonomi dan Bisnis', 'parent' => '041001'],
-            ['kode_unit' => '04', 'nama_unit' => 'Fakultas Agama Islam', 'parent' => '041001'],
-            ['kode_unit' => '05', 'nama_unit' => 'Fakultas Teknik dan Sains', 'parent' => '041001'],
-            ['kode_unit' => '06', 'nama_unit' => 'Sekolah Pascasarjana', 'parent' => '041001'],
-            ['kode_unit' => '07', 'nama_unit' => 'Fakultas Ilmu Kesehatan', 'parent' => '041001'],
+            ['kode_unit' => 'FKIP', 'nama_unit' => 'Fakultas Keguruan dan Ilmu Pendidikan', 'parent' => 'UIKA'],
+            ['kode_unit' => 'FH', 'nama_unit' => 'Fakultas Hukum', 'parent' => 'UIKA'],
+            ['kode_unit' => 'FEB', 'nama_unit' => 'Fakultas Ekonomi dan Bisnis', 'parent' => 'UIKA'],
+            ['kode_unit' => 'FAI', 'nama_unit' => 'Fakultas Agama Islam', 'parent' => 'UIKA'],
+            ['kode_unit' => 'FT', 'nama_unit' => 'Fakultas Teknik dan Sains', 'parent' => 'UIKA'],
+            ['kode_unit' => 'FPASCA', 'nama_unit' => 'Sekolah Pascasarjana', 'parent' => 'UIKA'],
+            ['kode_unit' => 'FIKES', 'nama_unit' => 'Fakultas Ilmu Kesehatan', 'parent' => 'UIKA'],
 
-            // Program Studi di bawah Fakultas Keguruan dan Ilmu Pendidikan (01)
-            ['kode_unit' => '82119', 'nama_unit' => 'Pendidikan Vokasional Desain Fashion', 'parent' => '01'],
-            ['kode_unit' => '84202', 'nama_unit' => 'Pendidikan Matematika', 'parent' => '01'],
-            ['kode_unit' => '86203', 'nama_unit' => 'Teknologi Pendidikan', 'parent' => '01'],
-            ['kode_unit' => '86227', 'nama_unit' => 'Pendidikan Masyarakat', 'parent' => '01'],
-            ['kode_unit' => '86906', 'nama_unit' => 'Pendidikan Profesi Guru', 'parent' => '01'],
-            ['kode_unit' => '88203', 'nama_unit' => 'Pendidikan Bahasa Inggris', 'parent' => '01'],
+            // Program Studi di bawah Fakultas Keguruan dan Ilmu Pendidikan (FKIP)
+            ['kode_unit' => '82119', 'nama_unit' => 'Pendidikan Vokasional Desain Fashion', 'parent' => 'FKIP'],
+            ['kode_unit' => '84202', 'nama_unit' => 'Pendidikan Matematika', 'parent' => 'FKIP'],
+            ['kode_unit' => '86203', 'nama_unit' => 'Teknologi Pendidikan', 'parent' => 'FKIP'],
+            ['kode_unit' => '86227', 'nama_unit' => 'Pendidikan Masyarakat', 'parent' => 'FKIP'],
+            ['kode_unit' => '86906', 'nama_unit' => 'Pendidikan Profesi Guru', 'parent' => 'FKIP'],
+            ['kode_unit' => '88203', 'nama_unit' => 'Pendidikan Bahasa Inggris', 'parent' => 'FKIP'],
 
             // Program Studi di bawah Fakultas Hukum (02)
             ['kode_unit' => '74201', 'nama_unit' => 'Ilmu Hukum', 'parent' => '02'],
@@ -120,9 +120,9 @@ class SimpegUnitKerjaSeeder extends Seeder
             ['kode_unit' => '13201', 'nama_unit' => 'Kesehatan Masyarakat', 'parent' => '07'],
 
             // Unit Lain-lain (Anak dari Universitas)
-            ['kode_unit' => '61406', 'nama_unit' => 'Keuangan Dan Perbankan', 'parent' => '041001'],
-            ['kode_unit' => '86205', 'nama_unit' => 'Pendidikan Luar Sekolah', 'parent' => '041001'],
-            ['kode_unit' => 'AU0102', 'nama_unit' => 'Bank Amanah Ummah', 'parent' => '041001'],
+            ['kode_unit' => '61406', 'nama_unit' => 'Keuangan Dan Perbankan', 'parent' => 'UIKA'],
+            ['kode_unit' => '86205', 'nama_unit' => 'Pendidikan Luar Sekolah', 'parent' => 'UIKA'],
+            ['kode_unit' => 'AU0102', 'nama_unit' => 'Bank Amanah Ummah', 'parent' => 'UIKA'],
         ];
 
         // PERBAIKAN: Gunakan DB::table() jika Model tidak ada

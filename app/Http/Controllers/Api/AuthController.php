@@ -85,7 +85,7 @@ class AuthController extends Controller
         $user = Auth::user(); // Ini akan mengembalikan SimpegUser instance
         
         // Load relasi pegawai untuk mendapatkan data lengkap
-        $user->load('pegawai.jabatanAkademik', 'pegawai.role');
+        $user->load('pegawai.role');
         
         // Log login activity - gunakan pegawai_id dari user
         DB::table('simpeg_login_logs')->insert([
