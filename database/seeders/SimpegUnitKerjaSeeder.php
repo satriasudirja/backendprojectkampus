@@ -31,13 +31,34 @@ class SimpegUnitKerjaSeeder extends Seeder
             ['kode_unit' => 'KPMA', 'nama_unit' => 'Kantor Penjaminan Mutu dan Audit Internal', 'parent' => '041001'],
             ['kode_unit' => 'LPPM', 'nama_unit' => 'Lembaga Penelitian dan Pengabdian Kepada Masyarakat', 'parent' => '041001'],
 
-            // Unit di bawah BAAK
-            ['kode_unit' => 'UP', 'nama_unit' => 'Unit Perpustakaan', 'parent' => 'BAAK'],
-            ['kode_unit' => 'WKWKM', 'nama_unit' => 'Mata Kuliah Wajib Kurikulum', 'parent' => 'BAAK'],
+            // Unit di bawah Rektorat
+            ['kode_unit' => 'SEK_REKTORAT', 'nama_unit' => 'Sekretariat Rektorat', 'parent' => '041001'],
+            ['kode_unit' => 'KOPERASI_UIKA', 'nama_unit' => 'Koperasi UIKA', 'parent' => '041001'],
 
-            // Unit di bawah BASK
-            ['kode_unit' => 'HUMAS', 'nama_unit' => 'Hubungan Masyarakat', 'parent' => 'BASK'],
+            // Unit di bawah BAAK (Biro Akademik & Kemahasiswaan)
+            ['kode_unit' => 'AKADEMIK', 'nama_unit' => 'Direktorat Akademik', 'parent' => 'BAAK'],
+            ['kode_unit' => 'KEMAHASISWAAN', 'nama_unit' => 'Direktorat Kemahasiswaan', 'parent' => 'BAAK'],
+            ['kode_unit' => 'PERPUS', 'nama_unit' => 'Unit Perpustakaan', 'parent' => 'BAAK'],
+            ['kode_unit' => 'ASPIKA', 'nama_unit' => 'Asrama dan Pelayanan Mahasiswa (ASPIKA)', 'parent' => 'BAAK'],
             
+            // Unit di bawah BASK
+            ['kode_unit' => 'UMUM_KEU_FAS', 'nama_unit' => 'Direktorat Umum, Keuangan & Fasilitas', 'parent' => 'BASK'],
+            ['kode_unit' => 'KEPEGAWAIAN', 'nama_unit' => 'Direktorat Kepegawaian', 'parent' => 'BASK'],
+            ['kode_unit' => 'HUMAS', 'nama_unit' => 'Hubungan Masyarakat', 'parent' => 'BASK'],
+            ['kode_unit' => 'TATA_USAHA', 'nama_unit' => 'Tata Usaha Pusat', 'parent' => 'BASK'],
+            ['kode_unit' => 'KEUANGAN', 'nama_unit' => 'Bagian Keuangan', 'parent' => 'BASK'],
+            ['kode_unit' => 'RUMAH_TANGGA', 'nama_unit' => 'Bagian Rumah Tangga', 'parent' => 'BASK'],
+            ['kode_unit' => 'SATPAM', 'nama_unit' => 'Satuan Pengamanan', 'parent' => 'BASK'],
+            ['kode_unit' => 'PARKIR', 'nama_unit' => 'Unit Pengelola Parkir', 'parent' => 'BASK'],
+            ['kode_unit' => 'PROPERTI', 'nama_unit' => 'Unit Properti dan Aset', 'parent' => 'BASK'],
+            ['kode_unit' => 'KESEKRETARIATAN', 'nama_unit' => 'Bagian Kesekretariatan', 'parent' => 'BASK'],
+            ['kode_unit' => 'LABORAN', 'nama_unit' => 'Unit Laboratorium Terpadu', 'parent' => 'BASK'],
+
+              // Unit di bawah BPPSI (Biro Perencanaan, Pelaporan & SI)
+            ['kode_unit' => 'PELAPORAN', 'nama_unit' => 'Bagian Pelaporan', 'parent' => 'BPPSI'],
+            ['kode_unit' => 'UKSI_TI', 'nama_unit' => 'Unit Kerja Sistem Informasi & Teknologi', 'parent' => 'BPPSI'],
+            
+
             // Fakultas (Anak dari Universitas)
             ['kode_unit' => '01', 'nama_unit' => 'Fakultas Keguruan dan Ilmu Pendidikan', 'parent' => '041001'],
             ['kode_unit' => '02', 'nama_unit' => 'Fakultas Hukum', 'parent' => '041001'],
