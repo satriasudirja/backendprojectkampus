@@ -7,7 +7,6 @@ use Carbon\Carbon;
 use App\Models\SimpegPegawai;
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegStatusAktif;
-use App\Models\SimpegJabatanAkademik;
 use App\Models\SimpegDataHubunganKerja;
 use App\Models\SimpegDataPendidikanFormal;
 use App\Models\SimpegJenjangPendidikan;
@@ -70,11 +69,11 @@ class AdminDashboardService
             $q->where('status_keluar', true);
         })->count();
 
-        $academicStaff = (clone $query)->whereHas('jabatanAkademik.role', function ($q) {
+        $academicStaff = (clone $query)->whereHas('role', function ($q) {
             $q->whereIn('nama', ['Dosen', 'Dosen Praktisi/Industri']);
         })->count();
 
-        $nonAcademicStaff = (clone $query)->whereHas('jabatanAkademik.role', function ($q) {
+        $nonAcademicStaff = (clone $query)->whereHas('role', function ($q) {
             $q->where('nama', 'Tenaga Kependidikan');
         })->count();
 
@@ -97,10 +96,10 @@ class AdminDashboardService
         }
         
         $baseQuery = SimpegPegawai::whereIn('unit_kerja_id', $unitIds);
-        $academicStaff = (clone $baseQuery)->whereHas('jabatanAkademik.role', function ($q) {
+        $academicStaff = (clone $baseQuery)->whereHas('role', function ($q) {
             $q->whereIn('nama', ['Dosen', 'Dosen Praktisi/Industri']);
         })->count();
-        $nonAcademicStaff = (clone $baseQuery)->whereHas('jabatanAkademik.role', function ($q) {
+        $nonAcademicStaff = (clone $baseQuery)->whereHas('role', function ($q) {
             $q->where('nama', 'Tenaga Kependidikan');
         })->count();
         $totalStaff = $academicStaff + $nonAcademicStaff;
@@ -144,7 +143,7 @@ class AdminDashboardService
     public function getAcademicEducationDistribution($unitKerjaId = null)
     {
         $unitIds = $this->getAllChildUnitIds($unitKerjaId);
-        $academicEmployeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)->whereHas('jabatanAkademik.role', fn($q) => $q->whereIn('nama', ['Dosen', 'Dosen Praktisi/Industri']))->pluck('simpeg_pegawai.id')->toArray();
+        $academicEmployeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)->whereHas('role', fn($q) => $q->whereIn('nama', ['Dosen', 'Dosen Praktisi/Industri']))->pluck('simpeg_pegawai.id')->toArray();
         return empty($academicEmployeeIds) ? $this->getEmptyEducationDistribution() : $this->getEducationDistributionByEmployeeIds($academicEmployeeIds, 'Akademik');
     }
 
@@ -154,7 +153,7 @@ class AdminDashboardService
     public function getNonAcademicEducationDistribution($unitKerjaId = null)
     {
         $unitIds = $this->getAllChildUnitIds($unitKerjaId);
-        $nonAcademicEmployeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)->whereHas('jabatanAkademik.role', fn($q) => $q->where('nama', 'Tenaga Kependidikan'))->pluck('simpeg_pegawai.id')->toArray();
+        $nonAcademicEmployeeIds = SimpegPegawai::whereIn('unit_kerja_id', $unitIds)->whereHas('role', fn($q) => $q->where('nama', 'Tenaga Kependidikan'))->pluck('simpeg_pegawai.id')->toArray();
         return empty($nonAcademicEmployeeIds) ? $this->getEmptyEducationDistribution() : $this->getEducationDistributionByEmployeeIds($nonAcademicEmployeeIds, 'Non-Akademik');
     }
 
