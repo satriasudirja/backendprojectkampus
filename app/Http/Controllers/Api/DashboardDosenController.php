@@ -23,7 +23,7 @@ class DashboardDosenController extends Controller
      */
     public function getDashboardData(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
