@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('simpeg_pegawai', function (Blueprint $table) {
-            $table->uuid('hubungan_kerja_id')->nullable();
+
+            $table->uuid('hubungan_kerja_id')
+                  ->nullable()
+                  ->after('jabatan_fungsional_id');
+
             $table->foreign('hubungan_kerja_id')
                   ->references('id')->on('simpeg_hubungan_kerja')
                   ->onDelete('set null');
