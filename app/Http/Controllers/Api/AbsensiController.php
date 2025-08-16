@@ -28,7 +28,7 @@ class AbsensiController extends Controller
     
     public function getAbsensiStatus()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $today = Carbon::now();
         
         $absensiHariIni = SimpegAbsensiRecord::where('pegawai_id', $pegawai->id)
@@ -60,7 +60,7 @@ class AbsensiController extends Controller
             return response()->json(['success' => false, 'message' => 'Tidak dapat melakukan absensi pada hari libur.'], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $today = $waktuSekarang->toDateString();
 
         if (!$waktuSekarang->between(Carbon::today()->setTime(4, 0), Carbon::today()->endOfDay())) {
@@ -160,7 +160,7 @@ class AbsensiController extends Controller
 
     public function absenKeluar(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $waktuSekarang = Carbon::now();
         $today = $waktuSekarang->toDateString();
 
@@ -251,7 +251,7 @@ class AbsensiController extends Controller
             return response()->json(['success' => false, 'message' => 'Filter tidak valid.', 'errors' => $validator->errors()], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $bulan = $request->input('bulan', date('m'));
         $tahun = $request->input('tahun', date('Y'));
 
@@ -291,7 +291,7 @@ class AbsensiController extends Controller
 
     public function getDetail($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $absensiRecord = SimpegAbsensiRecord::find($id);
 
         if (!$absensiRecord) {
@@ -313,7 +313,7 @@ class AbsensiController extends Controller
 
     public function requestCorrection(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $absensi = SimpegAbsensiRecord::where('pegawai_id', $pegawai->id)->find($id);
 
         if (!$absensi) {
@@ -403,7 +403,7 @@ class AbsensiController extends Controller
 
     public function getDashboardStats(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $bulan = $request->input('bulan', date('n'));
         $tahun = $request->input('tahun', date('Y'));
 
