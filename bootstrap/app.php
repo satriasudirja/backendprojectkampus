@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Console\Scheduling\Schedule; // <-- PASTIKAN IMPORT INI ADA
 use App\Console\Commands\CleanupTrashFiles;
 use App\Console\Commands\GenerateMonthlyPayroll; // <-- DAN IMPORT INI JUGA
+use App\Console\Commands\SyncPegawaiToUsers; // <-- DAN IMPORT INI JUGA
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register custom commands
         CleanupTrashFiles::class,
         GenerateMonthlyPayroll::class, // <-- Daftarkan command payroll di sini
+        SyncPegawaiUsers::class,
     ])
     ->withSchedule(function (Schedule $schedule) { // <-- Panggil withSchedule di sini
         // Jalankan command payroll pada tanggal 1 setiap bulan jam 02:00 pagi.
