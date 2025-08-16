@@ -23,7 +23,6 @@ return new class extends Migration
             $table->uuid('kode_status_pernikahan')->nullable();
             $table->uuid('status_aktif_id')->nullable();
             $table->uuid('jabatan_fungsional_id')->nullable(); // CHANGED: dari jabatan_akademik_id
-            $table->uuid('hubungan_kerja_id')->nullable(); 
             $table->uuid('suku_id')->nullable();
             
             // Data pribadi
