@@ -24,7 +24,7 @@ class PegawaiController extends Controller
             'unitKerja',
             'statusAktif',
             'role',
-            'dataHubunganKerja.hubunganKerja',
+            'hubunganKerja',
             'jabatanFungsional', // CHANGED: dari dataJabatanFungsional.jabatanFungsional.jabatanAkademik
         ]);
 
@@ -54,9 +54,7 @@ class PegawaiController extends Controller
         }
 
         if ($request->has('hubungan_kerja_id') && !empty($request->hubungan_kerja_id)) {
-            $query->whereHas('dataHubunganKerja', function ($q) use ($request) {
-                $q->where('hubungan_kerja_id', $request->hubungan_kerja_id);
-            });
+            $query->where('hubungan_kerja_id', $request->hubungan_kerja_id);
         }
 
         // CHANGED: Filter by jabatan_fungsional_id instead of jabatan_fungsional_id
@@ -131,6 +129,7 @@ class PegawaiController extends Controller
                 'unit_kerja' => $unit_kerja_nama,
                 'pendidikan_terakhir' => $pendidikan ? $pendidikan->jenjang_singkatan : '-',
                 'jabatan_fungsional' => $item->jabatanFungsional ? $item->jabatanFungsional->nama_jabatan_fungsional : '-', // ADDED: Show jabatan fungsional
+                'jabatan_fungsional' => $item->hubunganKerja ? $item->hubunganKErja->nama_hub_kerja : '-', // ADDED: Show jabatan fungsional
                 'status' => $item->statusAktif ? $item->statusAktif->kode : '-',
                 'aksi' => [
                     'detail_url' => url("/api/{$prefix}/pegawai/" . $item->id),
@@ -196,7 +195,8 @@ class PegawaiController extends Controller
             'statusAktif',
             'role',
             'jabatanFungsional', // CHANGED: Load jabatan fungsional instead
-            'dataHubunganKerja.hubunganKerja',
+            'hubunganKerja',
+            'dataHubunganKerja',
             'dataPendidikanFormal',
             'dataPangkat',
             'dataJabatanAkademik',
@@ -227,6 +227,7 @@ class PegawaiController extends Controller
             'nuptk' => 'nullable|string|max:50',
             'nama' => 'required|string|max:255',
             'unit_kerja_id' => 'required|exists:simpeg_unit_kerja,id',
+            'hubungan_kerja_id' => 'required|exists:simpeg_hubungan_kerja,id',
             'status_aktif_id' => 'required|exists:simpeg_status_aktif,id',
             'role_id' => 'required|exists:simpeg_users_roles,id',
             'jenis_kelamin' => 'required|string|max:30',
@@ -265,6 +266,7 @@ class PegawaiController extends Controller
                 'nama' => $request->nama,
                 'role_id'=> $request->role_id,
                 'unit_kerja_id' => $request->unit_kerja_id,
+                'hubungan_kerja_id'=>$request->hubungan_kerja_id,
                 'status_aktif_id' => $request->status_aktif_id,
                 'jenis_kelamin' => $request->jenis_kelamin,
                 'tempat_lahir' => $request->tempat_lahir,
@@ -395,7 +397,7 @@ class PegawaiController extends Controller
             'nomor_polisi' => 'string|max:20',
             'jenis_kendaraan' => 'string|max:50',
             'merk_kendaraan' => 'string|max:50',
-            'hubungan_kerja_id' => 'exists:hubungan_kerja,id',
+            'hubungan_kerja_id' => 'exists:simpeg_hubungan_kerja,id',
             'kode_status_pernikahan' => 'exists:simpeg_status_pernikahan,id',
             'jabatan_fungsional_id' => 'exists:simpeg_jabatan_fungsional,id', // CHANGED: validation
             'suku_id' => 'exists:simpeg_suku,id',
@@ -430,7 +432,7 @@ class PegawaiController extends Controller
             
             // Daftar semua field yang mungkin diupdate - Updated
             $allFields = [
-                'nip', 'nidn', 'nuptk', 'nama', 'unit_kerja_id', 'status_aktif_id',
+                'nip', 'nidn', 'nuptk', 'nama', 'unit_kerja_id', 'status_aktif_id','hubungan_kerja_id',
                 'kode_status_pernikahan', 'jabatan_fungsional_id', 'suku_id', // CHANGED: field name
                 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'nama_ibu_kandung',
                 'no_sk_capeg', 'tanggal_sk_capeg', 'golongan_capeg', 'tmt_capeg',
