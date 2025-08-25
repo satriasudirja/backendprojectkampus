@@ -129,7 +129,8 @@ class PegawaiController extends Controller
                 'unit_kerja' => $unit_kerja_nama,
                 'pendidikan_terakhir' => $pendidikan ? $pendidikan->jenjang_singkatan : '-',
                 'jabatan_fungsional' => $item->jabatanFungsional ? $item->jabatanFungsional->nama_jabatan_fungsional : '-', // ADDED: Show jabatan fungsional
-                'jabatan_fungsional' => $item->hubunganKerja ? $item->hubunganKErja->nama_hub_kerja : '-', // ADDED: Show jabatan fungsional
+                'jabatan_struktural' => $item->jabatanStruktural ? $item->jabatanStruktural->jenis_jabatan_struktural : '-', // ADDED: Show jabatan Struktural
+                'hubungan_kerja' => $item->hubunganKerja ? $item->hubunganKErja->nama_hub_kerja : '-', // ADDED: Show hubungan kerja
                 'status' => $item->statusAktif ? $item->statusAktif->kode : '-',
                 'aksi' => [
                     'detail_url' => url("/api/{$prefix}/pegawai/" . $item->id),
@@ -180,6 +181,7 @@ class PegawaiController extends Controller
                 ['field' => 'unit_kerja', 'label' => 'Unit Kerja'],
                 ['field' => 'pendidikan_terakhir', 'label' => 'Pendidikan Terakhir'],
                 ['field' => 'jabatan_fungsional', 'label' => 'Jabatan Fungsional'], // ADDED: Column
+                ['field' => 'jabatan_struktural', 'label' => 'Jabatan Struktural'], // ADDED: Column
                 ['field' => 'status', 'label' => 'Status'],
                 ['field' => 'terhubung_sister', 'label' => 'Terhubung Sister'],
                 ['field' => 'aksi', 'label' => 'Aksi'],
@@ -195,6 +197,7 @@ class PegawaiController extends Controller
             'statusAktif',
             'role',
             'jabatanFungsional', // CHANGED: Load jabatan fungsional instead
+            'jabatanStruktural', // CHANGED: Load jabatan Struktural instead
             'hubunganKerja',
             'dataHubunganKerja',
             'dataPendidikanFormal',
@@ -529,6 +532,25 @@ class PegawaiController extends Controller
                     'created_by' => auth()->id() ?? 1,
                 ]);
             }
+            // CHANGED: Update jabatan fungsional history instead of jabatan akademik
+            if ($request->has('jabatan_struktural_id') && $old['jabatan_struktural_id'] != $request->jabatan_struktural_id) {
+                // Akhiri riwayat jabatan fungsional saat ini
+                $pegawai->dataJabatanStruktural()
+                    ->whereNull('tanggal_selesai')
+                    ->update([
+                        'tanggal_selesai' => now(),
+                        'updated_by' => auth()->id() ?? 1
+                    ]);
+                
+                // Buat riwayat jabatan fungsional baru
+                $pegawai->dataJabatanStruktural()->create([
+                    'jabatan_struktural_id' => $request->jabatan_struktural_id,
+                    'tanggal_mulai' => now(),
+                    'keterangan' => $request->jabatan_struktural_keterangan ?? 'Updated via API',
+                    'created_by' => auth()->id() ?? 1,
+                ]);
+            }
+
 
             $changes = array_diff_assoc($pegawai->toArray(), $old);
             ActivityLogger::log('update', $pegawai, $changes);
@@ -832,7 +854,7 @@ class PegawaiController extends Controller
             return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan'], 404);
         }
 
-        $riwayat = $pegawai->dataJabatanFungsional()->with('jabatanFungsional.jabatanAkademik')
+        $riwayat = $pegawai->dataJabatanFungsional()->with('jabatanFungsional')
             ->orderBy('tanggal_mulai', 'desc')->get();
 
         return response()->json([
