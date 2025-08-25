@@ -129,7 +129,7 @@ class SimpegPegawai extends Model
     // CHANGED: Relasi ke jenis jabatan Struktural 
     public function jabatanStruktural(): BelongsTo
     {
-        return $this->belongsTo(SimpegJenisJabatanStruktural::class, 'jabatan_struktural_id');
+        return $this->belongsTo(JenisJabatanStruktural::class, 'jabatan_struktural_id');
     }
     
 
