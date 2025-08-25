@@ -120,10 +120,12 @@ class SimpegPegawai extends Model
         return $this->belongsTo(HubunganKerja::class, 'hubungan_kerja_id');
     }
 
-    public function unitKerja(): BelongsTo
+    // CHANGED: Relasi ke jenis jabatan Struktural 
+    public function jabatanStruktural(): BelongsTo
     {
-        return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id');
+        return $this->belongsTo(SimpegJenisJabatanStruktural::class, 'jabatan_struktural_id');
     }
+    
 
     public function statusPernikahan(): BelongsTo
     {
@@ -139,6 +141,10 @@ class SimpegPegawai extends Model
     public function jabatanFungsional(): BelongsTo
     {
         return $this->belongsTo(SimpegJabatanFungsional::class, 'jabatan_fungsional_id');
+    }
+    public function jenjangPendidikan(): BelongsTo
+    {
+        return $this->belongsTo(SimpegJabatanFungsional::class, 'jenjang_pendidikan_id');
     }
 
     public function suku(): BelongsTo

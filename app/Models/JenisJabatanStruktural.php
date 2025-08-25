@@ -25,4 +25,8 @@ class JenisJabatanStruktural extends Model
     {
         return $this->hasMany(SimpegJabatanStruktural::class, 'jenis_jabatan_struktural_id');
     }
+    public function pegawai(): HasMany
+    {
+        return $this->hasMany(SimpegPegawai::class, 'jabatan_struktural_id');
+    }
 }

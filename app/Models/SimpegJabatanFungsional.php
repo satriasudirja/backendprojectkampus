@@ -28,12 +28,6 @@ class SimpegJabatanFungsional extends Model
         'tunjangan',
     ];
 
-    // Relasi ke jabatan akademik
-    public function jabatanAkademik(): BelongsTo
-    {
-        return $this->belongsTo(SimpegJabatanAkademik::class, 'jabatan_akademik_id');
-    }
-
     // Relasi ke pangkat
     public function pangkat(): BelongsTo
     {
