@@ -20,7 +20,7 @@ class BiodataController extends Controller
     {
         try {
             // Ambil user yang sedang login (instance SimpegPegawai)
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
