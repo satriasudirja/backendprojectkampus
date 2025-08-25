@@ -104,6 +104,8 @@ class SimpegPegawai extends Model
         'is_admin' => 'boolean',
     ];
 
+
+    
     // Relations
     public function user()
     {
@@ -118,6 +120,10 @@ class SimpegPegawai extends Model
     public function hubunganKerja(): BelongsTo
     {
         return $this->belongsTo(HubunganKerja::class, 'hubungan_kerja_id');
+    }
+    public function unitKerja()
+    {
+        return $this->belongsTo(SimpegUnitKerja::class, 'unit_kerja_id');
     }
 
     // CHANGED: Relasi ke jenis jabatan Struktural 
