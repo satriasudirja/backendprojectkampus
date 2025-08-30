@@ -40,6 +40,14 @@ class SimpegUnitKerjaSeeder extends Seeder
             ['kode_unit' => 'KOPERASI', 'nama_unit' => 'Koperasi', 'parent' => 'UIKA'],
             ['kode_unit' => 'UPB', 'nama_unit' => 'Unit Pelayanan Bahasa', 'parent' => 'UIKA'],
             ['kode_unit' => 'TP', 'nama_unit' => 'Techno Park', 'parent' => 'UIKA'],
+            ['kode_unit' => 'TP', 'nama_unit' => 'Techno Park', 'parent' => 'UIKA'],
+            ['kode_unit' => 'MKWK', 'nama_unit' => 'Mata Kuliah Wajib Kurikulum', 'parent' => 'UIKA'],
+            ['kode_unit' => 'MKWK', 'nama_unit' => 'Mata Kuliah Wajib Kurikulum', 'parent' => 'UIKA'],
+            ['kode_unit' => 'PSDM', 'nama_unit' => 'Unit Pengembangan Sumber Daya Mahasiswa', 'parent' => 'UIKA'],
+            ['kode_unit' => 'UPLK', 'nama_unit' => 'Unit Pusat Layanan Kesehatan', 'parent' => 'UIKA'],
+            ['kode_unit' => 'UMSARPRAS', 'nama_unit' => 'Unit Sarana dan Prasarana', 'parent' => 'UIKA'],
+            ['kode_unit' => 'UPK', 'nama_unit' => 'Unit Pengembangan Karir', 'parent' => 'UIKA'],
+            ['kode_unit' => 'UK', 'nama_unit' => 'Unit Kerjasama', 'parent' => 'UIKA'],
             
 
             // Lembaga di bawah LPPM
