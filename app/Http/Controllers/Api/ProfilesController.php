@@ -24,7 +24,7 @@ class ProfilesController extends Controller
     public function getProfile()
     {
         // Mengambil data pegawai yang sedang login
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan atau belum login.'], 404);
@@ -52,7 +52,7 @@ class ProfilesController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan atau belum login.'], 404);
@@ -121,7 +121,7 @@ class ProfilesController extends Controller
      */
     public function changePassword(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan atau belum login.'], 404);

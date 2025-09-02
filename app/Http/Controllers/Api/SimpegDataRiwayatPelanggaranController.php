@@ -25,9 +25,9 @@ class SimpegDataRiwayatPelanggaranController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized - Silakan login terlebih dahulu'], 401);
         }
 
-        $pegawai = Auth::user()->load([
-            'unitKerja', 'statusAktif', 'jabatanAkademik',
-            'dataJabatanFungsional' => fn($q) => $q->with('jabatanFungsional')->orderBy('tmt_jabatan', 'desc')->limit(1),
+        $pegawai = Auth::user()->pegawai;
+        $pegawai->load([
+            'unitKerja', 'statusAktif', 'jabatanFungsional',
             'dataJabatanStruktural' => fn($q) => $q->with('jabatanStruktural.jenisJabatanStruktural')->orderBy('tgl_mulai', 'desc')->limit(1),
             'dataPendidikanFormal' => fn($q) => $q->with('jenjangPendidikan')->orderBy('jenjang_pendidikan_id', 'desc')->limit(1)
         ]);
@@ -84,7 +84,7 @@ class SimpegDataRiwayatPelanggaranController extends Controller
      */
     public function show($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Data pegawai tidak ditemukan'], 404);
         }
@@ -108,7 +108,7 @@ class SimpegDataRiwayatPelanggaranController extends Controller
      */
     public function store(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Data pegawai tidak ditemukan'], 404);
         }
@@ -152,7 +152,7 @@ class SimpegDataRiwayatPelanggaranController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Data pegawai tidak ditemukan'], 404);
         }
@@ -205,7 +205,7 @@ class SimpegDataRiwayatPelanggaranController extends Controller
      */
     public function destroy($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Data pegawai tidak ditemukan'], 404);
         }
@@ -240,7 +240,7 @@ class SimpegDataRiwayatPelanggaranController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Data pegawai tidak ditemukan'], 404);
         }

@@ -109,7 +109,7 @@ class AuthController extends Controller
     {
         // Pastikan relasi pegawai sudah di-load
         if (!$user->relationLoaded('pegawai')) {
-            $user->load('pegawai.jabatanAkademik', 'pegawai.role');
+            $user->load('pegawai.jabatanFungsional', 'pegawai.role');
         }
         
         $pegawai = $user->pegawai;
@@ -131,7 +131,7 @@ class AuthController extends Controller
                 'username' => $user->username,
             ],
             'role' => $roleName,
-            'jabatan' => $pegawai->jabatanAkademik->jabatan_akademik ?? '-',
+            'jabatan' => $pegawai->jabatanFungsional->nama_jabatan_fungsional ?? '-',
         ]);
     }
 
@@ -159,7 +159,7 @@ class AuthController extends Controller
                     'username' => $user->username,
                 ],
                 'role' => $roleName,
-                'jabatan' => $pegawai->jabatanAkademik->jabatan_akademik ?? '-',
+                'jabatan' => $pegawai->jabatanFungsional->nama_jabatan_fungsional ?? '-',
             ]
         ]);
     }

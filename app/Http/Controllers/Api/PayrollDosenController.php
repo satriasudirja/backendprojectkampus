@@ -18,7 +18,7 @@ class PayrollDosenController extends Controller
     public function index(Request $request)
     {
         // Mengambil data pegawai yang sedang login
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         // Validasi input per_page
         $allowedPerPages = [10, 25, 50, 100];
@@ -44,7 +44,7 @@ class PayrollDosenController extends Controller
     public function show(PenggajianPegawai $slip)
     {
         // Mengambil data pegawai yang sedang login
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         // Pastikan slip gaji yang diminta adalah milik pegawai yang sedang login
         // Ini adalah langkah keamanan yang penting

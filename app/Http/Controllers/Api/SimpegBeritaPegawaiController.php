@@ -171,7 +171,7 @@ class SimpegBeritaPegawaiController extends Controller
 
             // Load relasi secara terpisah untuk menghindari error
             try {
-                $berita->load('jabatanAkademik');
+                $berita->load('jabatanFungsional');
             } catch (\Exception $e) {
                 // Jika relasi jabatanAkademik error, skip
             }
@@ -301,41 +301,26 @@ class SimpegBeritaPegawaiController extends Controller
      * Ambil data pegawai yang sedang login
      * Sesuaikan dengan sistem autentikasi yang digunakan
      */
-    private function getPegawaiLogin()
+    private function pegawaiHasAccessToBerita($pegawai, $berita): bool
     {
-        try {
-            $userId = Auth::id();
-            
-            if (!$userId) {
-                return null;
-            }
+        $targetUnitIds = json_decode($berita->unit_kerja_id, true) ?? [];
 
-            // Ambil data pegawai berdasarkan user yang login
-            // Sesuaikan dengan relasi antara user dan pegawai di aplikasi
-            $pegawai = SimpegPegawai::where('user_id', $userId)->first();
-            
-            // Jika tidak ada relasi user_id, coba dengan cara lain
-            if (!$pegawai) {
-                // Alternatif: cari berdasarkan email atau field lain
-                $user = Auth::user();
-                if ($user && isset($user->email)) {
-                    $pegawai = SimpegPegawai::where('email', $user->email)->first();
-                }
-            }
-
-            // Load relasi unitKerja dengan error handling
-            if ($pegawai) {
-                try {
-                    $pegawai->load('unitKerja');
-                } catch (\Exception $e) {
-                    // Jika relasi unitKerja error, biarkan null
-                }
-            }
-
-            return $pegawai;
-        } catch (\Exception $e) {
-            \Log::error('Error getting pegawai login: ' . $e->getMessage());
-            return null;
+        // Jika berita untuk semua unit, beri akses
+        if (empty($targetUnitIds) || in_array('semua', $targetUnitIds)) {
+            return true;
         }
+
+        // Jika unit kerja pegawai ada di dalam daftar target, beri akses
+        if (in_array($pegawai->unit_kerja_id, $targetUnitIds)) {
+            return true;
+        }
+
+        // Jika jabatan akademik pegawai ada di dalam daftar target, beri akses
+        if ($pegawai->jabatan_akademik_id && $berita->jabatanAkademik()->where('jabatan_akademik_id', $pegawai->jabatan_akademik_id)->exists()) {
+            return true;
+        }
+
+        // Jika tidak memenuhi semua syarat, tolak akses
+        return false;
     }
 }

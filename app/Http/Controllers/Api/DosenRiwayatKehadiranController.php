@@ -29,7 +29,7 @@ class DosenRiwayatKehadiranController extends Controller
      */
     public function getMonthlySummary(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Gagal mengautentikasi data pegawai.'], 401);
         }
@@ -112,7 +112,7 @@ class DosenRiwayatKehadiranController extends Controller
      */
     public function getDailyDetail(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Gagal mengautentikasi data pegawai.'], 401);
         }

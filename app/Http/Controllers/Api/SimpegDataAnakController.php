@@ -26,11 +26,12 @@ class SimpegDataAnakController extends Controller
             ], 401);
         }
 
+        $pegawai = Auth::user()->pegawai;
         // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
-        $pegawai = Auth::user()->load([
+        $pegawai->load([
             'unitKerja',
             'statusAktif', 
-            'jabatanAkademik',
+            'jabatanFungsional',
             'dataJabatanFungsional' => function($query) {
                 $query->with('jabatanFungsional')
                       ->orderBy('tmt_jabatan', 'desc')
@@ -240,9 +241,9 @@ class SimpegDataAnakController extends Controller
         return response()->json([
             'success' => true,
             'pegawai' => $this->formatPegawaiInfo($pegawai->load([
-                'unitKerja', 'statusAktif', 'jabatanAkademik',
-                'dataJabatanFungsional.jabatanFungsional',
-                'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+                'unitKerja', 'statusAktif',
+                'jabatanFungsional',
+                'jabatanStruktural.jenisJabatanStruktural',
                 'dataPendidikanFormal.jenjangPendidikan'
             ])),
             'data' => $this->formatDataAnak($dataAnak)
@@ -338,7 +339,7 @@ class SimpegDataAnakController extends Controller
     // Update data anak dengan validasi status
     public function update(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -455,7 +456,7 @@ class SimpegDataAnakController extends Controller
     // Delete data anak
     public function destroy($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -494,7 +495,7 @@ class SimpegDataAnakController extends Controller
     // Submit draft ke diajukan
     public function submitDraft($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -545,7 +546,7 @@ class SimpegDataAnakController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -622,7 +623,7 @@ class SimpegDataAnakController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -662,7 +663,7 @@ class SimpegDataAnakController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -701,7 +702,7 @@ class SimpegDataAnakController extends Controller
     // Get status statistics untuk dashboard
     public function getStatusStatistics()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -788,7 +789,7 @@ class SimpegDataAnakController extends Controller
     // Get filter options
     public function getFilterOptions()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([

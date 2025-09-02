@@ -9,7 +9,7 @@ class ProfileController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
+        $user = Auth::user()->pegawai;
         $role = $user->jabatanAkademik->role;
         
         $profileData = [

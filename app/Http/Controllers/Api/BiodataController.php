@@ -34,12 +34,11 @@ class BiodataController extends Controller
                 'unitKerja',
                 'statusAktif',
                 'dataHubunganKerja.hubunganKerja',
-                'dataJabatanFungsional.jabatanFungsional.jabatanAkademik',
+                'jabatanFungsional',
                 'dataPendidikanFormal',
                 'dataPangkat.pangkat',
                 'dataPangkat.jenisKenaikanPangkat',
                 'dataPangkat.jenisSk',
-                'dataJabatanAkademik.jabatanAkademik',
                 'dataJabatanStruktural.jabatanStruktural'
             ]);
 
@@ -189,7 +188,7 @@ class BiodataController extends Controller
     public function riwayatPendidikan(Request $request)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
@@ -228,7 +227,7 @@ class BiodataController extends Controller
     public function riwayatPangkat(Request $request)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
@@ -302,7 +301,7 @@ class BiodataController extends Controller
     public function riwayatJabatanAkademik(Request $request)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
@@ -355,7 +354,7 @@ class BiodataController extends Controller
     public function riwayatJabatanFungsional(Request $request)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
@@ -412,7 +411,7 @@ class BiodataController extends Controller
     public function riwayatJabatanStruktural(Request $request)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
@@ -466,7 +465,7 @@ class BiodataController extends Controller
     public function riwayatHubunganKerja(Request $request)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
@@ -519,7 +518,7 @@ class BiodataController extends Controller
     public function rekapKehadiran(Request $request)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
@@ -566,7 +565,7 @@ class BiodataController extends Controller
   public function updateBiodata(Request $request)
     {
         // 1. Dapatkan model Pegawai yang sedang terotentikasi secara langsung
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         // Cukup periksa apakah autentikasi berhasil
         if (!$pegawai) {

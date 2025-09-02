@@ -28,11 +28,13 @@ class SimpegDataHubunganKerjaController extends Controller
             ], 401);
         }
 
+        $pegawai = Auth::user()->pegawai;
+
         // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
-        $pegawai = Auth::user()->load([
+        $pegawai->load([
             'unitKerja',
             'statusAktif', 
-            'jabatanAkademik',
+            'jabatanFungsional',
             'dataJabatanFungsional' => function($query) {
                 $query->with('jabatanFungsional')
                       ->orderBy('tmt_jabatan', 'desc')
@@ -165,7 +167,7 @@ class SimpegDataHubunganKerjaController extends Controller
     // Fix existing data dengan status_pengajuan null (jika ada field status_pengajuan)
     public function fixExistingData()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -224,7 +226,7 @@ class SimpegDataHubunganKerjaController extends Controller
     // Get detail data hubungan kerja
     public function show($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -247,9 +249,8 @@ class SimpegDataHubunganKerjaController extends Controller
         return response()->json([
             'success' => true,
             'pegawai' => $this->formatPegawaiInfo($pegawai->load([
-                'unitKerja', 'statusAktif', 'jabatanAkademik',
-                'dataJabatanFungsional.jabatanFungsional',
-                'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+                'unitKerja', 'statusAktif', 'jabatanFungsional',
+                'jabatanStruktural.jenisJabatanStruktural',
                 'dataPendidikanFormal.jenjangPendidikan'
             ])),
             'data' => $this->formatDataHubunganKerja($dataHubunganKerja, false)
@@ -259,7 +260,7 @@ class SimpegDataHubunganKerjaController extends Controller
     // Store new data hubungan kerja
     public function store(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -331,7 +332,7 @@ class SimpegDataHubunganKerjaController extends Controller
     // Update data hubungan kerja
     public function update(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -413,7 +414,7 @@ class SimpegDataHubunganKerjaController extends Controller
     // Delete data hubungan kerja
     public function destroy($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -464,7 +465,7 @@ class SimpegDataHubunganKerjaController extends Controller
         }
 
         // 2. Cek Pengguna yang Login
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -517,7 +518,7 @@ class SimpegDataHubunganKerjaController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -592,7 +593,7 @@ class SimpegDataHubunganKerjaController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -632,7 +633,7 @@ class SimpegDataHubunganKerjaController extends Controller
     // NEW: Activate/Deactivate hubungan kerja
     public function toggleActive(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -721,7 +722,7 @@ class SimpegDataHubunganKerjaController extends Controller
     // Get status statistics untuk dashboard
     public function getStatusStatistics()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -821,7 +822,7 @@ class SimpegDataHubunganKerjaController extends Controller
     // Download file hubungan kerja
     public function downloadFile($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([

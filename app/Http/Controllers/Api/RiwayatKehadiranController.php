@@ -30,7 +30,7 @@ class RiwayatKehadiranController extends Controller
      */
     public function index(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Data pegawai tidak ditemukan'], 404);
         }
@@ -44,7 +44,7 @@ class RiwayatKehadiranController extends Controller
         return response()->json([
             'success' => true,
             'data' => $attendanceData,
-            'pegawai_info' => $this->formatPegawaiInfo($pegawai->load(['unitKerja', 'statusAktif', 'jabatanAkademik'])),
+            'pegawai_info' => $this->formatPegawaiInfo($pegawai->load(['unitKerja', 'statusAktif', 'jabatanFungsional'])),
             'tahun' => (int) $tahun,
             'tahun_options' => $this->getYearOptions($pegawai->id),
             'summary' => $this->calculateYearlySummary($attendanceData),
@@ -57,7 +57,7 @@ class RiwayatKehadiranController extends Controller
      */
     public function detail(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $request->validate([
             'tahun' => 'required|integer|digits:4',
             'bulan' => 'required|integer|between:1,12',
@@ -78,7 +78,7 @@ class RiwayatKehadiranController extends Controller
      */
     public function print(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $request->validate([
             'tahun' => 'required|integer|digits:4',
             'bulan' => 'required|integer|between:1,12',

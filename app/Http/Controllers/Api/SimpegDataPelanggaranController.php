@@ -168,10 +168,10 @@ class SimpegDataPelanggaranController extends Controller
             // Load relasi untuk response
             $dataPelanggaran->load([
                 'pegawai' => function($q) {
-                    $q->select('id', 'nip', 'nama', 'unit_kerja_id', 'jabatan_akademik_id')
+                    $q->select('id', 'nip', 'nama', 'unit_kerja_id', 'jabatan_fungsional_id')
                       ->with([
                           'unitKerja:kode_unit,nama_unit',
-                          'jabatanAkademik:id,jabatan_akademik'
+                          'jabatanFungsional:id,jabatan_fungsional'
                       ]);
                 },
                 'jenisPelanggaran:id,nama_pelanggaran'
@@ -250,10 +250,10 @@ class SimpegDataPelanggaranController extends Controller
             // Load relasi untuk response
             $dataPelanggaran->load([
                 'pegawai' => function($q) {
-                    $q->select('id', 'nip', 'nama', 'unit_kerja_id', 'jabatan_akademik_id')
+                    $q->select('id', 'nip', 'nama', 'unit_kerja_id', 'jabatan_fungsional_id')
                       ->with([
                           'unitKerja:kode_unit,nama_unit',
-                          'jabatanAkademik:id,jabatan_akademik'
+                          'jabatanFungsional:id,jabatan_fungsional'
                       ]);
                 },
                 'jenisPelanggaran:id,nama_pelanggaran'
