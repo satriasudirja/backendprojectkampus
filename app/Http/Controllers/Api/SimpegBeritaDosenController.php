@@ -19,87 +19,46 @@ class SimpegBeritaDosenController extends Controller
     // Get all berita for logged in dosen
    public function index(Request $request) 
 {
-    // Pastikan user sudah login
-    if (!Auth::check()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized - Silakan login terlebih dahulu'
-        ], 401);
+    $pegawai = Auth::user()->pegawai;
+
+    if (!$pegawai) {
+        return response()->json(['success' => false, 'message' => 'Data pegawai tidak ditemukan'], 404);
     }
 
-    // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
-    $dosen = Auth::user()->load([
+    // Eager load relasi yang diperlukan PADA MODEL PEGAWAI
+    $pegawai->load([
         'unitKerja',
-        'statusAktif', 
-        'jabatanAkademik',
-        'dataJabatanFungsional' => function($query) {
-            $query->with('jabatanFungsional')
-                  ->orderBy('tmt_jabatan', 'desc')
-                  ->limit(1);
-        },
-        'dataJabatanStruktural' => function($query) {
-            $query->with('jabatanStruktural.jenisJabatanStruktural')
-                  ->orderBy('tgl_mulai', 'desc')
-                  ->limit(1);
-        },
-        'dataPendidikanFormal' => function($query) {
-            $query->with('jenjangPendidikan')
-                  ->orderBy('jenjang_pendidikan_id', 'desc')
-                  ->limit(1);
-        }
+        'statusAktif',
+        'jabatanFungsional',
     ]);
-
-    if (!$dosen) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Data dosen tidak ditemukan atau belum login'
-        ], 404);
-    }
 
     $perPage = $request->per_page ?? 10;
     $search = $request->search;
-    $unitKerja = $request->unit_kerja;
-    $prioritas = $request->prioritas;
-    $status = $request->status;
 
-    // Debug: Log informasi dosen untuk troubleshooting
-    \Log::info('Dosen Info', [
-        'id' => $dosen->id,
-        'unit_kerja_id' => $dosen->unit_kerja_id,
-        'jabatan_akademik_id' => $dosen->jabatan_akademik_id
-    ]);
+    // Query berita yang relevan untuk pegawai
+    $query = SimpegBerita::query();
 
-    // Query berita yang relevan untuk dosen
-    $query = SimpegBerita::with(['jabatanAkademik']);
+    $query->where(function ($q) use ($pegawai) {
+        // 1. Berita untuk unit kerja pegawai
+        if ($pegawai->unit_kerja_id) {
+            $q->whereJsonContains('unit_kerja_id', $pegawai->unit_kerja_id)
+                ->orWhereJsonContains('unit_kerja_id', (string) $pegawai->unit_kerja_id);
+        }
 
-    // **PERBAIKAN UTAMA**: Perbaiki logika WHERE dengan grouping yang tepat
-    $query->where(function($q) use ($dosen) {
-        // 1. Berita untuk unit kerja dosen (menggunakan ID integer)
-        if ($dosen->unit_kerja_id) {
-            $q->where(function($subQ) use ($dosen) {
-                // Coba beberapa format JSON yang mungkin
-                $subQ->whereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode([(int)$dosen->unit_kerja_id])])
-                     ->orWhereRaw("unit_kerja_id::jsonb @> ?::jsonb", [json_encode(["{$dosen->unit_kerja_id}"])])
-                     ->orWhere('unit_kerja_id', 'like', '%"' . $dosen->unit_kerja_id . '"%');
+        // 2. ATAU berita untuk jabatan akademik pegawai
+        if ($pegawai->jabatan_akademik_id) {
+            $q->orWhereHas('jabatanAkademik', function ($subQ) use ($pegawai) {
+                $subQ->where('jabatan_akademik_id', $pegawai->jabatan_akademik_id);
             });
         }
-        
-        // 2. ATAU berita untuk jabatan akademik dosen
-        if ($dosen->jabatan_akademik_id) {
-            $q->orWhereHas('jabatanAkademik', function($subQ) use ($dosen) {
-                $subQ->where('jabatan_akademik_id', $dosen->jabatan_akademik_id);
-            });
-        }
-        
-        // 3. ATAU berita yang tidak memiliki jabatan akademik spesifik (berita umum)
-        $q->orWhereDoesntHave('jabatanAkademik');
-        
-        // 4. ATAU berita yang tidak memiliki unit kerja spesifik (berita universal)
-        $q->orWhereNull('unit_kerja_id')
-          ->orWhere('unit_kerja_id', '[]')
-          ->orWhere('unit_kerja_id', '');
+
+        // 3. ATAU berita yang tidak memiliki target spesifik (umum)
+        $q->orWhere(function ($subQ) {
+            $subQ->whereNull('unit_kerja_id')
+                    ->orWhere('unit_kerja_id', '[]')
+                    ->orWhere('unit_kerja_id', '');
+        });
     });
-
     // Filter by search
     if ($search) {
         $query->where(function($q) use ($search) {
@@ -204,7 +163,7 @@ class SimpegBeritaDosenController extends Controller
     // Get detail berita
    public function show($id)
 {
-    $dosen = Auth::user();
+    $dosen = Auth::user()->pegawai;
 
     if (!$dosen) {
         return response()->json([
@@ -246,9 +205,8 @@ class SimpegBeritaDosenController extends Controller
         'dosen' => $this->formatDosenInfo($dosen->load([
             'unitKerja', 
             'statusAktif', 
-            'jabatanAkademik',
-            'dataJabatanFungsional.jabatanFungsional',
-            'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+            'jabatanFungsional',
+            'jabatanStruktural.jenisJabatanStruktural',
             'dataPendidikanFormal.jenjangPendidikan'
         ])),
         'data' => $this->formatBerita($berita)
@@ -259,7 +217,7 @@ class SimpegBeritaDosenController extends Controller
     // Get status statistics untuk dashboard
     public function getStatusStatistics()
     {
-        $dosen = Auth::user();
+        $dosen = Auth::user()->pegawai;
 
         if (!$dosen) {
             return response()->json([
@@ -311,7 +269,7 @@ class SimpegBeritaDosenController extends Controller
     // Get filter options
     public function getFilterOptions()
     {
-        $dosen = Auth::user();
+        $dosen = Auth::user()->pegawai;
 
         if (!$dosen) {
             return response()->json([
@@ -388,7 +346,7 @@ class SimpegBeritaDosenController extends Controller
     // Download berita file
     public function downloadFile($id)
     {
-        $dosen = Auth::user();
+        $dosen = Auth::user()->pegawai;
 
         if (!$dosen) {
             return response()->json([

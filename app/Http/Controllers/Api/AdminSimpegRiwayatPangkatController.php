@@ -21,7 +21,7 @@ class AdminSimpegRiwayatPangkatController extends Controller
      */
     public function index(Request $request, $pegawai_id)
     {
-        $pegawai = SimpegPegawai::with(['unitKerja', 'statusAktif', 'jabatanAkademik'])->findOrFail($pegawai_id);
+        $pegawai = SimpegPegawai::with(['unitKerja', 'statusAktif', 'jabatanFungsional'])->findOrFail($pegawai_id);
 
         $perPage = $request->per_page ?? 10;
         $search = $request->search; // Cari berdasarkan No SK atau Nama Pangkat

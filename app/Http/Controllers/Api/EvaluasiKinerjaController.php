@@ -21,7 +21,7 @@ class EvaluasiKinerjaController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
+        $user = Auth::user()->pegawai;
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -65,7 +65,7 @@ class EvaluasiKinerjaController extends Controller
      */
     public function show($pegawaiId)
     {
-        $user = Auth::user();
+        $user = Auth::user()->pegawai;
         $pegawai = SimpegPegawai::with([
             'unitKerja', 'jabatanAkademik.role', 'statusAktif', 'dataPendidikanFormal.jenjangPendidikan',
             'dataJabatanStruktural' => fn($q) => $q->whereNull('tgl_selesai')->with('jabatanStruktural'),
@@ -114,7 +114,7 @@ class EvaluasiKinerjaController extends Controller
      */
     private function saveOrUpdate(Request $request, $id = null)
     {
-        $user = Auth::user();
+        $user = Auth::user()->pegawai;
         $pegawai = SimpegPegawai::with('jabatanAkademik.role')->find($request->pegawai_id);
 
         if (!$pegawai) return response()->json(['success' => false, 'message' => 'Pegawai tidak ditemukan'], 404);
@@ -164,7 +164,7 @@ class EvaluasiKinerjaController extends Controller
      */
     public function destroy($id)
     {
-        $user = Auth::user();
+        $user = Auth::user()->pegawai;
         $evaluasi = SimpegEvaluasiKinerja::where('penilai_id', $user->id)->find($id);
 
         if (!$evaluasi) {
@@ -269,7 +269,7 @@ class EvaluasiKinerjaController extends Controller
     private function determineJenisKinerja(SimpegPegawai $pegawai)
     {
         $role = optional(optional($pegawai->jabatanAkademik)->role)->nama;
-        return in_array($role, ['Dosen', 'Dosen Praktisi/Industri']) ? 'dosen' : 'tendik';
+        return in_array($role, ['Dosen', 'Dosen LB']) ? 'dosen' : 'tendik';
     }
 
     private function getUserJabatanStruktural($userId)
@@ -420,7 +420,7 @@ class EvaluasiKinerjaController extends Controller
         
         // Fungsi ini mengembalikan 'Dosen' atau 'Staff'.
         // 'Staff' di sini mewakili SEMUA role selain Dosen.
-        return in_array($role, ['Dosen', 'Dosen Praktisi/Industri']) ? 'Dosen' : 'Staff';
+        return in_array($role, ['Dosen', 'Dosen LB']) ? 'Dosen' : 'Staff';
     }
     private function generateActionButtons($pegawai, $evaluasiTerkini)
     {

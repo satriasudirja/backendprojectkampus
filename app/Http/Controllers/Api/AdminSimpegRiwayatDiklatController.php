@@ -21,9 +21,8 @@ class AdminSimpegRiwayatDiklatController extends Controller
     public function index(Request $request, $pegawai_id)
     {
         $pegawai = SimpegPegawai::with([
-            'unitKerja', 'statusAktif', 'jabatanAkademik',
-            'dataJabatanFungsional.jabatanFungsional',
-            'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+            'unitKerja', 'statusAktif', 'jabatanFungsional',
+            'jabatanStruktural.jenisJabatanStruktural',
             'dataPendidikanFormal.jenjangPendidikan'
         ])->findOrFail($pegawai_id);
 

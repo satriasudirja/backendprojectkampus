@@ -31,7 +31,7 @@ class SimpegDataJabatanStrukturalController extends Controller
         $pegawai = Auth::user()->load([
             'unitKerja',
             'statusAktif', 
-            'jabatanAkademik',
+            'jabatanFungsional',
             'dataJabatanFungsional' => function($query) {
                 $query->with('jabatanFungsional')
                       ->orderBy('tmt_jabatan', 'desc')
@@ -171,7 +171,7 @@ class SimpegDataJabatanStrukturalController extends Controller
     // Fix existing data dengan status_pengajuan null
     public function fixExistingData()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -214,7 +214,7 @@ class SimpegDataJabatanStrukturalController extends Controller
     // Get detail data jabatan struktural
     public function show($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -237,9 +237,8 @@ class SimpegDataJabatanStrukturalController extends Controller
         return response()->json([
             'success' => true,
             'pegawai' => $this->formatPegawaiInfo($pegawai->load([
-                'unitKerja', 'statusAktif', 'jabatanAkademik',
-                'dataJabatanFungsional.jabatanFungsional',
-                'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+                'unitKerja', 'statusAktif', 'jabatanFungsional',
+                'jabatanStruktural.jenisJabatanStruktural',
                 'dataPendidikanFormal.jenjangPendidikan'
             ])),
             'data' => $this->formatDataJabatanStruktural($dataJabatanStruktural, false)
@@ -249,7 +248,7 @@ class SimpegDataJabatanStrukturalController extends Controller
     // Store new data jabatan struktural dengan draft/submit mode
     public function store(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -313,7 +312,7 @@ class SimpegDataJabatanStrukturalController extends Controller
     // Update data jabatan struktural dengan validasi status
     public function update(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -404,7 +403,7 @@ class SimpegDataJabatanStrukturalController extends Controller
     // Delete data jabatan struktural
     public function destroy($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -442,7 +441,7 @@ class SimpegDataJabatanStrukturalController extends Controller
     // Submit draft ke diajukan
     public function submitDraft($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -492,7 +491,7 @@ class SimpegDataJabatanStrukturalController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -568,7 +567,7 @@ class SimpegDataJabatanStrukturalController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -608,7 +607,7 @@ class SimpegDataJabatanStrukturalController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -670,7 +669,7 @@ class SimpegDataJabatanStrukturalController extends Controller
     // Get status statistics untuk dashboard
     public function getStatusStatistics()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -758,7 +757,7 @@ class SimpegDataJabatanStrukturalController extends Controller
     // Download file jabatan struktural
     public function downloadFile($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([

@@ -49,7 +49,7 @@ class AdminMonitoringValidasiIzinController extends Controller
 
             $query = SimpegPengajuanIzinDosen::with([
                 'pegawai.unitKerja',
-                'pegawai.jabatanAkademik',
+                'pegawai.jabatanFungsional',
                 'jenisIzin',
                 'approver'
             ]);
@@ -119,7 +119,7 @@ class AdminMonitoringValidasiIzinController extends Controller
             $pengajuanIzin = SimpegPengajuanIzinDosen::with([
                 'pegawai.unitKerja',
                 'pegawai.statusAktif', 
-                'pegawai.jabatanAkademik',
+                'pegawai.jabatanFungsional',
                 'jenisIzin',
                 'approver'
             ])->find($id);
@@ -173,7 +173,7 @@ class AdminMonitoringValidasiIzinController extends Controller
             $pengajuanIzin->update([
                 'status_pengajuan' => 'disetujui',
                 'tgl_disetujui' => now(),
-                'approved_by' => Auth::user()->nama,
+                'approved_by' => Auth::user()->pegawai->nama,
                 'keterangan' => $request->keterangan,
                 'tgl_ditolak' => null
             ]);
@@ -295,7 +295,7 @@ class AdminMonitoringValidasiIzinController extends Controller
                 $pengajuan->update([
                     'status_pengajuan' => 'disetujui',
                     'tgl_disetujui' => now(),
-                    'approved_by' => Auth::user()->nama,
+                    'approved_by' => Auth::user()->pegawai->nama,
                     'keterangan' => $request->keterangan,
                     'tgl_ditolak' => null
                 ]);
@@ -409,10 +409,8 @@ class AdminMonitoringValidasiIzinController extends Controller
                 'pending_approval' => $baseQuery->clone()->where('status_pengajuan', 'diajukan')->count()
             ];
 
-            $totalPegawaiQuery = SimpegPegawai::whereHas('jabatanAkademik', function($q) {
-                $dosenJabatan = ['Guru Besar', 'Lektor Kepala', 'Lektor', 'Asisten Ahli', 'Tenaga Pengajar', 'Dosen'];
-                $q->whereIn('jabatan_akademik', $dosenJabatan);
-            })->whereRaw('LOWER(status_kerja) = ?', ['aktif']);
+            $totalPegawaiQuery = SimpegPegawai::with(['unitKerja', 'jabatanFungsional', 'statusAktif'])
+                     ->where('status_kerja', 'Aktif');
 
             if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
                 $totalPegawaiQuery->where('unit_kerja_id', $unitKerjaFilter);
@@ -466,15 +464,15 @@ class AdminMonitoringValidasiIzinController extends Controller
         $unitKerjaFilter = $request->unit_kerja;
         $periodeIzinFilter = $request->periode_izin;
 
-        $query = SimpegPegawai::with(['unitKerja', 'jabatanAkademik', 'statusAktif'])->whereRaw('LOWER(status_kerja) = ?', ['aktif']);
+        $query = SimpegPegawai::with(['unitKerja', 'jabatanFungsional', 'statusAktif'])
+                     ->where('status_kerja', 'Aktif');
 
         if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
             $query->where('unit_kerja_id', $unitKerjaFilter);
         }
 
-        $query->whereHas('jabatanAkademik', function($q) {
-            $dosenJabatan = ['Guru Besar', 'Lektor Kepala', 'Lektor', 'Asisten Ahli', 'Tenaga Pengajar', 'Dosen'];
-            $q->whereIn('jabatan_akademik', $dosenJabatan);
+        $query->whereHas('role', function($q) {
+            $q->where('nama_role', 'Dosen');
         });
 
         if ($search) {
@@ -495,10 +493,9 @@ class AdminMonitoringValidasiIzinController extends Controller
             $pegawaiIds = collect($pegawaiIds)->diff($sudahMengajukan);
         }
 
-        $pegawaiBelumMengajukan = SimpegPegawai::with(['unitKerja', 'jabatanAkademik'])
-            ->whereIn('id', $pegawaiIds)
+        $pegawaiBelumMengajukan = $query->whereIn('id', $pegawaiIds)
             ->orderBy('nama', 'asc')
-            ->paginate($perPage);
+            ->paginate($request->per_page ?? 10);
         
         return $this->formatResponseBelumMengajukan($pegawaiBelumMengajukan, $request);
     }
@@ -516,7 +513,7 @@ class AdminMonitoringValidasiIzinController extends Controller
         }
 
         $period = CarbonPeriod::create($pengajuan->tgl_mulai, $pengajuan->tgl_selesai);
-        $user = Auth::user();
+        $user = Auth::user()->pegawai;
 
         foreach ($period as $date) {
             $tanggalAbsensiStr = $date->format('Y-m-d');

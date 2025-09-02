@@ -52,7 +52,7 @@ class DashboardDosenController extends Controller
      */
     public function getRiwayatHadir(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         
         $validator = \Validator::make($request->all(), [
             'tgl_mulai' => 'required|date',
@@ -87,7 +87,7 @@ class DashboardDosenController extends Controller
      */
     public function getEvaluasiKinerjaChart(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);

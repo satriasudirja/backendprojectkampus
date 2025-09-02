@@ -343,7 +343,7 @@ class AbsensiController extends Controller
 
     public function verifyAbsensi(Request $request, $id)
     {
-        $verifikator = Auth::user();
+        $verifikator = Auth::user()->pegawai;
         $absensi = SimpegAbsensiRecord::with('pegawai')->find($id);
 
         if (!$absensi) {

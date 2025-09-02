@@ -530,7 +530,7 @@ class SimpegRiwayatPendidikanController extends Controller
          if (Auth::check()) {
     // Karena auth()->user() langsung mengacu ke model SimpegPegawai (bukan User), 
     // kita bisa langsung mengambil nama pegawai
-    $data['dibuat_oleh'] = $user = Auth::user()->nama ?? 'Admin';
+    $data['dibuat_oleh'] = $user = Auth::user()->pegawai->nama ?? 'Admin';
 } else {
     $data['dibuat_oleh'] = 'Sistem';
 }

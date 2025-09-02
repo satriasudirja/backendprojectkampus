@@ -28,10 +28,12 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         }
 
         // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
-        $pegawai = Auth::user()->load([
+        
+        $pegawai = Auth::user()->pegawai;
+        $pegawai->load([
             'unitKerja',
             'statusAktif', 
-            'jabatanAkademik',
+            'jabatanFungsional',
             'dataJabatanFungsional' => function($query) {
                 $query->with('jabatanFungsional')
                       ->orderBy('tmt_jabatan', 'desc')
@@ -168,7 +170,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     // Fix existing data dengan status_pengajuan null
     public function fixExistingData()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -195,7 +197,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     // Get detail data riwayat pekerjaan
     public function show($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -218,9 +220,8 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
         return response()->json([
             'success' => true,
             'pegawai' => $this->formatPegawaiInfo($pegawai->load([
-                'unitKerja', 'statusAktif', 'jabatanAkademik',
-                'dataJabatanFungsional.jabatanFungsional',
-                'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+                'unitKerja', 'statusAktif', 'jabatanFungsional',
+                'jabatanStruktural.jenisJabatanStruktural',
                 'dataPendidikanFormal.jenjangPendidikan'
             ])),
             'data' => $this->formatDataPekerjaan($dataPekerjaan)
@@ -230,7 +231,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     // Store new data riwayat pekerjaan dengan draft/submit mode
     public function store(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -315,7 +316,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     // Update data riwayat pekerjaan dengan validasi status
     public function update(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -444,7 +445,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     // Delete data riwayat pekerjaan
     public function destroy($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -501,7 +502,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     // Submit draft ke diajukan
     public function submitDraft($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -551,7 +552,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -645,7 +646,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -684,7 +685,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -722,7 +723,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     // Get status statistics untuk dashboard
     public function getStatusStatistics()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -808,7 +809,7 @@ class SimpegDataRiwayatPekerjaanDosenController extends Controller
     // Get filter options
     public function getFilterOptions()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([

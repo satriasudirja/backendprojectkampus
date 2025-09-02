@@ -21,9 +21,8 @@ class AdminSimpegRiwayatJabatanAkademikController extends Controller
     {
         // Eager load semua relasi yang diperlukan untuk info pegawai yang lengkap
         $pegawai = SimpegPegawai::with([
-            'unitKerja', 'statusAktif', 'jabatanAkademik',
-            'dataJabatanFungsional.jabatanFungsional',
-            'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+            'unitKerja', 'statusAktif', 'jabatanFungsional',
+            'jabatanStruktural.jenisJabatanStruktural',
             'dataPendidikanFormal.jenjangPendidikan'
         ])->findOrFail($pegawai_id);
 

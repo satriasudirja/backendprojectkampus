@@ -17,7 +17,7 @@ class SimpegKegiatanHarianDosenController extends Controller
      */
     public function index(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         $perPage = $request->per_page ?? 10;
         $search = $request->search;
@@ -76,7 +76,7 @@ class SimpegKegiatanHarianDosenController extends Controller
      */
     public function show($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $kegiatan = SimpegAbsensiRecord::where('pegawai_id', $pegawai->id)->find($id);
 
         if (!$kegiatan) {
@@ -94,7 +94,7 @@ class SimpegKegiatanHarianDosenController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $kegiatan = SimpegAbsensiRecord::where('pegawai_id', $pegawai->id)->find($id);
 
         if (!$kegiatan) {
@@ -147,7 +147,7 @@ class SimpegKegiatanHarianDosenController extends Controller
      */
     public function submit($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
         $kegiatan = SimpegAbsensiRecord::where('pegawai_id', $pegawai->id)->find($id);
 
         if (!$kegiatan) {

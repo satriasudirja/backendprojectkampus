@@ -32,10 +32,11 @@ class SimpegPendidikanFormalDosenController extends Controller
         }
 
         // Eager load pegawai relations
-        $pegawai = Auth::user()->load([
+        $pegawai = Auth::user()->pegawai;
+        $pegawai->load([
             'unitKerja',
             'statusAktif', 
-            'jabatanAkademik',
+            'jabatanFungsional',
             'dataJabatanFungsional' => function($query) {
                 $query->with('jabatanFungsional')
                       ->orderBy('tmt_jabatan', 'desc')
@@ -188,7 +189,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     // Fix existing data with null status_pengajuan
     public function fixExistingData()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -231,7 +232,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     // Get detail pendidikan formal
     public function show($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -254,8 +255,7 @@ class SimpegPendidikanFormalDosenController extends Controller
         return response()->json([
             'success' => true,
             'pegawai' => $this->formatPegawaiInfo($pegawai->load([
-                'unitKerja', 'statusAktif', 'jabatanAkademik',
-                'dataJabatanFungsional.jabatanFungsional',
+                'unitKerja', 'statusAktif', 'jabatanFungsional',
                 'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
                 'dataPendidikanFormal.jenjangPendidikan'
             ])),
@@ -266,7 +266,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     // Store new pendidikan formal with draft/submit mode
     public function store(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -355,7 +355,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     // Update pendidikan formal with status validation
     public function update(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -475,7 +475,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     // Delete pendidikan formal
     public function destroy($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -516,7 +516,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     // Submit draft to diajukan
     public function submitDraft($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -566,7 +566,7 @@ class SimpegPendidikanFormalDosenController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -645,7 +645,7 @@ class SimpegPendidikanFormalDosenController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -684,7 +684,7 @@ class SimpegPendidikanFormalDosenController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -722,7 +722,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     // Get status statistics for dashboard
     public function getStatusStatistics()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -808,7 +808,7 @@ class SimpegPendidikanFormalDosenController extends Controller
     // Get filter options
     public function getFilterOptions()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([

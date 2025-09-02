@@ -34,7 +34,7 @@ class MonitoringRiwayatController extends Controller
     public function index(Request $request)
     {
         // Mendapatkan ID pegawai (dosen) yang sedang login
-        $pegawaiId = Auth::id();
+        $pegawaiId = Auth::user()->pegawai_id;
 
         if (!$pegawaiId) {
             return response()->json([

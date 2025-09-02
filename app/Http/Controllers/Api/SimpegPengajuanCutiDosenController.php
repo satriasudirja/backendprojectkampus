@@ -31,10 +31,11 @@ class SimpegPengajuanCutiDosenController extends Controller
             }
 
             // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
-            $pegawai = Auth::user()->load([
+            $pegawai = Auth::user()->pegawai;
+            $pegawai->load([
                 'unitKerja',
                 'statusAktif', 
-                'jabatanAkademik',
+                'jabatanFungsional',
                 'dataJabatanFungsional' => function($query) {
                     $query->with('jabatanFungsional')
                           ->orderBy('tmt_jabatan', 'desc')
@@ -216,67 +217,15 @@ class SimpegPengajuanCutiDosenController extends Controller
      */
     private function isDosen($pegawai)
     {
-        // Method 1: Check based on jabatan akademik
-        try {
-            if ($pegawai->jabatanAkademik) {
-                $jabatanAkademik = $pegawai->jabatanAkademik->jabatan_akademik ?? '';
-                $dosenJabatan = [
-                    'Guru Besar', 
-                    'Lektor Kepala', 
-                    'Lektor', 
-                    'Asisten Ahli', 
-                    'Tenaga Pengajar',
-                    'Dosen'
-                ];
-                
-                if (in_array($jabatanAkademik, $dosenJabatan)) {
-                    return true;
-                }
-            }
-        } catch (\Exception $e) {
-            // Ignore error and continue to next check
-        }
-
-        // Method 2: Check based on jabatan fungsional
-        try {
-            if ($pegawai->dataJabatanFungsional && $pegawai->dataJabatanFungsional->isNotEmpty()) {
-                $jabatanFungsional = $pegawai->dataJabatanFungsional->first();
-                if ($jabatanFungsional && $jabatanFungsional->jabatanFungsional) {
-                    $namaJabatan = $jabatanFungsional->jabatanFungsional->nama_jabatan_fungsional ?? '';
-                    if (stripos($namaJabatan, 'dosen') !== false) {
-                        return true;
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            // Ignore error and continue to next check
-        }
-
-        // Method 3: Check based on unit kerja (if it's academic unit)
-        try {
-            if ($pegawai->unitKerja) {
-                $namaUnit = strtolower($pegawai->unitKerja->nama_unit ?? '');
-                $akademikKeywords = ['fakultas', 'prodi', 'program studi', 'jurusan'];
-                
-                foreach ($akademikKeywords as $keyword) {
-                    if (stripos($namaUnit, $keyword) !== false) {
-                        return true;
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            // Ignore error
-        }
-
-        // Default: Allow access (better to be permissive than restrictive)
-        return true;
+        // Cek apakah relasi 'role' ada dan namanya adalah 'Dosen'
+        return $pegawai->role && $pegawai->role->nama === 'Dosen';
     }
 
     // Fix existing data dengan status_pengajuan null
     public function fixExistingData()
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -310,7 +259,7 @@ class SimpegPengajuanCutiDosenController extends Controller
     public function show($id)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -333,8 +282,7 @@ class SimpegPengajuanCutiDosenController extends Controller
             return response()->json([
                 'success' => true,
                 'pegawai' => $this->formatPegawaiInfo($pegawai->load([
-                    'unitKerja', 'statusAktif', 'jabatanAkademik',
-                    'dataJabatanFungsional.jabatanFungsional',
+                    'unitKerja', 'statusAktif', 'jabatanFungsional',
                     'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
                     'dataPendidikanFormal.jenjangPendidikan'
                 ])),
@@ -404,7 +352,7 @@ class SimpegPengajuanCutiDosenController extends Controller
     {
         DB::beginTransaction();
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -511,7 +459,7 @@ class SimpegPengajuanCutiDosenController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -711,22 +659,43 @@ class SimpegPengajuanCutiDosenController extends Controller
 
     public function getAvailableActions()
     {
-        $user = auth()->user(); // Pastikan user terautentikasi
-        $role = $user->role ?? 'pegawai';
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'data' => []], 401);
+        }
+
+        // Ambil data pegawai yang terhubung
+        $pegawai = $user->pegawai;
+
+        if (!$pegawai) {
+            return response()->json(['success' => false, 'data' => []], 404);
+        }
 
         $actions = [];
 
-        if ($role === 'admin') {
+        // Cek pertama: Apakah pegawai ini adalah admin?
+        if ($pegawai->is_admin) {
             $actions = [
                 'approve', 'reject', 'delete', 'edit'
-                // 'print' dihapus
             ];
-        } elseif ($role === 'pegawai') {
+        } 
+        // Jika bukan admin, baru cek nama perannya
+        elseif ($pegawai->role && $pegawai->role->nama === 'Dosen') { // Contoh untuk Dosen
             $actions = [
                 'edit', 'submit'
-                // 'print' dihapus
             ];
         }
+        elseif ($pegawai->role && $pegawai->role->nama === 'Tenaga Kependidikan') { // Contoh untuk Dosen
+            $actions = [
+                'edit', 'submit'
+            ];
+        }else{
+           $actions = [
+                'edit', 'submit'
+            ]; 
+        }
+        // Anda bisa menambahkan elseif lain untuk role yang berbeda
+        // elseif ($pegawai->role && $pegawai->role->nama === 'Tenaga Kependidikan') { ... }
 
         return response()->json([
             'success' => true,
@@ -740,7 +709,7 @@ class SimpegPengajuanCutiDosenController extends Controller
     public function destroy($id)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -792,7 +761,7 @@ class SimpegPengajuanCutiDosenController extends Controller
     public function submitDraft($id)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -853,7 +822,7 @@ class SimpegPengajuanCutiDosenController extends Controller
                 ], 422);
             }
 
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -943,7 +912,7 @@ class SimpegPengajuanCutiDosenController extends Controller
                 ], 422);
             }
 
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -990,7 +959,7 @@ class SimpegPengajuanCutiDosenController extends Controller
                 ], 422);
             }
 
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -1036,7 +1005,7 @@ class SimpegPengajuanCutiDosenController extends Controller
     public function getStatusStatistics()
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -1141,7 +1110,7 @@ class SimpegPengajuanCutiDosenController extends Controller
     public function getFilterOptions()
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -1201,7 +1170,7 @@ class SimpegPengajuanCutiDosenController extends Controller
     public function printCutiDocument($id)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([

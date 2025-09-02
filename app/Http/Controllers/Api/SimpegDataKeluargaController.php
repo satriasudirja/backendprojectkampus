@@ -18,8 +18,7 @@ class SimpegDataKeluargaController extends Controller
     // Get overview of all family data for logged in pegawai
     public function index(Request $request)
     {
-        $user = Auth::user();
-        $pegawai = SimpegPegawai::where('user_id', $user->id)->first();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -98,8 +97,7 @@ class SimpegDataKeluargaController extends Controller
     // Get dashboard summary
     public function dashboard()
     {
-        $user = Auth::user();
-        $pegawai = SimpegPegawai::where('user_id', $user->id)->first();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -146,8 +144,7 @@ class SimpegDataKeluargaController extends Controller
     // Get detail of specific family member
     public function show($id)
     {
-        $user = Auth::user();
-        $pegawai = SimpegPegawai::where('user_id', $user->id)->first();
+        $pegawai = Auth::user()->pegawai;
 
         $dataKeluarga = SimpegDataKeluargaPegawai::where('pegawai_id', $pegawai->id)
             ->find($id);
@@ -178,8 +175,7 @@ class SimpegDataKeluargaController extends Controller
     // Delete any family data
     public function destroy($id)
     {
-        $user = Auth::user();
-        $pegawai = SimpegPegawai::where('user_id', $user->id)->first();
+        $pegawai = Auth::user()->pegawai;
 
         $dataKeluarga = SimpegDataKeluargaPegawai::where('pegawai_id', $pegawai->id)
             ->find($id);
@@ -230,8 +226,7 @@ class SimpegDataKeluargaController extends Controller
             ], 422);
         }
 
-        $user = Auth::user();
-        $pegawai = SimpegPegawai::where('user_id', $user->id)->first();
+        $pegawai = Auth::user()->pegawai;
 
         $updateData = [
             'status_pengajuan' => $request->status_pengajuan,
@@ -275,8 +270,7 @@ class SimpegDataKeluargaController extends Controller
             ], 422);
         }
 
-        $user = Auth::user();
-        $pegawai = SimpegPegawai::where('user_id', $user->id)->first();
+        $pegawai = Auth::user()->pegawai;
 
         $dataKeluarga = SimpegDataKeluargaPegawai::where('pegawai_id', $pegawai->id)
             ->whereIn('id', $request->ids)
@@ -309,8 +303,7 @@ class SimpegDataKeluargaController extends Controller
     // Get filter options
     public function getFilterOptions()
     {
-        $user = Auth::user();
-        $pegawai = SimpegPegawai::where('user_id', $user->id)->first();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([

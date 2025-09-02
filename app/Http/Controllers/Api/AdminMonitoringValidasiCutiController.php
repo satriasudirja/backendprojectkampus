@@ -42,7 +42,7 @@ class AdminMonitoringValidasiCutiController extends Controller
             $statusFilter = $request->status;
             $jenisCutiFilter = $request->jenis_cuti;
 
-            $query = SimpegCutiRecord::with(['pegawai.unitKerja', 'pegawai.jabatanAkademik', 'jenisCuti', 'approver']);
+            $query = SimpegCutiRecord::with(['pegawai.unitKerja', 'pegawai.jabatanFungsional', 'jenisCuti', 'approver']);
 
             if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
                 $query->whereHas('pegawai', function($q) use ($unitKerjaFilter) {
@@ -107,7 +107,7 @@ class AdminMonitoringValidasiCutiController extends Controller
             $pengajuanCuti = SimpegCutiRecord::with([
                 'pegawai.unitKerja', 
                 'pegawai.statusAktif', 
-                'pegawai.jabatanAkademik',
+                'pegawai.jabatanFungsional',
                 'jenisCuti', 
                 'approver'
             ])->find($id);
@@ -339,15 +339,14 @@ class AdminMonitoringValidasiCutiController extends Controller
         $unitKerjaFilter = $request->unit_kerja;
         $periodeCutiFilter = $request->periode_cuti;
 
-        $query = SimpegPegawai::with(['unitKerja', 'jabatanAkademik', 'statusAktif'])->whereRaw('LOWER(status_kerja) = ?', ['aktif']);
+        $query = SimpegPegawai::with(['unitKerja', 'jabatanFungsional', 'statusAktif'])->whereRaw('LOWER(status_kerja) = ?', ['aktif']);
 
         if ($unitKerjaFilter && $unitKerjaFilter !== 'semua') {
             $query->where('unit_kerja_id', $unitKerjaFilter);
         }
 
-        $query->whereHas('jabatanAkademik', function($q) {
-            $dosenJabatan = ['Guru Besar', 'Lektor Kepala', 'Lektor', 'Asisten Ahli', 'Tenaga Pengajar', 'Dosen'];
-            $q->whereIn('jabatan_akademik', $dosenJabatan);
+        $query->whereHas('role', function($q) {
+            $q->where('nama', 'Dosen');
         });
 
         if ($search) {
@@ -368,10 +367,9 @@ class AdminMonitoringValidasiCutiController extends Controller
             $pegawaiIds = collect($pegawaiIds)->diff($sudahMengajukan);
         }
 
-        $pegawaiBelumMengajukan = SimpegPegawai::with(['unitKerja', 'jabatanAkademik'])
-            ->whereIn('id', $pegawaiIds)
+        $pegawaiBelumMengajukan = $query->whereIn('id', $pegawaiIds)
             ->orderBy('nama', 'asc')
-            ->paginate($perPage);
+            ->paginate($request->per_page ?? 10);
         
         return $this->formatResponseBelumMengajukan($pegawaiBelumMengajukan);
     }
@@ -390,7 +388,7 @@ class AdminMonitoringValidasiCutiController extends Controller
         }
 
         $period = CarbonPeriod::create($pengajuan->tgl_mulai, $pengajuan->tgl_selesai);
-        $user = Auth::user();
+        $user = Auth::user()->pegawai;
 
         foreach ($period as $date) {
             $tanggalAbsensiStr = $date->format('Y-m-d');

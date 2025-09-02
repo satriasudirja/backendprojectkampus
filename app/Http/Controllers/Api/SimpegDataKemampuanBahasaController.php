@@ -27,11 +27,12 @@ class SimpegDataKemampuanBahasaController extends Controller
             ], 401);
         }
 
+        $pegawai=Auth::user()->pegawai;
         // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
-        $pegawai = Auth::user()->load([
+        $pegawai->load([
             'unitKerja',
             'statusAktif', 
-            'jabatanAkademik',
+            'jabatanFungsional',
             'dataJabatanFungsional' => function($query) {
                 $query->with('jabatanFungsional')
                       ->orderBy('tmt_jabatan', 'desc')
@@ -160,7 +161,7 @@ class SimpegDataKemampuanBahasaController extends Controller
     // Fix existing data dengan status_pengajuan null
     public function fixExistingData()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -187,7 +188,7 @@ class SimpegDataKemampuanBahasaController extends Controller
     // Get detail data kemampuan bahasa
     public function show($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -210,9 +211,8 @@ class SimpegDataKemampuanBahasaController extends Controller
         return response()->json([
             'success' => true,
             'pegawai' => $this->formatPegawaiInfo($pegawai->load([
-                'unitKerja', 'statusAktif', 'jabatanAkademik',
-                'dataJabatanFungsional.jabatanFungsional',
-                'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+                'unitKerja', 'statusAktif', 'jabatanFungsional',
+                'jabatanStruktural.jenisJabatanStruktural',
                 'dataPendidikanFormal.jenjangPendidikan'
             ])),
             'data' => $this->formatDataKemampuanBahasa($dataKemampuanBahasa),
@@ -224,7 +224,7 @@ class SimpegDataKemampuanBahasaController extends Controller
     // Store new data kemampuan bahasa dengan draft/submit mode
     public function store(Request $request)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -302,7 +302,7 @@ class SimpegDataKemampuanBahasaController extends Controller
     // Update data kemampuan bahasa dengan validasi status
     public function update(Request $request, $id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -410,7 +410,7 @@ class SimpegDataKemampuanBahasaController extends Controller
     // Delete data kemampuan bahasa
     public function destroy($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -448,7 +448,7 @@ class SimpegDataKemampuanBahasaController extends Controller
     // Submit draft ke diajukan
     public function submitDraft($id)
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -498,7 +498,7 @@ class SimpegDataKemampuanBahasaController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -574,7 +574,7 @@ class SimpegDataKemampuanBahasaController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -613,7 +613,7 @@ class SimpegDataKemampuanBahasaController extends Controller
             ], 422);
         }
 
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -651,7 +651,7 @@ class SimpegDataKemampuanBahasaController extends Controller
     // Get status statistics untuk dashboard
     public function getStatusStatistics()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -737,7 +737,7 @@ class SimpegDataKemampuanBahasaController extends Controller
     // Get filter options
     public function getFilterOptions()
     {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([

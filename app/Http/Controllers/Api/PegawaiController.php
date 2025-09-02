@@ -911,7 +911,7 @@ class PegawaiController extends Controller
         $pegawai = SimpegPegawai::findOrFail($id);
 
         // Ambil pengguna yang sedang login
-        $authenticatedUser = Auth::user();
+        $authenticatedUser = Auth::user()->pegawai;
 
         // Periksa apakah pengguna login
         if (!$authenticatedUser) {

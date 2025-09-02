@@ -34,7 +34,7 @@ class AdminDataKeluargaController extends Controller
             // Base query dengan relasi ke pegawai
             $query = SimpegDataKeluargaPegawai::with([
                 'pegawai.unitKerja',
-                'pegawai.jabatanAkademik',
+                'pegawai.jabatanFungsional',
                 'pegawai.statusAktif',
                 'pegawai.dataJabatanFungsional' => function($q) {
                     $q->with('jabatanFungsional')->latest('tmt_jabatan')->limit(1);
@@ -50,15 +50,8 @@ class AdminDataKeluargaController extends Controller
 
             // Filter by unit kerja
             if ($unitKerjaFilter) {
-                $query->whereHas('pegawai', function($q) use ($unitKerjaFilter) {
-                    if (is_numeric($unitKerjaFilter)) {
-                        $unitKerja = SimpegUnitKerja::find($unitKerjaFilter);
-                        if ($unitKerja) {
-                            $q->whereRaw("unit_kerja_id::text = ?", [$unitKerja->kode_unit]);
-                        }
-                    } else {
-                        $q->whereRaw("unit_kerja_id::text = ?", [$unitKerjaFilter]);
-                    }
+                $query->whereHas('pegawai', function ($q) use ($unitKerjaFilter) {
+                    $q->where('unit_kerja_id', $unitKerjaFilter);
                 });
             }
 
@@ -79,7 +72,7 @@ class AdminDataKeluargaController extends Controller
 
             // Filter by jabatan fungsional
             if ($jabatanFungsionalFilter) {
-                $query->whereHas('pegawai.dataJabatanFungsional', function($q) use ($jabatanFungsionalFilter) {
+                $query->whereHas('pegawai', function ($q) use ($jabatanFungsionalFilter) {
                     $q->where('jabatan_fungsional_id', $jabatanFungsionalFilter);
                 });
             }
@@ -186,10 +179,9 @@ class AdminDataKeluargaController extends Controller
         try {
             $dataKeluarga = SimpegDataKeluargaPegawai::with([
                 'pegawai.unitKerja',
-                'pegawai.jabatanAkademik',
                 'pegawai.statusAktif',
-                'pegawai.dataJabatanFungsional.jabatanFungsional',
-                'pegawai.dataJabatanStruktural.jabatanStruktural'
+                'pegawai.jabatanFungsional',
+                'pegawai.jabatanStruktural'
             ])->find($id);
 
             if (!$dataKeluarga) {
@@ -250,7 +242,7 @@ class AdminDataKeluargaController extends Controller
             }
 
             $oldData = $dataKeluarga->getOriginal();
-            $admin = Auth::user();
+            $admin = Auth::user()->pegawai;
 
             $dataKeluarga->update([
                 'status_pengajuan' => 'disetujui',
@@ -311,7 +303,7 @@ class AdminDataKeluargaController extends Controller
             }
 
             $oldData = $dataKeluarga->getOriginal();
-            $admin = Auth::user();
+            $admin = Auth::user()->pegawai;
 
             $dataKeluarga->update([
                 'status_pengajuan' => 'ditolak',
@@ -357,7 +349,7 @@ class AdminDataKeluargaController extends Controller
                 ], 422);
             }
 
-            $admin = Auth::user();
+            $admin = Auth::user()->pegawai;
             $approvedCount = 0;
             $errors = [];
 
@@ -428,7 +420,7 @@ class AdminDataKeluargaController extends Controller
                 ], 422);
             }
 
-            $admin = Auth::user();
+            $admin = Auth::user()->pegawai;
             $rejectedCount = 0;
             $errors = [];
 
@@ -700,7 +692,6 @@ class AdminDataKeluargaController extends Controller
             'nip' => $pegawai->nip ?? '-',
             'nama' => $pegawai->nama ?? '-',
             'unit_kerja' => $pegawai->unitKerja->nama_unit ?? '-',
-            'jabatan_akademik' => $pegawai->jabatanAkademik->jabatan_akademik ?? '-',
             'jabatan_fungsional' => $this->getJabatanFungsional($pegawai),
             'status_aktif' => $pegawai->statusAktif->nama_status_aktif ?? '-',
             'email' => $pegawai->email_pegawai ?? $pegawai->email_pribadi ?? '-',
@@ -713,9 +704,8 @@ class AdminDataKeluargaController extends Controller
      */
     private function getJabatanFungsional($pegawai)
     {
-        if ($pegawai && $pegawai->dataJabatanFungsional && $pegawai->dataJabatanFungsional->isNotEmpty()) {
-            $jabatan = $pegawai->dataJabatanFungsional->first()->jabatanFungsional;
-            return $jabatan->nama_jabatan_fungsional ?? '-';
+        if ($pegawai && $pegawai->jabatanFungsional) {
+            return $pegawai->jabatanFungsional->nama_jabatan_fungsional ?? '-';
         }
         return '-';
     }

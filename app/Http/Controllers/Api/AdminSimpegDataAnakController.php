@@ -54,8 +54,7 @@ class AdminSimpegDataAnakController extends Controller
         // Eager load relasi untuk info pegawai
         // findOrFail akan otomatis memberikan response 404 jika pegawai tidak ditemukan.
         $pegawai = SimpegPegawai::with([
-            'unitKerja', 'statusAktif', 'jabatanAkademik',
-            'dataJabatanFungsional' => fn($q) => $q->with('jabatanFungsional')->orderBy('tmt_jabatan', 'desc')->limit(1),
+            'unitKerja', 'statusAktif', 'jabatanFungsional',
             'dataJabatanStruktural' => fn($q) => $q->with('jabatanStruktural.jenisJabatanStruktural')->orderBy('tgl_mulai', 'desc')->limit(1),
             'dataPendidikanFormal' => fn($q) => $q->with('jenjangPendidikan')->orderBy('jenjang_pendidikan_id', 'desc')->limit(1)
         ])->findOrFail($pegawai_id);

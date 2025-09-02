@@ -30,10 +30,11 @@ class SimpegPengajuanIzinDosenController extends Controller
             }
 
             // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
-            $pegawai = Auth::user()->load([
+            $pegawai = Auth::user()->pegawai;
+            $pegawai->load([
                 'unitKerja',
                 'statusAktif', 
-                'jabatanAkademik',
+                'jabatanFungsional',
                 'dataJabatanFungsional' => function($query) {
                     $query->with('jabatanFungsional')
                           ->orderBy('tmt_jabatan', 'desc')
@@ -214,64 +215,10 @@ class SimpegPengajuanIzinDosenController extends Controller
      * Check if pegawai is dosen based on available data
      */
     private function isDosen($pegawai)
-    {
-  
-        // Method 3: Check based on jabatan akademik
-        try {
-            if ($pegawai->jabatanAkademik) {
-                $jabatanAkademik = $pegawai->jabatanAkademik->jabatan_akademik ?? '';
-                $dosenJabatan = [
-                    'Guru Besar', 
-                    'Lektor Kepala', 
-                    'Lektor', 
-                    'Asisten Ahli', 
-                    'Tenaga Pengajar',
-                    'Dosen'
-                ];
-                
-                if (in_array($jabatanAkademik, $dosenJabatan)) {
-                    return true;
-                }
-            }
-        } catch (\Exception $e) {
-            // Ignore error and continue to next check
-        }
-
-        // Method 4: Check based on jabatan fungsional
-        try {
-            if ($pegawai->dataJabatanFungsional && $pegawai->dataJabatanFungsional->isNotEmpty()) {
-                $jabatanFungsional = $pegawai->dataJabatanFungsional->first();
-                if ($jabatanFungsional && $jabatanFungsional->jabatanFungsional) {
-                    $namaJabatan = $jabatanFungsional->jabatanFungsional->nama_jabatan_fungsional ?? '';
-                    if (stripos($namaJabatan, 'dosen') !== false) {
-                        return true;
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            // Ignore error and continue to next check
-        }
-
-        // Method 5: Check based on unit kerja (if it's academic unit)
-        try {
-            if ($pegawai->unitKerja) {
-                $namaUnit = strtolower($pegawai->unitKerja->nama_unit ?? '');
-                $akademikKeywords = ['fakultas', 'prodi', 'program studi', 'jurusan'];
-                
-                foreach ($akademikKeywords as $keyword) {
-                    if (stripos($namaUnit, $keyword) !== false) {
-                        return true;
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            // Ignore error
-        }
-
-        // Default: Allow access (better to be permissive than restrictive)
-        // You can change this to false if you want to be more restrictive
-        return true;
-    }
+{
+    // Cek apakah relasi 'role' ada dan namanya adalah 'Dosen'
+    return $pegawai->role && $pegawai->role->nama === 'Dosen';
+}
 
     private function parseMultipartFormData()
 {
@@ -373,7 +320,7 @@ private function createTempFileFromMultipart($fileData)
     public function fixExistingData()
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -407,7 +354,7 @@ private function createTempFileFromMultipart($fileData)
     public function show($id)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -430,9 +377,8 @@ private function createTempFileFromMultipart($fileData)
             return response()->json([
                 'success' => true,
                 'pegawai' => $this->formatPegawaiInfo($pegawai->load([
-                    'unitKerja', 'statusAktif', 'jabatanAkademik',
-                    'dataJabatanFungsional.jabatanFungsional',
-                    'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
+                    'unitKerja', 'statusAktif', 'jabatanFungsional',
+                    'jabatanStruktural.jenisJabatanStruktural',
                     'dataPendidikanFormal.jenjangPendidikan'
                 ])),
                 'data' => $this->formatDataIzin($dataIzin)
@@ -504,7 +450,7 @@ private function createTempFileFromMultipart($fileData)
 {
     DB::beginTransaction();
     try {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -606,7 +552,7 @@ public function update(Request $request, $id)
 {
     DB::beginTransaction();
     try {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -837,7 +783,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
     public function destroy($id)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -886,7 +832,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
     public function submitDraft($id)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -947,7 +893,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
                 ], 422);
             }
 
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -1034,7 +980,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
                 ], 422);
             }
 
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -1081,7 +1027,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
                 ], 422);
             }
 
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -1127,7 +1073,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
     public function getStatusStatistics()
 {
     try {
-        $pegawai = Auth::user();
+        $pegawai = Auth::user()->pegawai;
 
         if (!$pegawai) {
             return response()->json([
@@ -1242,7 +1188,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
     public function getFilterOptions()
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([
@@ -1378,7 +1324,7 @@ if (isset($updateData['jenis_izin_id']) && $updateData['jenis_izin_id'] != $data
     public function printIzinDocument($id)
     {
         try {
-            $pegawai = Auth::user();
+            $pegawai = Auth::user()->pegawai;
 
             if (!$pegawai) {
                 return response()->json([

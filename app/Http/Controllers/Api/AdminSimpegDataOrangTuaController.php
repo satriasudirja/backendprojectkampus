@@ -18,7 +18,7 @@ class AdminSimpegDataOrangTuaController extends Controller
     public function index(Request $request, $pegawai_id)
     {
         $pegawai = SimpegPegawai::with([
-            'unitKerja', 'statusAktif', 'jabatanAkademik'
+            'unitKerja', 'statusAktif', 'jabatanFungsional'
         ])->findOrFail($pegawai_id);
 
         $perPage = $request->per_page ?? 10;

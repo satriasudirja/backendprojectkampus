@@ -167,7 +167,7 @@ class SimpegBeritaController extends Controller
             DB::commit();
 
             // Load relasi untuk response
-            $berita->load('jabatanAkademik');
+            $berita->load('jabatanFungsional');
 
             return response()->json([
                 'success' => true,
@@ -330,7 +330,7 @@ class SimpegBeritaController extends Controller
             DB::commit();
 
             // Load relations for response
-            $berita->load('jabatanAkademik');
+            $berita->load('jabatanFungsional');
 
             return response()->json([
                 'success' => true,
@@ -437,7 +437,7 @@ class SimpegBeritaController extends Controller
 
         $berita->restore();
         
-        $berita->load('jabatanAkademik');
+        $berita->load('jabatanFungsional');
 
         ActivityLogger::log('restore', $berita, $berita->toArray());
 

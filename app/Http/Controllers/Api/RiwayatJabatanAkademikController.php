@@ -535,12 +535,13 @@ class RiwayatJabatanAkademikController extends Controller
         $query = SimpegDataJabatanAkademik::query();
 
         // Jika bukan admin, batasi hanya data pegawai yang login
-        if ($prefix !== 'admin') {
-            $user = auth()->user();
-            if ($user) {
-                $query->where('pegawai_id', $user->id);
-            }
+       if ($prefix !== 'admin') {
+        $user = auth()->user();
+        if ($user) {
+            // BENAR: Mengambil ID pegawai dari kolom pegawai_id di tabel simpeg_users.
+            $query->where('pegawai_id', $user->pegawai_id);
         }
+    }
 
         $riwayat = $query->where('status_pengajuan', 'draft')->find($id);
 
