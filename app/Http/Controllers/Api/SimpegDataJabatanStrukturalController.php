@@ -28,7 +28,8 @@ class SimpegDataJabatanStrukturalController extends Controller
         }
 
         // Eager load semua relasi yang diperlukan untuk menghindari N+1 query problem
-        $pegawai = Auth::user()->load([
+        $pegawai = Auth::user()->pegawai;
+        $pegawai->load([
             'unitKerja',
             'statusAktif', 
             'jabatanFungsional',

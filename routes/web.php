@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CaptchaController;
+use App\Http\Controllers\Auth\SsoController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -14,6 +15,7 @@ Route::get('/captcha/slide-captcha', function () {
     return 'Route override works! Controller was the problem.';
 });
 
+Route::get('/auth/sso/callback', [SsoController::class, 'callback'])->name('sso.callback');
 
 // Route::middleware('web')->group(function () {
     Route::get('/captcha/slide-captcha', [CaptchaController::class, 'showSlideCaptcha'])

@@ -34,7 +34,7 @@ class SimpegDataPangkatController extends Controller
         $pegawai->load([
             'unitKerja',
             'statusAktif', 
-            'jabatnaFungsional',
+            'jabatanFungsional',
             'dataJabatanFungsional' => function($query) {
                 $query->with('jabatanFungsional')
                       ->orderBy('tmt_jabatan', 'desc')

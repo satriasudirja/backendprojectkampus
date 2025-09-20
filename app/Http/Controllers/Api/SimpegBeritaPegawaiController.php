@@ -18,7 +18,7 @@ class SimpegBeritaPegawaiController extends Controller
     {
         try {
             // Ambil data pegawai yang sedang login
-            $pegawai = $this->getPegawaiLogin();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
@@ -123,7 +123,7 @@ class SimpegBeritaPegawaiController extends Controller
     {
         try {
             // Ambil data pegawai yang sedang login
-            $pegawai = $this->getPegawaiLogin();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([
@@ -254,7 +254,7 @@ class SimpegBeritaPegawaiController extends Controller
     {
         try {
             // Ambil data pegawai yang sedang login
-            $pegawai = $this->getPegawaiLogin();
+            $pegawai = Auth::user()->pegawai;
             
             if (!$pegawai) {
                 return response()->json([

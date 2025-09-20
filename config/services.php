@@ -14,6 +14,22 @@ return [
     |
     */
 
+    'custom_sso' => [
+    // Method 1: Shared secret key (most common)
+    'secret_key' => env('SSO_SECRET_KEY'),
+    
+    // Method 2: Public key (if your friend uses RS256)
+    'public_key' => env('SSO_PUBLIC_KEY'),
+    
+    // Method 3: Validation endpoint (if your friend provides one)
+    'validation_url' => env('SSO_VALIDATION_URL'),
+    'logout_url' => env('SSO_LOGOUT_URL'),
+    
+    // JWT algorithm
+    'algorithm' => env('SSO_ALGORITHM', 'HS256'),
+    'timeout' => env('SSO_TIMEOUT', 10),
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

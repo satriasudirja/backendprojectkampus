@@ -34,7 +34,7 @@ class SimpegDataJabatanFungsionalController extends Controller
         $query = SimpegDataJabatanFungsional::with(['jabatanFungsional', 'pegawai']);
 
         // PERBAIKAN: Admin melihat semua data, user lain hanya melihat data miliknya
-        if (!$pegawai->hasRole('Admin')) {
+        if (!$pegawai->is_admin) {
             $query->where('pegawai_id', $pegawai->id);
         }
 
@@ -144,7 +144,7 @@ class SimpegDataJabatanFungsionalController extends Controller
         $user = Auth::user();
         $pegawai = $user ? $user->pegawai : null;
 
-        if (!$pegawai || (!$pegawai->hasRole('Admin') && $pegawai->id !== $dataJabatanFungsional->pegawai_id)) {
+        if (!$pegawai || (!$pegawai->is_admin && $pegawai->id !== $dataJabatanFungsional->pegawai_id)) {
             return response()->json(['success' => false, 'message' => 'Anda tidak diizinkan untuk melihat data ini.'], 403);
         }
 
@@ -166,12 +166,12 @@ class SimpegDataJabatanFungsionalController extends Controller
         // Authorization
         $user = Auth::user();
         $pegawai = $user ? $user->pegawai : null;
-        if (!$pegawai || (!$pegawai->hasRole('Admin') && $pegawai->id !== $dataJabatanFungsional->pegawai_id)) {
+        if (!$pegawai || (!$pegawai->is_admin && $pegawai->id !== $dataJabatanFungsional->pegawai_id)) {
             return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk mengubah data ini.'], 403);
         }
 
         // Prevent editing if already approved, unless by Admin
-        if ($dataJabatanFungsional->status_pengajuan === 'disetujui' && !$pegawai->hasRole('Admin')) {
+        if ($dataJabatanFungsional->status_pengajuan === 'disetujui' && !$pegawai->is_admin) {
             return response()->json(['success' => false, 'message' => 'Data yang telah disetujui tidak dapat diubah.'], 403);
         }
 
@@ -240,12 +240,12 @@ class SimpegDataJabatanFungsionalController extends Controller
         $user = Auth::user();
         $pegawai = $user ? $user->pegawai : null;
         
-        if (!$pegawai || (!$pegawai->hasRole('Admin') && $pegawai->id !== $dataJabatanFungsional->pegawai_id)) {
+        if (!$pegawai || (!$pegawai->is_admin && $pegawai->id !== $dataJabatanFungsional->pegawai_id)) {
             return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk menghapus data ini.'], 403);
         }
 
         // Prevent deletion if already approved, unless by Admin
-        if ($dataJabatanFungsional->status_pengajuan === 'disetujui' && !$pegawai->hasRole('Admin')) {
+        if ($dataJabatanFungsional->status_pengajuan === 'disetujui' && !$pegawai->is_admin) {
             return response()->json(['success' => false, 'message' => 'Data yang telah disetujui tidak dapat dihapus.'], 403);
         }
 
@@ -304,7 +304,7 @@ class SimpegDataJabatanFungsionalController extends Controller
         $pegawai = $user ? $user->pegawai : null;
 
         // This is an admin-only action
-        if (!$pegawai || !$pegawai->hasRole('Admin')) {
+        if (!$pegawai || !$pegawai->is_admin) {
             return response()->json(['success' => false, 'message' => 'Anda tidak berwenang melakukan aksi ini.'], 403);
         }
 
@@ -353,7 +353,7 @@ class SimpegDataJabatanFungsionalController extends Controller
         $user = Auth::user();
         $pegawai = $user ? $user->pegawai : null;
 
-        if (!$pegawai || (!$pegawai->hasRole('Admin') && $pegawai->id !== $dataJabatanFungsional->pegawai_id)) {
+        if (!$pegawai || (!$pegawai->is_admin && $pegawai->id !== $dataJabatanFungsional->pegawai_id)) {
             return response()->json(['success' => false, 'message' => 'Anda tidak diizinkan mengunduh file ini.'], 403);
         }
 
@@ -381,7 +381,7 @@ class SimpegDataJabatanFungsionalController extends Controller
 
         $query = DB::table('simpeg_data_jabatan_fungsional')->select('status_pengajuan', DB::raw('count(*) as total'));
 
-        if (!$pegawai->hasRole('Admin')) {
+        if (!$pegawai->is_admin) {
             $query->where('pegawai_id', $pegawai->id);
         }
 
@@ -410,7 +410,7 @@ class SimpegDataJabatanFungsionalController extends Controller
         $user = Auth::user();
         $pegawai = $user ? $user->pegawai : null;
         $isOwner = $pegawai ? $pegawai->id === $data->pegawai_id : false;
-        $isAdmin = $pegawai ? $pegawai->hasRole('Admin') : false;
+        $isAdmin = $pegawai ? $pegawai->is_admin : false;
         
         $status = $data->status_pengajuan;
         $canEdit = ($isOwner && in_array($status, ['draft', 'ditolak'])) || $isAdmin;
