@@ -446,20 +446,34 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
             ], 404);
         }
 
-        if ($dataJabatanStruktural->approve()) { // Use model's approve method
-            if (class_exists('App\Services\ActivityLogger')) {
-                ActivityLogger::log('admin_approve_jabatan_struktural', $dataJabatanStruktural, $dataJabatanStruktural->getOriginal());
+        DB:beginTransaction();
+        try{
+            $admin = Auth::user()->pegawai;
+            if (!$admin) {
+                throw new \Exception('Data admin tidak ditemukan.');
             }
+
+            SimpegPegawai::where('id', $dataJabatanStruktural->pegawai_id)
+                ->update([
+                    'jabatan_struktural_id'=> $dataJabatanStruktural->jabatan_struktural_id
+                ]);
+            
+            $dataJabatanStruktural->update([
+                'status_pengajuan' => 'disetujui',
+                'tgl_disetujui' => now(),
+            ]);
+
+            DB::commit();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Data Jabatan Struktural berhasil disetujui'
+                'message' => 'Data hubungan kerja berhasil disetujui dan disinkronkan.',
+                'data' => $dataJabatanStruktural->fresh('pegawai', 'jabatanStruktural')
             ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal menyetujui data: ' . $e->getMessage()], 500);
         }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Data Jabatan Struktural tidak dapat disetujui dari status saat ini.'
-        ], 409);
     }
 
     /**

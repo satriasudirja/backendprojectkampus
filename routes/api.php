@@ -168,6 +168,10 @@ use App\Http\Controllers\Api\RekapitulasiKehadiranController;
 use App\Http\Controllers\Api\SimpegMasterGelarAkademikController;
 use App\Http\Controllers\Api\SimpegSearchPegawaiController;
 
+Route::get('/test-sso', function(){
+    return "success";
+})->middleware('auth:sso');
+
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::get('captcha', [AuthController::class, 'generateCaptcha']);

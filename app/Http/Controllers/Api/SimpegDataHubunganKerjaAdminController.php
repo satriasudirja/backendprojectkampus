@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class SimpegDataHubunganKerjaAdminController extends Controller
 {
@@ -480,22 +481,32 @@ class SimpegDataHubunganKerjaAdminController extends Controller
             ], 409);
         }
 
-        $oldData = $hubunganKerja->getOriginal();
-        $hubunganKerja->update([
-            'status_pengajuan' => SimpegDataHubunganKerja::STATUS_DISETUJUI,
-            'tgl_disetujui' => now(),
-            'tgl_ditolak' => null,
-            'keterangan' => null, // Clear rejection note
-        ]);
+        DB::beginTransaction();
+        try{
+            $admin = Auth::user()->pegawai;
+             // LANGKAH 1: SINKRONISASI KE TABEL UTAMA (simpeg_pegawai)
+            SimpegPegawai::where('id', $hubunganKerja->pegawai_id)->update([
+                'hubungan_kerja_id' => $hubunganKerja->hubungan_kerja_id
+            ]);
 
-        if (class_exists('App\Services\ActivityLogger')) {
-            ActivityLogger::log('admin_approve_hubungan_kerja', $hubunganKerja, $oldData);
+            // LANGKAH 2: UPDATE STATUS RIWAYAT ITU SENDIRI
+            $hubunganKerja->update([
+                'status_pengajuan' => 'disetujui',
+                'tgl_disetujui' => now(),
+                'disetujui_oleh' => $admin->id, // Simpan ID admin yang menyetujui
+            ]);
+            
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data hubungan kerja berhasil disetujui dan disinkronkan.',
+                'data' => $hubunganKerja->fresh('pegawai', 'hubunganKerja')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal menyetujui data: ' . $e->getMessage()], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data hubungan kerja berhasil disetujui'
-        ]);
     }
 
     /**
@@ -716,6 +727,11 @@ class SimpegDataHubunganKerjaAdminController extends Controller
         try {
             foreach ($dataToProcess as $item) {
                 $oldData = $item->getOriginal();
+
+                SimpegPegawai::where('id', $item->pegawai_id)->update([
+                    'hubungan_kerja_id' => $item->hubungan_kerja_id
+                ]);
+
                 $item->update([
                     'status_pengajuan' => SimpegDataHubunganKerja::STATUS_DISETUJUI,
                     'tgl_disetujui' => now(),

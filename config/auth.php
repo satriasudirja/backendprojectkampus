@@ -31,6 +31,10 @@ return [
             'provider' => 'simpeg_users',
             'hash' => false,
         ],
+        'sso' => [
+            'driver' => 'sso',
+            'provider' => 'simpeg_users',
+        ],
     ],
 
     /*
