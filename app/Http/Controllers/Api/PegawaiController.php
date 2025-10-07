@@ -207,7 +207,7 @@ class PegawaiController extends Controller
             'dataJabatanAkademik',
             'dataJabatanFungsional',
             'dataJabatanStruktural',
-            'absensiRecord'
+            'absensiRecords'
         ])->find($id);
 
         if (!$pegawai) {
