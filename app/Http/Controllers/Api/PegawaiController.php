@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SimpegPegawai;
+use App\Models\SimpegUser;
 use App\Models\SimpegDataJabatanAkademik;  
 use App\Models\SimpegJabatanAkademik;  
 use App\Models\SimpegJabatanFungsional;  // ADDED: Import model jabatan fungsional
