@@ -11,7 +11,7 @@ class SimpegJabatanStrukturalController extends Controller
 {
     public function index(Request $request)
     {
-        $jabatan = SimpegJabatanStruktural::with(['unitKerja', 'jenisJabatanStruktural', 'pangkat', 'eselon', 'parent'])
+        $jabatan = SimpegJabatanStruktural::with(['unitKerja', 'jenisJabatanStruktural', 'pangkat', 'parent'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -34,7 +34,7 @@ class SimpegJabatanStrukturalController extends Controller
 
     public function show(Request $request, $id)
     {
-        $jabatan = SimpegJabatanStruktural::with(['unitKerja', 'jenisJabatanStruktural', 'pangkat', 'eselon', 'parent', 'children'])
+        $jabatan = SimpegJabatanStruktural::with(['unitKerja', 'jenisJabatanStruktural', 'pangkat', 'parent', 'children'])
             ->find($id);
 
         if (!$jabatan) {
@@ -101,7 +101,6 @@ class SimpegJabatanStrukturalController extends Controller
             'unit_kerja_id' => 'sometimes|required|exists:simpeg_unit_kerja,id',
             'jenis_jabatan_struktural_id' => 'sometimes|required|exists:simpeg_jenis_jabatan_struktural,id',
             'pangkat_id' => 'sometimes|required|exists:simpeg_master_pangkat,id',
-            'eselon_id' => 'sometimes|required|exists:simpeg_eselon,id',
             'alamat_email' => 'nullable|email|max:100',
             'beban_sks' => 'nullable|integer|min:0',
             'is_pimpinan' => 'sometimes|required|boolean',
