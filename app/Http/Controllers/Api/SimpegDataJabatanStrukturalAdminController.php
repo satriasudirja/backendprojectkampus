@@ -631,6 +631,7 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
+    
     public function batchApprove(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -646,7 +647,11 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
         }
 
         $dataToProcess = SimpegDataJabatanStruktural::whereIn('id', $request->ids)
-            ->whereIn('status_pengajuan', [SimpegDataJabatanStruktural::STATUS_DRAFT, SimpegDataJabatanStruktural::STATUS_DIAJUKAN, SimpegDataJabatanStruktural::STATUS_DITOLAK])
+            ->whereIn('status_pengajuan', [
+                SimpegDataJabatanStruktural::STATUS_DRAFT, 
+                SimpegDataJabatanStruktural::STATUS_DIAJUKAN, 
+                SimpegDataJabatanStruktural::STATUS_DITOLAK
+            ])
             ->get();
 
         if ($dataToProcess->isEmpty()) {
@@ -658,31 +663,75 @@ class SimpegDataJabatanStrukturalAdminController extends Controller
 
         $updatedCount = 0;
         $approvedIds = [];
+        $errors = [];
+        
         DB::beginTransaction();
         try {
             foreach ($dataToProcess as $item) {
-                $oldData = $item->getOriginal();
-                if ($item->approve()) { // Use model's approve method
+                try {
+                    $oldData = $item->getOriginal();
+                    
+                    // Update status jabatan struktural
+                    $item->update([
+                        'status_pengajuan' => SimpegDataJabatanStruktural::STATUS_DISETUJUI,
+                        'tgl_disetujui' => now(),
+                        'tgl_diajukan' => $item->tgl_diajukan ?? now(),
+                    ]);
+
+                    // PENTING: Update jabatan_struktural_id di tabel simpeg_pegawai
+                    // Ambil jenis_jabatan_struktural_id dari relasi
+                    $jabatanStruktural = SimpegJabatanStruktural::find($item->jabatan_struktural_id);
+                    
+                    if ($jabatanStruktural && $jabatanStruktural->jenis_jabatan_struktural_id) {
+                        SimpegPegawai::where('id', $item->pegawai_id)
+                            ->update([
+                                'jabatan_struktural_id' => $jabatanStruktural->jenis_jabatan_struktural_id
+                            ]);
+                    } else {
+                        throw new \Exception('Jenis jabatan struktural tidak ditemukan untuk jabatan struktural ID: ' . $item->jabatan_struktural_id);
+                    }
+                    
                     if (class_exists('App\Services\ActivityLogger')) {
                         ActivityLogger::log('admin_batch_approve_jabatan_struktural', $item, $oldData);
                     }
+                    
                     $updatedCount++;
                     $approvedIds[] = $item->id;
+                    
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'id' => $item->id,
+                        'no_sk' => $item->no_sk,
+                        'error' => 'Gagal menyetujui: ' . $e->getMessage()
+                    ];
                 }
             }
+            
             DB::commit();
+            
         } catch (\Exception $e) {
             DB::rollback();
             \Log::error('Error during batch approve jabatan struktural: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyetujui data secara batch: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat menyetujui data secara batch: ' . $e->getMessage(),
+                'errors' => $errors
             ], 500);
+        }
+
+        if (!empty($errors)) {
+            return response()->json([
+                'success' => $updatedCount > 0,
+                'message' => "Berhasil menyetujui {$updatedCount} dari " . count($request->ids) . " data Jabatan Struktural",
+                'updated_count' => $updatedCount,
+                'approved_ids' => $approvedIds,
+                'errors' => $errors
+            ], $updatedCount > 0 ? 207 : 422);
         }
 
         return response()->json([
             'success' => true,
-            'message' => "Berhasil menyetujui {$updatedCount} data Jabatan Struktural",
+            'message' => "Berhasil menyetujui {$updatedCount} data Jabatan Struktural dan memperbarui data pegawai",
             'updated_count' => $updatedCount,
             'approved_ids' => $approvedIds
         ]);

@@ -16,6 +16,7 @@ class BiodataController extends Controller
     /**
      * Menampilkan biodata lengkap pegawai yang sedang login
      */
+    
     public function index(Request $request)
     {
         try {
@@ -39,8 +40,55 @@ class BiodataController extends Controller
                 'dataPangkat.pangkat',
                 'dataPangkat.jenisKenaikanPangkat',
                 'dataPangkat.jenisSk',
-                'dataJabatanStruktural.jabatanStruktural'
+                'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural', // Load jenis jabatan
+                'dataJabatanAkademik.jabatanAkademik',
+                'dataJabatanFungsional.jabatanFungsional'
             ]);
+
+            // FIX: Ambil jabatan struktural aktif dengan field yang benar (tgl_mulai & tgl_selesai)
+            $jabatanStrukturalAktif = $pegawai->dataJabatanStruktural
+                ->where('status_pengajuan', 'disetujui') // Hanya yang disetujui
+                ->filter(function($item) {
+                    $now = now();
+                    $tglMulai = $item->tgl_mulai ? \Carbon\Carbon::parse($item->tgl_mulai) : null;
+                    $tglSelesai = $item->tgl_selesai ? \Carbon\Carbon::parse($item->tgl_selesai) : null;
+                    
+                    // Jabatan aktif jika:
+                    // 1. Sudah dimulai (tgl_mulai <= now)
+                    // 2. Belum selesai (tgl_selesai null ATAU tgl_selesai >= now)
+                    return $tglMulai && $tglMulai <= $now && 
+                        (!$tglSelesai || $tglSelesai >= $now);
+                })
+                ->sortByDesc('tgl_mulai') // Urutkan berdasarkan tgl_mulai terbaru
+                ->first();
+
+            // FIX: Ambil jabatan akademik aktif
+            $jabatanAkademikAktif = $pegawai->dataJabatanAkademik
+                ->where('status_pengajuan', 'disetujui')
+                ->filter(function($item) {
+                    $now = now();
+                    $tanggalMulai = $item->tanggal_mulai ? \Carbon\Carbon::parse($item->tanggal_mulai) : null;
+                    $tanggalSelesai = $item->tanggal_selesai ? \Carbon\Carbon::parse($item->tanggal_selesai) : null;
+                    
+                    return $tanggalMulai && $tanggalMulai <= $now && 
+                        (!$tanggalSelesai || $tanggalSelesai >= $now);
+                })
+                ->sortByDesc('tanggal_mulai')
+                ->first();
+
+            // FIX: Ambil jabatan fungsional aktif
+            $jabatanFungsionalAktif = $pegawai->dataJabatanFungsional
+                ->where('status_pengajuan', 'disetujui')
+                ->filter(function($item) {
+                    $now = now();
+                    $tanggalMulai = $item->tanggal_mulai ? \Carbon\Carbon::parse($item->tanggal_mulai) : null;
+                    $tanggalSelesai = $item->tanggal_selesai ? \Carbon\Carbon::parse($item->tanggal_selesai) : null;
+                    
+                    return $tanggalMulai && $tanggalMulai <= $now && 
+                        (!$tanggalSelesai || $tanggalSelesai >= $now);
+                })
+                ->sortByDesc('tanggal_mulai')
+                ->first();
 
             // Format response data
             $biodataResponse = [
@@ -94,7 +142,7 @@ class BiodataController extends Controller
                     'unit_kerja' => $pegawai->unitKerja ? [
                         'id' => $pegawai->unitKerja->id,
                         'nama_unit' => $pegawai->unitKerja->nama_unit,
-                        'kode_unit' => $pegawai->unitKerja->kode ?? null,
+                        'kode_unit' => $pegawai->unitKerja->kode_unit ?? null,
                     ] : null,
                     'status_kepegawaian' => [
                         'status_aktif' => $pegawai->statusAktif ? [
@@ -127,36 +175,26 @@ class BiodataController extends Controller
                                 ->where('is_aktif', true)
                                 ->first()->tmt_pangkat ?? null,
                         ] : null,
-                    'jabatan_akademik_aktif' => $pegawai->dataJabatanAkademik
-                        ->where('tanggal_selesai', null)
-                        ->first() ? [
-                            'nama_jabatan' => $pegawai->dataJabatanAkademik
-                                ->where('tanggal_selesai', null)
-                                ->first()->jabatanAkademik->nama_jab_akademik ?? null,
-                            'tanggal_mulai' => $pegawai->dataJabatanAkademik
-                                ->where('tanggal_selesai', null)
-                                ->first()->tanggal_mulai ?? null,
-                        ] : null,
-                    'jabatan_fungsional_aktif' => $pegawai->dataJabatanFungsional
-                        ->where('tanggal_selesai', null)
-                        ->first() ? [
-                            'nama_jabatan' => $pegawai->dataJabatanFungsional
-                                ->where('tanggal_selesai', null)
-                                ->first()->jabatanFungsional->nama_jab_fungsional ?? null,
-                            'tanggal_mulai' => $pegawai->dataJabatanFungsional
-                                ->where('tanggal_selesai', null)
-                                ->first()->tanggal_mulai ?? null,
-                        ] : null,
-                    'jabatan_struktural_aktif' => $pegawai->dataJabatanStruktural
-                        ->where('tanggal_selesai', null)
-                        ->first() ? [
-                            'nama_jabatan' => $pegawai->dataJabatanStruktural
-                                ->where('tanggal_selesai', null)
-                                ->first()->jabatanStruktural->nama_jabatan ?? null,
-                            'tanggal_mulai' => $pegawai->dataJabatanStruktural
-                                ->where('tanggal_selesai', null)
-                                ->first()->tanggal_mulai ?? null,
-                        ] : null,
+                    // FIX: Format jabatan akademik aktif
+                    'jabatan_akademik_aktif' => $jabatanAkademikAktif ? [
+                        'nama_jabatan' => $jabatanAkademikAktif->jabatanAkademik->nama_jab_akademik ?? null,
+                        'tanggal_mulai' => $jabatanAkademikAktif->tanggal_mulai ?? null
+                    ] : null,
+                    // FIX: Format jabatan fungsional aktif
+                    'jabatan_fungsional_aktif' => $jabatanFungsionalAktif ? [
+                        'nama_jabatan' => $jabatanFungsionalAktif->jabatanFungsional->nama_jab_fungsional ?? null,
+                        'tanggal_mulai' => $jabatanFungsionalAktif->tanggal_mulai ?? null,
+                    ] : null,
+                    // FIX: Format jabatan struktural aktif dengan field yang benar
+                    'jabatan_struktural_aktif' => $jabatanStrukturalAktif ? [
+                        'nama_jabatan' => $jabatanStrukturalAktif->jabatanStruktural && 
+                                        $jabatanStrukturalAktif->jabatanStruktural->jenisJabatanStruktural 
+                            ? $jabatanStrukturalAktif->jabatanStruktural->jenisJabatanStruktural->jenis_jabatan_struktural 
+                            : ($jabatanStrukturalAktif->jabatanStruktural->nama_jabatan ?? null),
+                        'tanggal_mulai' => $jabatanStrukturalAktif->tgl_mulai ?? null, // Gunakan tgl_mulai
+                        'tanggal_selesai' => $jabatanStrukturalAktif->tgl_selesai ?? null, // Gunakan tgl_selesai
+                        'no_sk' => $jabatanStrukturalAktif->no_sk ?? null,
+                    ] : null,
                     'files' => [
                         'file_ktp' => $pegawai->file_ktp ? url('storage/pegawai/' . $pegawai->file_ktp) : null,
                         'file_kk' => $pegawai->file_kk ? url('storage/pegawai/' . $pegawai->file_kk) : null,
@@ -175,6 +213,9 @@ class BiodataController extends Controller
             return response()->json($biodataResponse);
 
         } catch (\Exception $e) {
+            \Log::error('Error in BiodataController@index: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -420,9 +461,10 @@ class BiodataController extends Controller
                 ], 401);
             }
 
+            // FIX: Load relasi jenisJabatanStruktural
             $riwayatJabatanStruktural = $pegawai->dataJabatanStruktural()
-                ->with('jabatanStruktural')
-                ->orderBy('tanggal_mulai', 'desc')
+                ->with('jabatanStruktural.jenisJabatanStruktural')
+                ->orderBy('tgl_mulai', 'desc') // FIX: Gunakan tgl_mulai
                 ->get();
 
             return response()->json([
@@ -438,26 +480,34 @@ class BiodataController extends Controller
                             'id' => $item->id,
                             'jabatan_struktural' => $item->jabatanStruktural ? [
                                 'id' => $item->jabatanStruktural->id,
-                                'nama_jabatan' => $item->jabatanStruktural->nama_jabatan,
-                                'level' => $item->jabatanStruktural->level,
+                                // FIX: Prioritaskan jenis_jabatan_struktural
+                                'nama_jabatan' => $item->jabatanStruktural->jenisJabatanStruktural 
+                                    ? $item->jabatanStruktural->jenisJabatanStruktural->jenis_jabatan_struktural
+                                    : ($item->jabatanStruktural->nama_jabatan ?? $item->jabatanStruktural->singkatan),
+                                'level' => $item->jabatanStruktural->level ?? null,
                             ] : null,
-                            'tanggal_mulai' => $item->tanggal_mulai,
-                            'tanggal_selesai' => $item->tanggal_selesai,
+                            'tgl_mulai' => $item->tgl_mulai, // FIX: Gunakan tgl_mulai
+                            'tgl_selesai' => $item->tgl_selesai, // FIX: Gunakan tgl_selesai
                             'no_sk' => $item->no_sk,
                             'tgl_sk' => $item->tgl_sk,
-                            'file_sk' => $item->file_sk ? url('storage/pegawai/' . $item->file_sk) : null,
+                            'pejabat_penetap' => $item->pejabat_penetap ?? null,
+                            'status_pengajuan' => $item->status_pengajuan,
+                            'file_jabatan' => $item->file_jabatan ? url('storage/' . $item->file_jabatan) : null,
                         ];
                     })
                 ]
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error in BiodataController@riwayatJabatanStruktural: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
     }
+
 
     /**
      * Menampilkan riwayat hubungan kerja pegawai yang sedang login

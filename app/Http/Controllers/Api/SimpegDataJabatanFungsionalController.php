@@ -83,7 +83,7 @@ class SimpegDataJabatanFungsionalController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'jabatan_fungsional_id' => 'required|exists:simpeg_master_jabatan_fungsional,id',
+            'jabatan_fungsional_id' => 'required|exists:simpeg_jabatan_fungsional,id',
             'tmt_jabatan' => 'required|date',
             'pejabat_penetap' => 'required|string|max:255',
             'no_sk' => 'required|string|max:255',
@@ -428,7 +428,7 @@ class SimpegDataJabatanFungsionalController extends Controller
             'id' => $data->id,
             'pegawai_info' => $data->pegawai ? [
                 'id' => $data->pegawai->id,
-                'nama_lengkap' => $data->pegawai->nama_lengkap,
+                'nama_lengkap' => $data->pegawai->nama,
             ] : null,
             'jabatan_fungsional_id' => $data->jabatan_fungsional_id,
             'nama_jabatan_fungsional' => $data->jabatanFungsional->nama_jabatan_fungsional ?? '-',

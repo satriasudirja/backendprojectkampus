@@ -60,7 +60,6 @@ class SimpegJabatanStrukturalController extends Controller
             'unit_kerja_id' => 'required|exists:simpeg_unit_kerja,id',
             'jenis_jabatan_struktural_id' => 'required|exists:simpeg_jenis_jabatan_struktural,id',
             'pangkat_id' => 'required|exists:simpeg_master_pangkat,id',
-            'eselon_id' => 'required|exists:simpeg_eselon,id',
             'alamat_email' => 'nullable|email|max:100',
             'beban_sks' => 'nullable|integer|min:0',
             'is_pimpinan' => 'required|boolean',

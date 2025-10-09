@@ -17,7 +17,7 @@ class SimpegJabatanStruktural extends Model
         'unit_kerja_id',
         'jenis_jabatan_struktural_id',
         'pangkat_id',
-        'eselon_id',
+        // 'eselon_id',
         'kode',
         'singkatan',
         'alamat_email',
@@ -64,10 +64,10 @@ class SimpegJabatanStruktural extends Model
     /**
      * Relasi ke eselon
      */
-    public function eselon()
-    {
-        return $this->belongsTo(SimpegEselon::class, 'eselon_id');
-    }
+    // public function eselon()
+    // {
+    //     return $this->belongsTo(SimpegEselon::class, 'eselon_id');
+    // }
 
     /**
      * Relasi ke jabatan parent (self-reference)

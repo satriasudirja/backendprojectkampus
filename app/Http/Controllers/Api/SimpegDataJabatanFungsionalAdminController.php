@@ -441,20 +441,50 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
             ], 404);
         }
 
-        if ($dataJabatanFungsional->approve()) { // Use model's approve method
-            if (class_exists('App\Services\ActivityLogger')) {
-                ActivityLogger::log('admin_approve_jabatan_fungsional', $dataJabatanFungsional, $dataJabatanFungsional->getOriginal());
-            }
+        if ($dataJabatanFungsional->status_pengajuan === SimpegDataJabatanFungsional::STATUS_DISETUJUI) {
             return response()->json([
-                'success' => true,
-                'message' => 'Data Jabatan Fungsional berhasil disetujui'
-            ]);
+                'success' => false,
+                'message' => 'Data sudah disetujui sebelumnya'
+            ], 409);
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Data Jabatan Fungsional tidak dapat disetujui dari status saat ini.'
-        ], 409);
+        DB::beginTransaction();
+        try {
+            $oldData = $dataJabatanFungsional->getOriginal();
+            
+            // Update status di data jabatan fungsional
+            $dataJabatanFungsional->update([
+                'status_pengajuan' => SimpegDataJabatanFungsional::STATUS_DISETUJUI,
+                'tgl_disetujui' => now(),
+                'tgl_diajukan' => $dataJabatanFungsional->tgl_diajukan ?? now(),
+                'tgl_ditolak' => null,
+            ]);
+
+            // PENTING: Update jabatan_fungsional_id di tabel pegawai
+            SimpegPegawai::where('id', $dataJabatanFungsional->pegawai_id)
+                ->update([
+                    'jabatan_fungsional_id' => $dataJabatanFungsional->jabatan_fungsional_id
+                ]);
+
+            if (class_exists('App\Services\ActivityLogger')) {
+                ActivityLogger::log('admin_approve_jabatan_fungsional', $dataJabatanFungsional, $oldData);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data Jabatan Fungsional berhasil disetujui dan disinkronkan ke data pegawai',
+                'data' => $dataJabatanFungsional->fresh(['pegawai', 'jabatanFungsional'])
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false, 
+                'message' => 'Gagal menyetujui data: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -635,7 +665,11 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
         }
 
         $dataToProcess = SimpegDataJabatanFungsional::whereIn('id', $request->ids)
-            ->whereIn('status_pengajuan', [SimpegDataJabatanFungsional::STATUS_DRAFT, SimpegDataJabatanFungsional::STATUS_DIAJUKAN, SimpegDataJabatanFungsional::STATUS_DITOLAK])
+            ->whereIn('status_pengajuan', [
+                SimpegDataJabatanFungsional::STATUS_DRAFT, 
+                SimpegDataJabatanFungsional::STATUS_DIAJUKAN, 
+                SimpegDataJabatanFungsional::STATUS_DITOLAK
+            ])
             ->get();
 
         if ($dataToProcess->isEmpty()) {
@@ -647,31 +681,69 @@ class SimpegDataJabatanFungsionalAdminController extends Controller
 
         $updatedCount = 0;
         $approvedIds = [];
+        $errors = [];
+        
         DB::beginTransaction();
         try {
             foreach ($dataToProcess as $item) {
-                $oldData = $item->getOriginal();
-                if ($item->approve()) { // Use model's approve method
+                try {
+                    $oldData = $item->getOriginal();
+                    
+                    // Update status jabatan fungsional
+                    $item->update([
+                        'status_pengajuan' => SimpegDataJabatanFungsional::STATUS_DISETUJUI,
+                        'tgl_disetujui' => now(),
+                        'tgl_diajukan' => $item->tgl_diajukan ?? now(),
+                        'tgl_ditolak' => null,
+                    ]);
+
+                    // PENTING: Update jabatan_fungsional_id di tabel simpeg_pegawai
+                    SimpegPegawai::where('id', $item->pegawai_id)
+                        ->update([
+                            'jabatan_fungsional_id' => $item->jabatan_fungsional_id
+                        ]);
+                    
                     if (class_exists('App\Services\ActivityLogger')) {
                         ActivityLogger::log('admin_batch_approve_jabatan_fungsional', $item, $oldData);
                     }
+                    
                     $updatedCount++;
                     $approvedIds[] = $item->id;
+                    
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'id' => $item->id,
+                        'no_sk' => $item->no_sk,
+                        'error' => 'Gagal menyetujui: ' . $e->getMessage()
+                    ];
                 }
             }
+            
             DB::commit();
+            
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error during batch approve jabatan fungsional: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyetujui data secara batch: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat menyetujui data secara batch: ' . $e->getMessage(),
+                'errors' => $errors
             ], 500);
+        }
+
+        if (!empty($errors)) {
+            return response()->json([
+                'success' => $updatedCount > 0,
+                'message' => "Berhasil menyetujui {$updatedCount} dari " . count($request->ids) . " data Jabatan Fungsional",
+                'updated_count' => $updatedCount,
+                'approved_ids' => $approvedIds,
+                'errors' => $errors
+            ], $updatedCount > 0 ? 207 : 422);
         }
 
         return response()->json([
             'success' => true,
-            'message' => "Berhasil menyetujui {$updatedCount} data Jabatan Fungsional",
+            'message' => "Berhasil menyetujui {$updatedCount} data Jabatan Fungsional dan memperbarui data pegawai",
             'updated_count' => $updatedCount,
             'approved_ids' => $approvedIds
         ]);
