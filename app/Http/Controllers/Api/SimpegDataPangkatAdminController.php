@@ -11,7 +11,6 @@ use App\Models\SimpegDaftarJenisSk; // Model for Jenis SK list
 use App\Models\SimpegJenisKenaikanPangkat; // Model for Jenis Kenaikan Pangkat list
 
 // Import other models for pegawai info detail (if needed)
-use App\Models\SimpegJabatanAkademik;
 use App\Models\SimpegDataJabatanFungsional;
 use App\Models\SimpegDataJabatanStruktural;
 use App\Models\SimpegDataPendidikanFormal;
@@ -158,7 +157,7 @@ class SimpegDataPangkatAdminController extends Controller
         $dataPangkat = SimpegDataPangkat::with([
             'pegawai' => function ($q) {
                 $q->with([
-                    'unitKerja', 'statusAktif', 'jabatanAkademik',
+                    'unitKerja', 'statusAktif',
                     'dataJabatanFungsional' => function ($query) {
                         $query->with('jabatanFungsional')->latest('tmt_jabatan')->limit(1);
                     },
@@ -170,9 +169,6 @@ class SimpegDataPangkatAdminController extends Controller
                     },
                     'dataHubunganKerja' => function($query) {
                         $query->with('hubunganKerja')->latest('tgl_awal')->limit(1);
-                    },
-                    'dataJabatanAkademik' => function($query) {
-                        $query->with('jabatanAkademik')->latest('tmt_jabatan')->limit(1);
                     }
                 ]);
             },
@@ -1056,16 +1052,7 @@ class SimpegDataPangkatAdminController extends Controller
             return null;
         }
 
-        $jabatanAkademikNama = '-';
-        if ($pegawai->dataJabatanAkademik && $pegawai->dataJabatanAkademik->isNotEmpty()) {
-            $jabatanAkademik = $pegawai->dataJabatanAkademik->sortByDesc('tmt_jabatan')->first();
-            if ($jabatanAkademik && $jabatanAkademik->jabatanAkademik) {
-                $jabatanAkademikNama = $jabatanAkademik->jabatanAkademik->jabatan_akademik ?? '-';
-            }
-        } else if ($pegawai->jabatanAkademik) {
-            $jabatanAkademikNama = $pegawai->jabatanAkademik->jabatan_akademik ?? '-';
-        }
-
+    
 
         $jabatanFungsionalNama = '-';
         if ($pegawai->dataJabatanFungsional && $pegawai->dataJabatanFungsional->isNotEmpty()) {
@@ -1117,7 +1104,6 @@ class SimpegDataPangkatAdminController extends Controller
             'nama_lengkap' => ($pegawai->gelar_depan ? $pegawai->gelar_depan . ' ' : '') . $pegawai->nama . ($pegawai->gelar_belakang ? ', ' . $pegawai->gelar_belakang : ''),
             'unit_kerja' => $unitKerjaNama,
             'status_aktif_pegawai' => $pegawai->statusAktif ? $pegawai->statusAktif->nama_status_aktif : '-',
-            'jab_akademik_pegawai' => $jabatanAkademikNama,
             'jab_fungsional_pegawai' => $jabatanFungsionalNama,
             'jab_struktural_pegawai' => $jabatanStrukturalNama,
             'pendidikan_terakhir' => $jenjangPendidikanNama,
