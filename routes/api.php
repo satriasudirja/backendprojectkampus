@@ -167,6 +167,7 @@ use App\Http\Controllers\Api\ProfilesController;
 use App\Http\Controllers\Api\RekapitulasiKehadiranController;
 use App\Http\Controllers\Api\SimpegMasterGelarAkademikController;
 use App\Http\Controllers\Api\SimpegSearchPegawaiController;
+use App\Http\Controllers\Api\MasterPotonganWajibController;
 
 Route::get('/test-sso', function(){
     return "success";
@@ -195,6 +196,7 @@ Route::middleware('auth:api')->group(function () {
 
         Route::get('pegawai/search', [SimpegSearchPegawaiController::class, 'search'])->name('pegawai.search');
 
+
         Route::apiResource('gelar-akademik', SimpegMasterGelarAkademikController::class);
         Route::get('/rekapitulasi/kehadiran', [RekapitulasiKehadiranController::class, 'index']);
          Route::get('/rekapitulasi/kehadiran/pegawai/{id}', [RekapitulasiKehadiranController::class, 'show']);
@@ -214,19 +216,33 @@ Route::middleware('auth:api')->group(function () {
              */
             Route::post('/profiles/change-password', [ProfilesController::class, 'changePassword']);
 
+        // Master Potongan Wajib CRUD
+        Route::apiResource('master-potongan-wajib', MasterPotonganWajibController::class);
+        Route::post('master-potongan-wajib/{masterPotonganWajib}/toggle-status', 
+            [MasterPotonganWajibController::class, 'toggleStatus']);
 
-                Route::prefix('payroll')->name('payroll.api.')->group(function () {
+
+        Route::prefix('payroll')->name('payroll.api.')->group(function () {
             // Memicu pembuatan payroll
-            Route::post('/generate', [PayrollController::class, 'generate'])->name('generate');
-            
-            // Melihat daftar periode
-            Route::get('/periods', [PayrollController::class, 'indexPeriods'])->name('periods.index');
-            
-            // Melihat detail satu periode, menggunakan route model binding
-            Route::get('/periods/{periode}', [PayrollController::class, 'showPeriod'])->name('periods.show');
-            
-            // Melihat detail slip gaji berdasarkan ID slip-nya, menggunakan route model binding
-            Route::get('/slips/{slip}', [PayrollController::class, 'showSlip'])->name('slips.show');
+                Route::post('/generate', [PayrollController::class, 'generate'])->name('generate');
+                
+                // Melihat daftar periode
+                Route::get('/periods', [PayrollController::class, 'indexPeriods'])->name('periods.index');
+                
+                // Melihat detail satu periode, menggunakan route model binding
+                Route::get('/periods/{periode}', [PayrollController::class, 'showPeriod'])->name('periods.show');
+                
+                // Melihat detail slip gaji berdasarkan ID slip-nya, menggunakan route model binding
+                Route::get('/slips/{slip}', [PayrollController::class, 'showSlip'])->name('slips.show');
+
+                // Cetak individual slip
+                Route::get('/slips/{slip}/print', [PayrollController::class, 'printSlip']);
+
+                // Cetak bulk (semua pegawai dalam periode)
+                Route::get('/periods/{periode}/print-bulk', [PayrollController::class, 'printBulkSlips']);
+
+                // Cetak selected (pegawai terpilih)
+                Route::post('/print-selected', [PayrollController::class, 'printSelectedSlips']);
         });
 
         // Route::get('/pegawai/search', [AdminSimpegDataAnakController::class, 'searchPegawai'])

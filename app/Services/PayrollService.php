@@ -7,15 +7,21 @@ use App\Models\SimpegDataJabatanStruktural;
 use App\Models\SimpegDataJabatanFungsional;
 use App\Models\PenggajianPeriode;
 use App\Models\PenggajianPegawai;
+use App\Models\MasterPotonganWajib;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception;
 
 class PayrollService
 {
-    public function generatePayrollForPeriod(int $tahun, int $bulan, array $additionalAllowances = [], array $additionalDeductions = []): PenggajianPeriode
-    {
-        return DB::transaction(function () use ($tahun, $bulan, $additionalAllowances, $additionalDeductions) {
+    public function generatePayrollForPeriod(
+        int $tahun, 
+        int $bulan, 
+        array $additionalAllowances = [], 
+        array $additionalDeductions = [],
+        array $excludedPegawaiIds = [] // TAMBAHAN: Array pegawai yang dikecualikan
+    ): PenggajianPeriode {
+        return DB::transaction(function () use ($tahun, $bulan, $additionalAllowances, $additionalDeductions, $excludedPegawaiIds) {
             $namaPeriode = "Penggajian " . Carbon::create($tahun, $bulan)->locale('id')->monthName . " " . $tahun;
             
             $periode = PenggajianPeriode::where('tahun', $tahun)->where('bulan', $bulan)->first();
@@ -25,17 +31,31 @@ class PayrollService
             }
 
             if (!$periode) {
-                $periode = PenggajianPeriode::create(['tahun' => $tahun, 'bulan' => $bulan, 'nama_periode' => $namaPeriode, 'status' => 'processing']);
+                $periode = PenggajianPeriode::create([
+                    'tahun' => $tahun, 
+                    'bulan' => $bulan, 
+                    'nama_periode' => $namaPeriode, 
+                    'status' => 'processing'
+                ]);
             } else {
                 $periode->update(['status' => 'processing']);
             }
             
             $periode->penggajianPegawai()->delete();
-            $pegawais = SimpegPegawai::whereHas('statusAktif', function ($query) {
-                $query->where('kode', 'AA'); // 'AA' adalah kode untuk status 'Aktif'
-            })->get();
+            
+            // Query pegawai aktif dengan filter exclusion
+            $pegawaisQuery = SimpegPegawai::whereHas('statusAktif', function ($query) {
+                $query->where('kode', 'AA');
+            });
 
-            if($pegawais->isEmpty()){
+            // FILTER: Kecualikan pegawai yang ada di excludedPegawaiIds
+            if (!empty($excludedPegawaiIds)) {
+                $pegawaisQuery->whereNotIn('id', $excludedPegawaiIds);
+            }
+
+            $pegawais = $pegawaisQuery->get();
+
+            if ($pegawais->isEmpty()) {
                 throw new Exception("Tidak ditemukan pegawai aktif untuk diproses.");
             }
 
@@ -50,48 +70,127 @@ class PayrollService
         });
     }
 
-    private function processEmployeePayroll(PenggajianPeriode $periode, SimpegPegawai $pegawai, array $additionalAllowances, array $additionalDeductions)
-    {
+    private function processEmployeePayroll(
+        PenggajianPeriode $periode, 
+        SimpegPegawai $pegawai, 
+        array $additionalAllowances, 
+        array $additionalDeductions
+    ) {
         $pendapatan = [];
         $potongan = [];
+        $gajiPokok = 0;
 
-        $dataPangkatAktif = SimpegDataPangkat::where('pegawai_id', $pegawai->id)->where('status_pengajuan', 'disetujui')->orderBy('tgl_disetujui', 'desc')->with('pangkat')->first();
+        // 1. GAJI POKOK dari Pangkat
+        $dataPangkatAktif = SimpegDataPangkat::where('pegawai_id', $pegawai->id)
+            ->where('status_pengajuan', 'disetujui')
+            ->orderBy('tgl_disetujui', 'desc')
+            ->with('pangkat')
+            ->first();
+            
         if ($dataPangkatAktif && $dataPangkatAktif->pangkat) {
-            $pendapatan[] = ['kode_komponen' => 'GAPOK', 'deskripsi' => 'Gaji Pokok - ' . $dataPangkatAktif->pangkat->pangkat, 'nominal' => $dataPangkatAktif->pangkat->tunjangan ?? 0];
+            $gajiPokok = $dataPangkatAktif->pangkat->tunjangan ?? 0;
+            $pendapatan[] = [
+                'kode_komponen' => 'GAPOK', 
+                'deskripsi' => 'Gaji Pokok - ' . $dataPangkatAktif->pangkat->pangkat, 
+                'nominal' => $gajiPokok
+            ];
         }
 
-        $dataJabatanStrukturalAktif = SimpegDataJabatanStruktural::where('pegawai_id', $pegawai->id)->where('status_pengajuan', 'disetujui')->whereNull('tgl_selesai')->orderBy('tgl_disetujui', 'desc')->with('jabatanStruktural')->first();
+        // 2. TUNJANGAN STRUKTURAL
+        $dataJabatanStrukturalAktif = SimpegDataJabatanStruktural::where('pegawai_id', $pegawai->id)
+            ->where('status_pengajuan', 'disetujui')
+            ->where(function ($q) {
+                $q->whereNull('tgl_selesai')
+                ->orWhere('tgl_selesai', '>', now());
+            })
+            ->orderBy('tgl_disetujui', 'desc')
+            ->with('jabatanStruktural')
+            ->first();
+            
         if ($dataJabatanStrukturalAktif && $dataJabatanStrukturalAktif->jabatanStruktural) {
-            // FIX: Menggunakan null coalescing operator (??) untuk memastikan nilai nominal tidak null.
-            $pendapatan[] = ['kode_komponen' => 'TUNJ_STRUKTURAL', 'deskripsi' => 'Tunjangan Jabatan Struktural - ' . $dataJabatanStrukturalAktif->jabatanStruktural->kode, 'nominal' => $dataJabatanStrukturalAktif->jabatanStruktural->tunjangan ?? 0];
+            $pendapatan[] = [
+                'kode_komponen' => 'TUNJ_STRUKTURAL', 
+                'deskripsi' => 'Tunjangan Jabatan Struktural - ' . $dataJabatanStrukturalAktif->jabatanStruktural->singkatan, 
+                'nominal' => $dataJabatanStrukturalAktif->jabatanStruktural->tunjangan ?? 0
+            ];
         }
 
-        $dataJabatanFungsionalAktif = SimpegDataJabatanFungsional::where('pegawai_id', $pegawai->id)->where('status_pengajuan', 'disetujui')->orderBy('tgl_disetujui', 'desc')->with('jabatanFungsional')->first();
+        // 3. TUNJANGAN FUNGSIONAL
+        $dataJabatanFungsionalAktif = SimpegDataJabatanFungsional::where('pegawai_id', $pegawai->id)
+            ->where('status_pengajuan', 'disetujui')
+            ->orderBy('tgl_disetujui', 'desc')
+            ->with('jabatanFungsional')
+            ->first();
+            
         if ($dataJabatanFungsionalAktif && $dataJabatanFungsionalAktif->jabatanFungsional) {
-            // FIX: Menggunakan null coalescing operator (??) untuk memastikan nilai nominal tidak null.
-            $pendapatan[] = ['kode_komponen' => 'TUNJ_FUNGSIONAL', 'deskripsi' => 'Tunjangan Jabatan Fungsional - ' . $dataJabatanFungsionalAktif->jabatanFungsional->nama_jabatan_fungsional, 'nominal' => $dataJabatanFungsionalAktif->jabatanFungsional->tunjangan ?? 0];
+            $pendapatan[] = [
+                'kode_komponen' => 'TUNJ_FUNGSIONAL', 
+                'deskripsi' => 'Tunjangan Jabatan Fungsional - ' . $dataJabatanFungsionalAktif->jabatanFungsional->nama_jabatan_fungsional, 
+                'nominal' => $dataJabatanFungsionalAktif->jabatanFungsional->tunjangan ?? 0
+            ];
         }
         
+        // 4. TUNJANGAN TAMBAHAN dari parameter
         $pegawaiAllowances = array_filter($additionalAllowances, fn($item) => $item['pegawai_id'] == $pegawai->id);
-        foreach($pegawaiAllowances as $allowance) {
-             $pendapatan[] = ['kode_komponen' => $allowance['kode'], 'deskripsi' => $allowance['deskripsi'], 'nominal' => $allowance['nominal'] ?? 0];
+        foreach ($pegawaiAllowances as $allowance) {
+            $pendapatan[] = [
+                'kode_komponen' => $allowance['kode'], 
+                'deskripsi' => $allowance['deskripsi'], 
+                'nominal' => $allowance['nominal'] ?? 0
+            ];
         }
 
-        $totalPendapatanKotor = array_sum(array_column($pendapatan, 'nominal'));
-        $potongan[] = ['kode_komponen' => 'BPJS_KES', 'deskripsi' => 'Potongan BPJS Kesehatan (1%)', 'nominal' => $totalPendapatanKotor * 0.01];
+        // 5. HITUNG PENGHASILAN BRUTO (Total Pendapatan)
+        $penghasilanBruto = array_sum(array_column($pendapatan, 'nominal'));
+
+        // 6. POTONGAN WAJIB DINAMIS dari Master
+        $potonganWajibList = MasterPotonganWajib::active()->get();
         
+        foreach ($potonganWajibList as $masterPotongan) {
+            $nominalPotongan = $masterPotongan->hitungPotongan($gajiPokok, $penghasilanBruto);
+            
+            $potongan[] = [
+                'kode_komponen' => $masterPotongan->kode_potongan,
+                'deskripsi' => $masterPotongan->nama_potongan . 
+                              ($masterPotongan->jenis_potongan === 'persen' 
+                                ? " ({$masterPotongan->nilai_potongan}%)" 
+                                : ''),
+                'nominal' => $nominalPotongan
+            ];
+        }
+        
+        // 7. POTONGAN TAMBAHAN dari parameter (misalnya: pinjaman, denda, dll)
         $pegawaiDeductions = array_filter($additionalDeductions, fn($item) => $item['pegawai_id'] == $pegawai->id);
-        foreach($pegawaiDeductions as $deduction) {
-             $potongan[] = ['kode_komponen' => $deduction['kode'], 'deskripsi' => $deduction['deskripsi'], 'nominal' => $deduction['nominal'] ?? 0];
+        foreach ($pegawaiDeductions as $deduction) {
+            $potongan[] = [
+                'kode_komponen' => $deduction['kode'], 
+                'deskripsi' => $deduction['deskripsi'], 
+                'nominal' => $deduction['nominal'] ?? 0
+            ];
         }
 
+        // 8. HITUNG TOTAL
         $totalPendapatan = array_sum(array_column($pendapatan, 'nominal'));
         $totalPotongan = array_sum(array_column($potongan, 'nominal'));
+        $gajiBersih = $totalPendapatan - $totalPotongan;
 
+        // 9. SIMPAN SLIP GAJI
         if ($totalPendapatan > 0) {
-            $slipGaji = PenggajianPegawai::create(['periode_id' => $periode->id, 'pegawai_id' => $pegawai->id, 'total_pendapatan' => $totalPendapatan, 'total_potongan' => $totalPotongan, 'gaji_bersih' => $totalPendapatan - $totalPotongan]);
-            if(!empty($pendapatan)) $slipGaji->komponenPendapatan()->createMany($pendapatan);
-            if(!empty($potongan)) $slipGaji->komponenPotongan()->createMany($potongan);
+            $slipGaji = PenggajianPegawai::create([
+                'periode_id' => $periode->id, 
+                'pegawai_id' => $pegawai->id, 
+                'total_pendapatan' => $totalPendapatan, 
+                'total_potongan' => $totalPotongan, 
+                'gaji_bersih' => $gajiBersih
+            ]);
+            
+            if (!empty($pendapatan)) {
+                $slipGaji->komponenPendapatan()->createMany($pendapatan);
+            }
+            
+            if (!empty($potongan)) {
+                $slipGaji->komponenPotongan()->createMany($potongan);
+            }
         }
     }
 }
