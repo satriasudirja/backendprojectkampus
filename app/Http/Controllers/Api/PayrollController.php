@@ -151,7 +151,7 @@ class PayrollController extends Controller
         if ($format === 'pdf') {
             $slips = $periode->penggajianPegawai;
             
-            $pdf = Pdf::loadView('payroll.bulk-slips', compact('slips', 'periode'));
+            $pdf = Pdf::loadView('payroll.bulk-slip-gaji', compact('slips', 'periode'));
             $pdf->setPaper('a4', 'portrait');
             
             $filename = 'slip-gaji-bulk-' . $periode->tahun . '-' . $periode->bulan . '.pdf';
@@ -193,7 +193,7 @@ class PayrollController extends Controller
         $periode = $slips->first()->periode;
 
         if ($format === 'pdf') {
-            $pdf = Pdf::loadView('payroll.bulk-slips', compact('slips', 'periode'));
+            $pdf = Pdf::loadView('payroll.bulk-slip-gaji', compact('slips', 'periode'));
             $pdf->setPaper('a4', 'portrait');
             
             $filename = 'slip-gaji-selected-' . now()->format('YmdHis') . '.pdf';
