@@ -159,7 +159,7 @@ class PayrollController extends Controller
             return $pdf->download($filename);
         }
         
-        return view('payroll.bulk-slips', compact('periode'));
+        return view('payroll.bulk-slip-gaji', compact('periode'));
     }
 
     /**
@@ -201,6 +201,6 @@ class PayrollController extends Controller
             return $pdf->download($filename);
         }
 
-        return view('payroll.bulk-slips', compact('slips', 'periode'));
+        return view('payroll.bulk-slip-gaji', compact('slips', 'periode'));
     }
 }
