@@ -55,6 +55,13 @@
             font-size: 10px;
         }
         
+        .info-col {
+            display: flex;
+            flex-direction: column; /* Mengubah orientasi menjadi kolom */
+            gap: 5px; /* Cara modern untuk memberi jarak antar item di dalam kolom */
+            font-size: 10px;
+        }
+        
         .info-label {
             width: 100px;
             font-weight: bold;
@@ -143,13 +150,13 @@
         </div>
         
         <div class="info-pegawai">
-            <div class="info-row">
-                <div class="info-label">NIP</div>
-                <div>: {{ $slip->pegawai->nip }}</div>
+            <div class="info-col">
+                <div class="info-label">NIP :</div>
+                <div> {{ $slip->pegawai->nip }}</div>
             </div>
-            <div class="info-row">
-                <div class="info-label">Nama</div>
-                <div>: {{ $slip->pegawai->nama }}</div>
+            <div class="info-col">
+                <div class="info-label">Nama :</div>
+                <div> {{ $slip->pegawai->nama }}</div>
             </div>
         </div>
         
