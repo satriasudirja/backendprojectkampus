@@ -11,7 +11,7 @@ class SimpegJabatanStrukturalController extends Controller
 {
     public function index(Request $request)
     {
-        $jabatan = SimpegJabatanStruktural::with(['unitKerja', 'jenisJabatanStruktural', 'pangkat', 'parent'])
+        $jabatan = SimpegJabatanStruktural::with(['unitKerja', 'jenisJabatanStruktural', 'parent'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -34,7 +34,7 @@ class SimpegJabatanStrukturalController extends Controller
 
     public function show(Request $request, $id)
     {
-        $jabatan = SimpegJabatanStruktural::with(['unitKerja', 'jenisJabatanStruktural', 'pangkat', 'parent', 'children'])
+        $jabatan = SimpegJabatanStruktural::with(['unitKerja', 'jenisJabatanStruktural', 'parent', 'children'])
             ->find($id);
 
         if (!$jabatan) {
