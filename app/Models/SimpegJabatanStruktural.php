@@ -16,7 +16,7 @@ class SimpegJabatanStruktural extends Model
     protected $fillable = [
         'unit_kerja_id',
         'jenis_jabatan_struktural_id',
-        'pangkat_id',
+        // 'pangkat_id',
         // 'eselon_id',
         'kode',
         'singkatan',
@@ -56,10 +56,10 @@ class SimpegJabatanStruktural extends Model
     /**
      * Relasi ke pangkat
      */
-    public function pangkat()
-    {
-        return $this->belongsTo(SimpegMasterPangkat::class, 'pangkat_id');
-    }
+    // public function pangkat()
+    // {
+    //     return $this->belongsTo(SimpegMasterPangkat::class, 'pangkat_id');
+    // }
 
     /**
      * Relasi ke eselon
