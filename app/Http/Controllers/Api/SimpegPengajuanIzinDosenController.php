@@ -69,13 +69,7 @@ class SimpegPengajuanIzinDosenController extends Controller
                 ->with('jenisIzin');
 
             // Additional validation - hanya untuk pegawai yang valid
-            // Cek apakah pegawai adalah dosen berdasarkan data yang tersedia
-            if (!$this->isDosen($pegawai)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Akses ditolak - Hanya dosen yang dapat mengakses fitur ini'
-                ], 403);
-            }
+
 
             // Filter by search
             if ($search) {
@@ -211,14 +205,6 @@ class SimpegPengajuanIzinDosenController extends Controller
         }
     }
 
-    /**
-     * Check if pegawai is dosen based on available data
-     */
-    private function isDosen($pegawai)
-{
-    // Cek apakah relasi 'role' ada dan namanya adalah 'Dosen'
-    return $pegawai->role && $pegawai->role->nama === 'Dosen';
-}
 
     private function parseMultipartFormData()
 {
@@ -459,13 +445,7 @@ private function createTempFileFromMultipart($fileData)
             ], 404);
         }
 
-        // Check if user is dosen
-        if (!$this->isDosen($pegawai)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Akses ditolak - Hanya dosen yang dapat menggunakan fitur ini'
-            ], 403);
-        }
+
 
         $validator = Validator::make($request->all(), [
             'jenis_izin_id' => 'required|uuid|exists:simpeg_jenis_izin,id',

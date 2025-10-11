@@ -342,17 +342,21 @@ class EvaluasiKinerjaController extends Controller
             'dataPendidikanFormal.jenjangPendidikan'
         ]);
 
-        $jabatanStrukturalData = $pegawai->dataJabatanStruktural()->whereNull('tgl_selesai')->with('jabatanStruktural')->first();
-        $pendidikanTerakhirData = $pegawai->dataPendidikanFormal()->orderBy('tahun_lulus', 'desc')->with('jenjangPendidikan')->first();
+
+
+        $jabatanStruktural = $this->getUserJabatanStruktural($pegawai->id);
+        $pendidikanTerakhirData = $pegawai->dataPendidikanFormal
+        ->sortByDesc('tahun_lulus')
+        ->first();
 
         return [
             'id' => $pegawai->id,
             'nama_lengkap' => $pegawai->nama,
             'unit_kerja' => $this->getUnitKerjaNama($pegawai),
             'status' => optional($pegawai->statusAktif)->nama_status_aktif ?? 'Tidak Diketahui',
-            'jab_akademik' => optional($pegawai->role)->nama ?? '-', // Sekarang dari role
-            'job_fungsional' => $this->determineFungsional($pegawai),
-            'jab_struktural' => optional(optional($jabatanStrukturalData)->jabatanStruktural)->singkatan ?? '-',
+            'jab_fungsional' => optional($pegawai->jabatanFungsional)->nama_jabatan_fungsional ?? '-', // Sekarang dari role
+            'jenis_pegawai' => $this->determineFungsional($pegawai),
+            'jab_struktural' => optional($jabatanStruktural)->singkatan ?? '-',
             'pendidikan' => optional(optional($pendidikanTerakhirData)->jenjangPendidikan)->nama_jenjang ?? 'Tidak Diketahui',
         ];
     }

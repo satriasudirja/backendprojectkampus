@@ -22,7 +22,7 @@ class AdminSimpegRiwayatPenghargaanController extends Controller
     public function index(Request $request, $pegawai_id)
     {
         $pegawai = SimpegPegawai::with([
-            'unitKerja', 'statusAktif', 'jabatanAkademik',
+            'unitKerja', 'statusAktif',
             'dataJabatanFungsional.jabatanFungsional',
             'dataJabatanStruktural.jabatanStruktural.jenisJabatanStruktural',
             'dataPendidikanFormal.jenjangPendidikan'
@@ -225,7 +225,6 @@ class AdminSimpegRiwayatPenghargaanController extends Controller
             'nama' => trim(($pegawai->gelar_depan ? $pegawai->gelar_depan . ' ' : '') . $pegawai->nama . ($pegawai->gelar_belakang ? ', ' . $pegawai->gelar_belakang : '')),
             'unit_kerja' => optional($pegawai->unitKerja)->nama_unit ?? 'Tidak Ada',
             'status' => optional($pegawai->statusAktif)->nama_status_aktif ?? '-',
-            'jab_akademik' => optional($pegawai->jabatanAkademik)->jabatan_akademik ?? '-',
             'jab_fungsional' => optional(optional($pegawai->dataJabatanFungsional->first())->jabatanFungsional)->nama_jabatan_fungsional ?? '-',
             'jab_struktural' => optional(optional(optional($pegawai->dataJabatanStruktural->first())->jabatanStruktural)->jenisJabatanStruktural)->jenis_jabatan_struktural ?? '-',
             'pendidikan' => optional(optional($pegawai->dataPendidikanFormal->first())->jenjangPendidikan)->jenjang_pendidikan ?? '-',
