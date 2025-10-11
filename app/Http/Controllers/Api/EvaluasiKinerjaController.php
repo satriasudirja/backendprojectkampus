@@ -274,8 +274,17 @@ class EvaluasiKinerjaController extends Controller
 
     private function getUserJabatanStruktural($userId)
     {
-        return optional(SimpegDataJabatanStruktural::where('pegawai_id', $userId)
-            ->whereNull('tgl_selesai')->with('jabatanStruktural')->first())->jabatanStruktural;
+        $dataJabatan = SimpegDataJabatanStruktural::where('pegawai_id', $userId)
+            ->where(function($q) {
+                $q->whereNull('tgl_selesai')
+                ->orWhere('tgl_selesai', '>=', now());
+            })
+            ->where('status_pengajuan', 'disetujui') // Pastikan statusnya disetujui
+            ->with('jabatanStruktural')
+            ->orderBy('tgl_mulai', 'desc')
+            ->first();
+        
+        return optional($dataJabatan)->jabatanStruktural;
     }
 
     private function getPegawaiByHierarki($jabatanStruktural, $penilaiId)
