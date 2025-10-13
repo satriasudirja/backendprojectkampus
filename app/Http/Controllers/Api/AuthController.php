@@ -56,22 +56,35 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        // Verify slide captcha first
-        $captchaVerified = $this->captchaService->verifySlideCaptcha(
-            $request->captcha_id, 
-            $request->slider_position
-        );
+        $isMobile = $request->has('device_id');
         
-        if (!$captchaVerified) {
-            return response()->json([
-                'success' => false,
-                'message' => 'CAPTCHA tidak valid atau sudah kadaluarsa'
-            ], 422);
+        if ($isMobile) {
+            // Mobile: Check device lock
+            $deviceCheckResult = $this->checkDeviceLock($request->nip, $request->device_id);
+            if (!$deviceCheckResult['allowed']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $deviceCheckResult['message']
+                ], 403);
+            }
+        } else {
+            // Web: Verify captcha
+            $captchaVerified = $this->captchaService->verifySlideCaptcha(
+                $request->captcha_id, 
+                $request->slider_position
+            );
+            
+            if (!$captchaVerified) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'CAPTCHA tidak valid atau sudah kadaluarsa'
+                ], 422);
+            }
         }
         
         // Login menggunakan username (yang berasal dari NIP) dan password
         $credentials = [
-            'username' => $request->nip, // NIP dari request akan dicari di kolom username
+            'username' => $request->nip,
             'password' => $request->password
         ];
 
@@ -82,12 +95,17 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = Auth::user(); // Ini akan mengembalikan SimpegUser instance
+        $user = Auth::user();
         
         // Load relasi pegawai untuk mendapatkan data lengkap
         $user->load('pegawai.role');
         
-        // Log login activity - gunakan pegawai_id dari user
+        // For mobile: register device
+        if ($isMobile && !$user->device_id) {
+            $user->update(['device_id' => $request->device_id]);
+        }
+        
+        // Log login activity
         DB::table('simpeg_login_logs')->insert([
             'pegawai_id' => $user->pegawai_id,
             'ip_address' => request()->ip(),
@@ -96,6 +114,76 @@ class AuthController extends Controller
         ]);
 
         return $this->respondWithToken($token, $user);
+    }
+    
+    /**
+     * Check if device is locked to another account
+     *
+     * @param string $nip
+     * @param string $deviceId
+     * @return array
+     */
+    protected function checkDeviceLock($nip, $deviceId)
+    {
+        // Find user by NIP
+        $requestUser = SimpegUser::where('username', $nip)->first();
+        
+        if (!$requestUser) {
+            return ['allowed' => true];
+        }
+        
+        // Check if this user already has a registered device
+        if ($requestUser->device_id && $requestUser->device_id !== $deviceId) {
+            return [
+                'allowed' => false,
+                'message' => 'Akun ini sudah terdaftar di perangkat lain. Silakan hubungi admin untuk reset perangkat.'
+            ];
+        }
+        
+        // Check if this device is registered to another user
+        $deviceOwner = SimpegUser::where('device_id', $deviceId)
+            ->where('id', '!=', $requestUser->id)
+            ->first();
+        
+        if ($deviceOwner) {
+            return [
+                'allowed' => false,
+                'message' => 'Perangkat ini sudah terdaftar untuk akun lain. Satu perangkat hanya bisa digunakan untuk satu akun.'
+            ];
+        }
+        
+        return ['allowed' => true];
+    }
+    
+    /**
+     * Reset device for a user (admin only)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function resetDevice(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:simpeg_users,id'
+        ]);
+        
+        $user = SimpegUser::findOrFail($request->user_id);
+        
+        // Check if requester is admin
+        $currentUser = Auth::user();
+        if (!$currentUser->pegawai->is_admin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya admin yang dapat mereset perangkat'
+            ], 403);
+        }
+        
+        $user->update(['device_id' => null]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Perangkat berhasil direset. User dapat login dengan perangkat baru.'
+        ]);
     }
 
     /**
@@ -137,7 +225,7 @@ class AuthController extends Controller
 
     public function me()
     {
-        $user = Auth::user(); // SimpegUser instance
+        $user = Auth::user();
         
         // Load relasi pegawai jika belum di-load
         if (!$user->relationLoaded('pegawai')) {
@@ -166,11 +254,11 @@ class AuthController extends Controller
     
     public function logout()
     {
-        $user = Auth::user(); // SimpegUser instance
+        $user = Auth::user();
         
         if ($user) {
             // Gunakan pegawai_id dari user untuk mencari log
-            $log_id = \DB::table('simpeg_login_logs')
+            $log_id = DB::table('simpeg_login_logs')
                 ->where('pegawai_id', $user->pegawai_id)
                 ->whereNull('logged_out_at')
                 ->orderBy('logged_in_at', 'desc')
@@ -203,7 +291,7 @@ class AuthController extends Controller
 
     public function getMenu()
     {
-        $user = Auth::user(); // SimpegUser instance
+        $user = Auth::user();
         
         // Load relasi pegawai jika belum di-load
         if (!$user->relationLoaded('pegawai')) {

@@ -16,8 +16,9 @@ class LoginRequest extends FormRequest
         return [
             'nip' => 'required|string',
             'password' => 'required|string',
-            'captcha_id' => 'required|string|uuid',
-            'slider_position' => 'required|numeric|min:0|max:100',
+            'captcha_id' => 'nullable|string|uuid',
+            'slider_position' => 'nullable|numeric|min:0|max:100',
+            'device_id' => 'nullable|string',
         ];
     }
 
