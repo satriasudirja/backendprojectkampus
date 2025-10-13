@@ -27,6 +27,7 @@ class SimpegUser extends Authenticatable implements JWTSubject
     protected $fillable = [
         'username', 
         'password', 
+        'device_id', 
         'is_active', // Disesuaikan dengan nama kolom di migrasi ('is_active' bukan 'aktif')
         'pegawai_id', // WAJIB ada agar bisa diisi saat membuat user baru
     ];
