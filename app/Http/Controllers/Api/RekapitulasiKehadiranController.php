@@ -50,11 +50,8 @@ class RekapitulasiKehadiranController extends Controller
         // 3. Query Utama dengan withCount untuk efisiensi
         $rekapQuery = SimpegPegawai::query()
             ->with(['unitKerja'])
-            ->where(function ($query) {
-                $query->where('status_kerja', 'like', '%Aktif%')
-                      ->orWhereHas('statusAktif', function ($q) {
-                          $q->where('nama_status_aktif', 'like', '%aktif%');
-                      });
+            ->whereHas('statusAktif', function ($query) {
+                $query->where('nama_status_aktif', 'like', '%Aktif%');
             })
             ->withCount([
                 'absensiRecords as hadir_count' => function ($query) use ($tanggalAwal, $tanggalAkhir) {

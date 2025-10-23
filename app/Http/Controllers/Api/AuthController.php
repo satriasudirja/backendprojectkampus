@@ -62,6 +62,7 @@ class AuthController extends Controller
             // Mobile: Check device lock
             $deviceCheckResult = $this->checkDeviceLock($request->nip, $request->device_id);
             if (!$deviceCheckResult['allowed']) {
+                
                 return response()->json([
                     'success' => false,
                     'message' => $deviceCheckResult['message']

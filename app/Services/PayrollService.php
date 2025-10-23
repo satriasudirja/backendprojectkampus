@@ -158,6 +158,26 @@ class PayrollService
                 'nominal' => $nominalPotongan
             ];
         }
+
+        if ($dataPangkatAktif && $dataPangkatAktif->pangkat && $dataPangkatAktif->pangkat->potongan > 0) {
+            // Hitung jumlah Alpha di bulan periode penggajian
+            $jumlahAlpha = SimpegAbsensiRecord::where('pegawai_id', $pegawai->id)
+                ->whereYear('tanggal_absensi', $periode->tahun)
+                ->whereMonth('tanggal_absensi', $periode->bulan)
+                ->alphaOnly()
+                ->count();
+
+            if ($jumlahAlpha > 0) {
+                $potonganPerAlpha = $dataPangkatAktif->pangkat->potongan;
+                $totalPotonganAlpha = $jumlahAlpha * $potonganPerAlpha;
+
+                $potongan[] = [
+                    'kode_komponen' => 'POT_ALPHA',
+                    'deskripsi' => "Potongan Alpha ({$jumlahAlpha} hari × Rp " . number_format($potonganPerAlpha, 0, ',', '.') . ")",
+                    'nominal' => $totalPotonganAlpha
+                ];
+            }
+        }
         
         // 7. POTONGAN TAMBAHAN dari parameter (misalnya: pinjaman, denda, dll)
         $pegawaiDeductions = array_filter($additionalDeductions, fn($item) => $item['pegawai_id'] == $pegawai->id);
