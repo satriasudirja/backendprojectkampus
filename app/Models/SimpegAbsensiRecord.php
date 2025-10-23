@@ -77,6 +77,13 @@ class SimpegAbsensiRecord extends Model
         return ['label' => 'Alpha', 'color' => 'danger'];
     }
 
+    public function scopeAlphaOnly($query)
+    {
+        return $query->whereNull('jam_masuk')
+                    ->whereNull('cuti_record_id')
+                    ->whereNull('izin_record_id');
+    }
+
     /**
      * LOGIKA BARU: Format durasi kerja dari field 'durasi_kerja' (dalam menit).
      */

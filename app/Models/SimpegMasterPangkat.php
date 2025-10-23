@@ -19,7 +19,8 @@ class SimpegMasterPangkat extends Model
         'id',
         'pangkat',
         'nama_golongan',
-        'tunjangan'
+        'tunjangan',
+        'potongan'
     ];
 
     /**

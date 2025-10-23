@@ -54,12 +54,14 @@ class SimpegMasterPangkatController extends Controller
             'pangkat' => 'required|string|max:6',
             'nama_golongan' => 'required|string|max:30',
             'tunjangan' => 'required|numeric|min:0',
+            'potongan' => 'required|numeric|min:0',
         ]);
 
         $pangkat = SimpegMasterPangkat::create([
             'pangkat' => $request->pangkat,
             'nama_golongan' => $request->nama_golongan,
             'tunjangan' => $request->tunjangan,
+            'potongan' => $request->potongan,
         ]);
 
         ActivityLogger::log('create', $pangkat, $pangkat->toArray());
@@ -83,6 +85,7 @@ class SimpegMasterPangkatController extends Controller
             'pangkat' => 'required|string|max:6',
             'nama_golongan' => 'required|string|max:30',
             'tunjangan' => 'required|numeric|min:0',
+            'potongan' => 'required|numeric|min:0',
         ]);
 
         $old = $pangkat->getOriginal();
@@ -91,6 +94,7 @@ class SimpegMasterPangkatController extends Controller
             'pangkat' => $request->pangkat,
             'nama_golongan' => $request->nama_golongan,
             'tunjangan' => $request->tunjangan,
+            'potongan' => $request->potongan,
         ]);
 
         $changes = array_diff_assoc($pangkat->toArray(), $old);
