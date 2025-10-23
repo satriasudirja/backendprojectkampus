@@ -98,7 +98,7 @@ class AttendanceGeneratorService
                         'tanggal_absensi' => $tanggal,
                         'jenis_kehadiran_id' => $jenisAlpha->id,
                         'jam_kerja_id' => $jamKerjaDefault?->id,
-                        'status_verifikasi' => 'auto_generated',
+                        'status_verifikasi' => 'pending',
                         'jam_masuk' => null,
                         'jam_keluar' => null,
                         'terlambat' => false,
