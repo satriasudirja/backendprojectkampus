@@ -8,6 +8,7 @@ use App\Models\SimpegDataJabatanFungsional;
 use App\Models\PenggajianPeriode;
 use App\Models\PenggajianPegawai;
 use App\Models\MasterPotonganWajib;
+use App\Models\SimpegAbsensiRecord;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception;
