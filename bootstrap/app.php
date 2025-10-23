@@ -7,6 +7,7 @@ use Illuminate\Console\Scheduling\Schedule; // <-- PASTIKAN IMPORT INI ADA
 use App\Console\Commands\CleanupTrashFiles;
 use App\Console\Commands\GenerateMonthlyPayroll; // <-- DAN IMPORT INI JUGA
 use App\Console\Commands\SyncPegawaiToUsers; // <-- DAN IMPORT INI JUGA
+use App\Console\Commands\GenerateMonthlyAttendance;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -37,7 +38,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register custom commands
         CleanupTrashFiles::class,
         GenerateMonthlyPayroll::class, // <-- Daftarkan command payroll di sini
-        SyncPegawaiUsers::class,
+        SyncPegawaiToUsers::class,
+        GenerateMonthlyAttendance::class,
     ])
     ->withSchedule(function (Schedule $schedule) { // <-- Panggil withSchedule di sini
         // Jalankan command payroll pada tanggal 1 setiap bulan jam 02:00 pagi.
@@ -47,5 +49,16 @@ return Application::configure(basePath: dirname(__DIR__))
                  ->monthlyOn(1, '02:00')
                  ->timezone('Asia/Jakarta') // Tentukan timezone server Anda
                  ->withoutOverlapping(); // Mencegah tugas berjalan ganda jika proses sebelumnya belum selesai
+        
+        // Generate absensi otomatis setiap tanggal 1 jam 00:01 pagi
+        $schedule->command('attendance:generate')
+            ->monthlyOn(1, '00:01')
+            ->timezone('Asia/Jakarta')
+            ->onSuccess(function () {
+                \Log::info('✅ Monthly attendance auto-generated successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('❌ Failed to auto-generate monthly attendance');
+            });
     })
     ->create();
