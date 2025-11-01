@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SimpegAbsensiRecord;
 use App\Models\SimpegSettingKehadiran;
 use App\Models\SimpegJamKerja;
-use App\Models\SimpegJenisKehadiran; // Import model Jenis Kehadiran
+use App\Models\SimpegJenisKehadiran;
 use App\Services\HolidayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,66 +46,149 @@ class AbsensiController extends Controller
             'tanggal_hari_ini' => $today->toDateString(),
             'waktu_sekarang' => $today->locale('id')->isoFormat('dddd, D MMMM YYYY, HH:mm:ss'),
             'is_holiday' => $isHoliday,
+            'metode_absensi' => optional($absensiHariIni)->metode_absensi,
             'setting_lokasi' => $settingKehadiran && method_exists($settingKehadiran, 'getLocationInfo') ? $settingKehadiran->getLocationInfo() : null
         ];
 
         return response()->json(['success' => true, 'data' => $status, 'message' => 'Status absensi berhasil dimuat']);
     }
 
+    /**
+     * ABSEN MASUK - QR CODE SEBAGAI METODE UTAMA
+     * Foto menjadi opsional
+     */
     public function absenMasuk(Request $request)
     {
         $waktuSekarang = Carbon::now();
         
         if ($this->holidayService->isHoliday($waktuSekarang)) {
-            return response()->json(['success' => false, 'message' => 'Tidak dapat melakukan absensi pada hari libur.'], 422);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Tidak dapat melakukan absensi pada hari libur.'
+            ], 422);
         }
 
         $pegawai = Auth::user()->pegawai;
         $today = $waktuSekarang->toDateString();
 
         if (!$waktuSekarang->between(Carbon::today()->setTime(4, 0), Carbon::today()->endOfDay())) {
-            return response()->json(['success' => false, 'message' => 'Absen masuk hanya dapat dilakukan antara pukul 04:00 - 23:59.'], 422);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Absen masuk hanya dapat dilakukan antara pukul 04:00 - 23:59.'
+            ], 422);
         }
 
-        $absensiHariIni = SimpegAbsensiRecord::where('pegawai_id', $pegawai->id)->where('tanggal_absensi', $today)->first();
+        $absensiHariIni = SimpegAbsensiRecord::where('pegawai_id', $pegawai->id)
+            ->where('tanggal_absensi', $today)
+            ->first();
+            
         if ($absensiHariIni && $absensiHariIni->jam_masuk) {
-            return response()->json(['success' => false, 'message' => 'Anda sudah melakukan absen masuk hari ini.'], 422);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Anda sudah melakukan absen masuk hari ini.'
+            ], 422);
+        }
+
+        // Tentukan metode absensi berdasarkan request
+        $metodeAbsensi = 'manual';
+        $usingQrCode = $request->has('qr_token') && !empty($request->qr_token);
+
+        // VALIDASI DINAMIS BERDASARKAN METODE
+        $validationRules = [
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'rencana_kegiatan' => 'nullable|string|max:1000'
+        ];
+
+        if ($usingQrCode) {
+            // QR Code Mode - QR Token wajib, foto opsional
+            $validationRules['qr_token'] = 'required|string';
+            $validationRules['foto'] = 'nullable|image|mimes:jpeg,png,jpg|max:5120';
+            $metodeAbsensi = 'qr_code';
+        } else {
+            // Manual Mode - Foto wajib
+            $validationRules['foto'] = 'required|image|mimes:jpeg,png,jpg|max:5120';
+            $metodeAbsensi = 'foto';
         }
         
-        $validator = Validator::make($request->all(), [
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'foto' => 'required|image|mimes:jpeg,png,jpg|max:5120',
-            'rencana_kegiatan' => 'nullable|string|max:1000'
-        ]);
-        if ($validator->fails()) return response()->json(['success' => false, 'message' => 'Validasi gagal.', 'errors' => $validator->errors()], 422);
-        
-        $settingKehadiran = SimpegSettingKehadiran::first();
+        $validator = Validator::make($request->all(), $validationRules);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Validasi gagal.', 
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
+        // VALIDASI QR CODE
+        $settingKehadiran = null;
+        
+        if ($usingQrCode) {
+            try {
+                $qrData = json_decode($request->qr_token, true);
+                
+                if (!$qrData || !isset($qrData['token'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Format QR Code tidak valid. Silakan scan ulang QR Code.'
+                    ], 400);
+                }
+
+                // Validasi token QR
+                $settingKehadiran = SimpegSettingKehadiran::where('qr_code_token', $qrData['token'])->first();
+                
+                if (!$settingKehadiran) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'QR Code tidak ditemukan dalam sistem. Pastikan QR Code masih valid.'
+                    ], 404);
+                }
+
+                if (!$settingKehadiran->qr_code_enabled) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'QR Code sudah tidak aktif. Silakan hubungi admin untuk mendapatkan QR Code baru.'
+                    ], 400);
+                }
+
+                // QR Code valid, setting sudah didapat
+                
+            } catch (\Exception $e) {
+                Log::error('QR Code validation error: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat memvalidasi QR Code. Silakan coba lagi.'
+                ], 500);
+            }
+        } else {
+            // Mode manual/foto, ambil setting default
+            $settingKehadiran = SimpegSettingKehadiran::first();
+        }
+
+        // VALIDASI LOKASI (Wajib untuk semua metode)
         if ($settingKehadiran && $settingKehadiran->wajib_presensi_dilokasi) {
-            // Cek apakah model punya method isWithinRadius, jika tidak ada, kalkulasi manual
-            // Method ini sudah ada di SimpegSettingKehadiranController, kita asumsikan ada juga di model.
             if (method_exists($settingKehadiran, 'isWithinRadius')) {
                 $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
                 
                 if (!$isWithinRadius) {
-                    // Jika user berada di luar radius, tolak absensi
                     $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
                     return response()->json([
                         'success' => false, 
-                        'message' => "Anda berada di luar radius presensi yang diizinkan. Jarak Anda dari lokasi: {$distance} meter."
-                    ], 422); // 422 Unprocessable Entity
+                        'message' => "Anda berada di luar radius presensi yang diizinkan. Jarak Anda dari lokasi: {$distance} meter, Maksimal: {$settingKehadiran->radius} meter."
+                    ], 422);
                 }
-            } else {
-                // Fallback jika method tidak ada, bisa ditambahkan log error
-                Log::warning('Method isWithinRadius() tidak ditemukan pada model SimpegSettingKehadiran.');
             }
         }
         
         $jamKerja = SimpegJamKerja::where('is_default', true)->first();
         
-        $fotoPath = $request->file('foto')->store('absensi/masuk', 'public');
+        // Handle foto upload (opsional untuk QR Code)
+        $fotoPath = null;
+        if ($request->hasFile('foto')) {
+            $fotoPath = $request->file('foto')->store('absensi/masuk', 'public');
+        }
 
+        // Hitung keterlambatan
         $isTerlambat = false;
         $durasiTerlambat = 0;
         if ($jamKerja) {
@@ -123,84 +206,188 @@ class AbsensiController extends Controller
         $jenisKehadiran = SimpegJenisKehadiran::where('kode_jenis', $kodeJenisKehadiran)->first();
 
         if (!$jenisKehadiran) {
-            return response()->json(['success' => false, 'message' => "Konfigurasi sistem untuk Jenis Kehadiran dengan kode '{$kodeJenisKehadiran}' tidak ditemukan. Harap hubungi administrator."], 500);
+            return response()->json([
+                'success' => false, 
+                'message' => "Konfigurasi sistem untuk Jenis Kehadiran dengan kode '{$kodeJenisKehadiran}' tidak ditemukan. Harap hubungi administrator."
+            ], 500);
         }
 
         try {
             DB::beginTransaction();
+            
+            $absensiData = [
+                'jam_masuk' => $waktuSekarang,
+                'latitude_masuk' => $request->latitude,
+                'longitude_masuk' => $request->longitude,
+                'lokasi_masuk' => optional($settingKehadiran)->nama_gedung ?? 'Lokasi Tidak Diketahui',
+                'foto_masuk' => $fotoPath,
+                'setting_kehadiran_id' => optional($settingKehadiran)->id,
+                'jam_kerja_id' => optional($jamKerja)->id,
+                'jenis_kehadiran_id' => optional($jenisKehadiran)->id,
+                'rencana_kegiatan' => $request->rencana_kegiatan,
+                'status_verifikasi' => 'pending',
+                'terlambat' => $isTerlambat,
+                'durasi_terlambat' => $durasiTerlambat,
+                'metode_absensi' => $metodeAbsensi,
+                'check_sum_absensi' => md5($pegawai->id . $today . $waktuSekarang->timestamp)
+            ];
+
+            // Tambah keterangan metode
+            if ($usingQrCode) {
+                $absensiData['keterangan'] = 'Absensi menggunakan QR Code' . ($fotoPath ? ' dengan foto' : ' tanpa foto');
+            } else {
+                $absensiData['keterangan'] = 'Absensi manual dengan foto';
+            }
+
             $absensi = SimpegAbsensiRecord::updateOrCreate(
                 ['pegawai_id' => $pegawai->id, 'tanggal_absensi' => $today],
-                [
-                    'jam_masuk' => $waktuSekarang,
-                    'latitude_masuk' => $request->latitude,
-                    'longitude_masuk' => $request->longitude,
-                    'lokasi_masuk' => optional($settingKehadiran)->nama_gedung ?? 'Luar Jaringan',
-                    'foto_masuk' => $fotoPath,
-                    'setting_kehadiran_id' => optional($settingKehadiran)->id,
-                    'jam_kerja_id' => optional($jamKerja)->id,
-                    'jenis_kehadiran_id' => optional($jenisKehadiran)->id,
-                    'rencana_kegiatan' => $request->rencana_kegiatan,
-                    'status_verifikasi' => 'pending',
+                $absensiData
+            );
+            
+            DB::commit();
+            
+            $message = "Absen masuk berhasil";
+            if ($usingQrCode) {
+                $message .= " menggunakan QR Code";
+            }
+            if ($isTerlambat) {
+                $message .= ". Anda terlambat {$durasiTerlambat} menit";
+            }
+            
+            return response()->json([
+                'success' => true, 
+                'message' => $message, 
+                'data' => [
+                    'id' => $absensi->id,
+                    'jam_masuk' => $absensi->jam_masuk->format('H:i:s'),
+                    'lokasi' => $absensi->lokasi_masuk,
+                    'metode' => $metodeAbsensi,
                     'terlambat' => $isTerlambat,
                     'durasi_terlambat' => $durasiTerlambat,
-                    'check_sum_absensi' => md5($pegawai->id . $today . $waktuSekarang->timestamp)
+                    'dengan_foto' => $fotoPath !== null
                 ]
-            );
-            DB::commit();
-            return response()->json(['success' => true, 'message' => "Absen masuk berhasil.", 'data' => $absensi]);
+            ]);
+            
         } catch (\Exception $e) {
             DB::rollBack();
-            if (isset($fotoPath) && Storage::disk('public')->exists($fotoPath)) {
+            if (isset($fotoPath) && $fotoPath && Storage::disk('public')->exists($fotoPath)) {
                 Storage::disk('public')->delete($fotoPath);
             }
             Log::error("Absen Masuk Gagal untuk pegawai ID {$pegawai->id}: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Gagal menyimpan absensi: ' . $e->getMessage()], 500);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Gagal menyimpan absensi: ' . $e->getMessage()
+            ], 500);
         }
     }
 
+    /**
+     * ABSEN KELUAR - QR CODE SEBAGAI METODE UTAMA
+     */
     public function absenKeluar(Request $request)
     {
         $pegawai = Auth::user()->pegawai;
         $waktuSekarang = Carbon::now();
         $today = $waktuSekarang->toDateString();
 
-        $absensiHariIni = SimpegAbsensiRecord::with('jamKerja')->where('pegawai_id', $pegawai->id)->where('tanggal_absensi', $today)->first();
+        $absensiHariIni = SimpegAbsensiRecord::with('jamKerja')
+            ->where('pegawai_id', $pegawai->id)
+            ->where('tanggal_absensi', $today)
+            ->first();
+            
         if (!$absensiHariIni || !$absensiHariIni->jam_masuk) {
-            return response()->json(['success' => false, 'message' => 'Anda belum melakukan absen masuk hari ini.'], 422);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Anda belum melakukan absen masuk hari ini.'
+            ], 422);
         }
+        
         if ($absensiHariIni->jam_keluar) {
-            return response()->json(['success' => false, 'message' => 'Anda sudah melakukan absen keluar hari ini.'], 422);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Anda sudah melakukan absen keluar hari ini.'
+            ], 422);
+        }
+
+        // Tentukan metode
+        $usingQrCode = $request->has('qr_token') && !empty($request->qr_token);
+        $metodeAbsensi = $usingQrCode ? 'qr_code' : 'foto';
+
+        // Validation rules
+        $validationRules = [
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'realisasi_kegiatan' => 'nullable|string|max:1000'
+        ];
+
+        if ($usingQrCode) {
+            $validationRules['qr_token'] = 'required|string';
+            $validationRules['foto'] = 'nullable|image|mimes:jpeg,png,jpg|max:5120';
+        } else {
+            $validationRules['foto'] = 'required|image|mimes:jpeg,png,jpg|max:5120';
         }
         
-        $validator = Validator::make($request->all(), [
-            'latitude' => 'required|numeric', 'longitude' => 'required|numeric',
-            'foto' => 'required|image|mimes:jpeg,png,jpg|max:5120',
-            'realisasi_kegiatan' => 'nullable|string|max:1000'
-        ]);
-        if ($validator->fails()) return response()->json(['success' => false, 'message' => 'Validasi gagal.', 'errors' => $validator->errors()], 422);
-        
-        $settingKehadiran = SimpegSettingKehadiran::first();
+        $validator = Validator::make($request->all(), $validationRules);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Validasi gagal.', 
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
+        // Validate QR Code
+        $settingKehadiran = null;
+        
+        if ($usingQrCode) {
+            try {
+                $qrData = json_decode($request->qr_token, true);
+                
+                if (!$qrData || !isset($qrData['token'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Format QR Code tidak valid'
+                    ], 400);
+                }
+
+                $settingKehadiran = SimpegSettingKehadiran::where('qr_code_token', $qrData['token'])->first();
+                
+                if (!$settingKehadiran || !$settingKehadiran->qr_code_enabled) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'QR Code tidak valid atau sudah tidak aktif'
+                    ], 400);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'QR Code tidak valid'
+                ], 400);
+            }
+        } else {
+            $settingKehadiran = SimpegSettingKehadiran::first();
+        }
+
+        // Validate location
         if ($settingKehadiran && $settingKehadiran->wajib_presensi_dilokasi) {
-            // Asumsi method isWithinRadius() ada di model SimpegSettingKehadiran
             if (method_exists($settingKehadiran, 'isWithinRadius')) {
                 $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
                 
                 if (!$isWithinRadius) {
-                    // Jika user berada di luar radius, tolak absensi
                     $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
                     return response()->json([
                         'success' => false, 
-                        'message' => "Anda berada di luar radius presensi yang diizinkan. Jarak Anda dari lokasi: {$distance} meter."
-                    ], 422); // 422 Unprocessable Entity
+                        'message' => "Anda berada di luar radius presensi yang diizinkan. Jarak Anda: {$distance} meter."
+                    ], 422);
                 }
-            } else {
-                // Fallback jika method tidak ada, bisa ditambahkan log error
-                Log::warning('Method isWithinRadius() tidak ditemukan pada model SimpegSettingKehadiran.');
             }
         }
 
-        $fotoPath = $request->file('foto')->store('absensi/keluar', 'public');
+        // Handle foto
+        $fotoPath = null;
+        if ($request->hasFile('foto')) {
+            $fotoPath = $request->file('foto')->store('absensi/keluar', 'public');
+        }
         
         $jamMasuk = Carbon::parse($absensiHariIni->jam_masuk);
         $durasi_kerja = (int) round($waktuSekarang->diffInMinutes($jamMasuk));
@@ -222,24 +409,65 @@ class AbsensiController extends Controller
 
         try {
             DB::beginTransaction();
-            $absensiHariIni->update([
-                'jam_keluar' => $waktuSekarang, 'latitude_keluar' => $request->latitude, 'longitude_keluar' => $request->longitude,
-                'lokasi_keluar' => optional($absensiHariIni->settingKehadiran)->nama_gedung ?? 'Luar Jaringan', 'foto_keluar' => $fotoPath,
-                'durasi_kerja' => $durasi_kerja, 'realisasi_kegiatan' => $request->realisasi_kegiatan,
-                'pulang_awal' => $isPulangAwal, 'durasi_pulang_awal' => $durasiPulangAwal
-            ]);
+            
+            $updateData = [
+                'jam_keluar' => $waktuSekarang,
+                'latitude_keluar' => $request->latitude,
+                'longitude_keluar' => $request->longitude,
+                'lokasi_keluar' => optional($settingKehadiran)->nama_gedung ?? 'Lokasi Tidak Diketahui',
+                'foto_keluar' => $fotoPath,
+                'durasi_kerja' => $durasi_kerja,
+                'realisasi_kegiatan' => $request->realisasi_kegiatan,
+                'pulang_awal' => $isPulangAwal,
+                'durasi_pulang_awal' => $durasiPulangAwal
+            ];
+
+            // Update keterangan
+            $keterangan = $absensiHariIni->keterangan ?? '';
+            if ($usingQrCode) {
+                $keterangan .= ' | Absen keluar menggunakan QR Code' . ($fotoPath ? ' dengan foto' : ' tanpa foto');
+            } else {
+                $keterangan .= ' | Absen keluar manual dengan foto';
+            }
+            $updateData['keterangan'] = $keterangan;
+
+            $absensiHariIni->update($updateData);
+            
             DB::commit();
-            return response()->json(['success' => true, 'message' => "Absen keluar berhasil. Durasi kerja: {$durasiKerjaFormatted}", 'data' => $absensiHariIni]);
+            
+            $message = "Absen keluar berhasil. Durasi kerja: {$durasiKerjaFormatted}";
+            if ($usingQrCode) {
+                $message .= " (via QR Code)";
+            }
+            
+            return response()->json([
+                'success' => true, 
+                'message' => $message, 
+                'data' => [
+                    'id' => $absensiHariIni->id,
+                    'jam_keluar' => $absensiHariIni->jam_keluar->format('H:i:s'),
+                    'durasi_kerja' => $durasiKerjaFormatted,
+                    'lokasi' => $absensiHariIni->lokasi_keluar,
+                    'metode' => $metodeAbsensi,
+                    'pulang_awal' => $isPulangAwal,
+                    'dengan_foto' => $fotoPath !== null
+                ]
+            ]);
+            
         } catch (\Exception $e) {
             DB::rollBack();
-            if (isset($fotoPath) && Storage::disk('public')->exists($fotoPath)) {
+            if (isset($fotoPath) && $fotoPath && Storage::disk('public')->exists($fotoPath)) {
                 Storage::disk('public')->delete($fotoPath);
             }
             Log::error("Absen Keluar Gagal untuk pegawai ID {$pegawai->id}: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Gagal menyimpan absensi keluar: ' . $e->getMessage()], 500);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Gagal menyimpan absensi keluar: ' . $e->getMessage()
+            ], 500);
         }
     }
 
+    // Keep other existing methods...
     public function getHistory(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -266,13 +494,14 @@ class AbsensiController extends Controller
             $status = $item->getAttendanceStatus();
             return [
                 'id' => $item->id,
-                'tanggal' => Carbon::parse($item->tanggal_absensi)->toDateString(), // Format YYYY-MM-DD
-                'tanggal_formatted' => Carbon::parse($item->tanggal_absensi)->locale('id')->isoFormat('dddd, D MMMM YYYY'), // Format untuk display
+                'tanggal' => Carbon::parse($item->tanggal_absensi)->toDateString(),
+                'tanggal_formatted' => Carbon::parse($item->tanggal_absensi)->locale('id')->isoFormat('dddd, D MMMM YYYY'),
                 'jam_masuk' => $item->jam_masuk ? Carbon::parse($item->jam_masuk)->format('H:i') : '-',
                 'jam_keluar' => $item->jam_keluar ? Carbon::parse($item->jam_keluar)->format('H:i') : '-',
                 'status_label' => $status['label'],
                 'status_color' => $status['color'],
                 'durasi_kerja' => $item->getFormattedWorkingDuration(),
+                'metode_absensi' => $item->metode_absensi ?? 'manual'
             ];
         });
 
@@ -287,118 +516,6 @@ class AbsensiController extends Controller
                 'last_page' => $riwayatPaginator->lastPage(),
             ]
         ]);
-    }
-
-    public function getDetail($id)
-    {
-        $pegawai = Auth::user()->pegawai;
-        $absensiRecord = SimpegAbsensiRecord::find($id);
-
-        if (!$absensiRecord) {
-            return response()->json(['success' => false, 'message' => 'Data absensi tidak ditemukan.'], 404);
-        }
-
-        if ($absensiRecord->pegawai_id !== $pegawai->id) {
-            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki akses untuk melihat data ini.'], 403);
-        }
-        
-        $detailData = $absensiRecord->getFullAttendanceInfo();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Detail absensi berhasil dimuat.',
-            'data' => $detailData
-        ]);
-    }
-
-    public function requestCorrection(Request $request, $id)
-    {
-        $pegawai = Auth::user()->pegawai;
-        $absensi = SimpegAbsensiRecord::where('pegawai_id', $pegawai->id)->find($id);
-
-        if (!$absensi) {
-            return response()->json(['success' => false, 'message' => 'Data absensi tidak ditemukan'], 404);
-        }
-
-        if (method_exists($absensi, 'canBeCorrected') && !$absensi->canBeCorrected()) {
-            return response()->json(['success' => false, 'message' => 'Absensi ini tidak dapat dikoreksi (sudah diverifikasi atau melewati batas waktu)'], 422);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'alasan_koreksi' => 'required|string|max:1000',
-            'dokumen_pendukung' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-        
-        $absensi->update([
-            'status_verifikasi' => 'correction_requested',
-            'keterangan' => ($absensi->keterangan ? $absensi->keterangan . ' | ' : '') . 'KOREKSI: ' . $request->alasan_koreksi
-        ]);
-
-        return response()->json(['success' => true, 'message' => 'Permintaan koreksi absensi berhasil dikirim']);
-    }
-
-    public function verifyAbsensi(Request $request, $id)
-    {
-        $verifikator = Auth::user()->pegawai;
-        $absensi = SimpegAbsensiRecord::with('pegawai')->find($id);
-
-        if (!$absensi) {
-            return response()->json(['success' => false, 'message' => 'Data absensi tidak ditemukan'], 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'status' => 'required|in:verified,rejected',
-            'catatan' => 'nullable|string|max:500'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
-        if (method_exists($absensi, 'updateVerificationStatus')) {
-            $absensi->updateVerificationStatus($request->status, $verifikator->id, $request->catatan);
-        } else {
-            $absensi->update([
-                'status_verifikasi' => $request->status,
-                'verifikasi_oleh' => $verifikator->id,
-                'verifikasi_at' => now(),
-                'keterangan' => ($absensi->keterangan ? $absensi->keterangan . ' | ' : '') . 'VERIFIKASI: ' . $request->catatan
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Status absensi berhasil diperbarui.',
-            'data' => $absensi
-        ]);
-    }
-
-    public function getAbsensiForVerification(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'status' => 'nullable|in:pending,correction_requested',
-            'tanggal_mulai' => 'nullable|date',
-            'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Filter tidak valid.', 'errors' => $validator->errors()], 422);
-        }
-
-        $query = SimpegAbsensiRecord::with('pegawai:id,nama,nip')
-            ->whereIn('status_verifikasi', [$request->input('status', 'pending'), 'correction_requested']);
-
-        if ($request->has('tanggal_mulai') && $request->has('tanggal_selesai')) {
-            $query->whereBetween('tanggal_absensi', [$request->tanggal_mulai, $request->tanggal_selesai]);
-        }
-
-        $absensiList = $query->orderBy('tanggal_absensi', 'desc')->paginate(15);
-
-        return response()->json(['success' => true, 'data' => $absensiList]);
     }
 
     public function getDashboardStats(Request $request)
@@ -417,6 +534,8 @@ class AbsensiController extends Controller
             'total_pulang_awal' => (clone $query)->where('pulang_awal', true)->count(),
             'total_cuti' => (clone $query)->whereNotNull('cuti_record_id')->count(),
             'total_izin' => (clone $query)->whereNotNull('izin_record_id')->count(),
+            'absensi_qr_code' => (clone $query)->where('metode_absensi', 'qr_code')->count(),
+            'absensi_manual' => (clone $query)->where('metode_absensi', 'foto')->count(),
         ];
 
         $hariKerja = 0;
