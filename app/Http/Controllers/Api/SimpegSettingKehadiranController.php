@@ -8,17 +8,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SimpegSettingKehadiranController extends Controller
 {
-    // Get setting kehadiran (show form with existing data or empty form)
     public function index()
     {
         try {
-            // Cari setting yang ada (ambil yang pertama karena harusnya hanya ada 1)
             $setting = SimpegSettingKehadiran::active()->first();
             
-            // Jika tidak ada setting, return template kosong untuk create
             if (!$setting) {
                 return response()->json([
                     'success' => true,
@@ -30,7 +28,6 @@ class SimpegSettingKehadiranController extends Controller
                 ]);
             }
 
-            // Jika ada setting, return data untuk edit
             return response()->json([
                 'success' => true,
                 'data' => $this->formatSettingResponse($setting),
@@ -48,11 +45,9 @@ class SimpegSettingKehadiranController extends Controller
         }
     }
 
-    // Save setting (auto create/update)
-    public function store(Request $request)
+   public function store(Request $request)
     {
         try {
-            // Validasi input
             $validator = Validator::make($request->all(), [
                 'nama_gedung' => 'required|string|max:255',
                 'latitude' => 'required|numeric|between:-90,90',
@@ -65,7 +60,8 @@ class SimpegSettingKehadiranController extends Controller
                 'wajib_foto' => 'boolean',
                 'wajib_isi_rencana_kegiatan' => 'boolean',
                 'wajib_isi_realisasi_kegiatan' => 'boolean',
-                'wajib_presensi_dilokasi' => 'boolean'
+                'wajib_presensi_dilokasi' => 'boolean',
+                'qr_code_enabled' => 'boolean'
             ]);
 
             if ($validator->fails()) {
@@ -78,14 +74,14 @@ class SimpegSettingKehadiranController extends Controller
 
             $data = $request->all();
             
-            // Set default values untuk boolean fields jika tidak diset
             $booleanFields = [
                 'berlaku_keterlambatan',
                 'berlaku_pulang_cepat', 
                 'wajib_foto',
                 'wajib_isi_rencana_kegiatan',
                 'wajib_isi_realisasi_kegiatan',
-                'wajib_presensi_dilokasi'
+                'wajib_presensi_dilokasi',
+                'qr_code_enabled'
             ];
 
             foreach ($booleanFields as $field) {
@@ -94,54 +90,122 @@ class SimpegSettingKehadiranController extends Controller
                 }
             }
 
-            // Set default toleransi jika tidak diset
             if (!isset($data['toleransi_terlambat']) || $data['toleransi_terlambat'] === null) {
-                $data['toleransi_terlambat'] = 15; // Default 15 menit
+                $data['toleransi_terlambat'] = 15;
             }
             
             if (!isset($data['toleransi_pulang_cepat']) || $data['toleransi_pulang_cepat'] === null) {
-                $data['toleransi_pulang_cepat'] = 15; // Default 15 menit
+                $data['toleransi_pulang_cepat'] = 15;
             }
 
-            // Cek apakah sudah ada setting
             $existingSetting = SimpegSettingKehadiran::active()->first();
 
             DB::beginTransaction();
 
-            if ($existingSetting) {
-                // UPDATE existing setting
-                $oldData = $existingSetting->getOriginal();
-                $existingSetting->update($data);
+            try {
+                if ($existingSetting) {
+                    // === UPDATE EXISTING ===
+                    $oldData = $existingSetting->getOriginal();
+                    $existingSetting->update($data);
+
+                    \Log::info('Updating existing setting, QR enabled: ' . ($data['qr_code_enabled'] ? 'YES' : 'NO'));
+
+                    // Check if need to regenerate QR
+                    $needRegenerate = false;
+                    
+                    if ($data['qr_code_enabled']) {
+                        // QR enabled, check if need regenerate
+                        $isQrMissing = is_null($existingSetting->qr_code_path) || is_null($existingSetting->qr_code_token);
+                        $locationChanged = $oldData['latitude'] != $data['latitude'] || 
+                                        $oldData['longitude'] != $data['longitude'] ||
+                                        $oldData['nama_gedung'] != $data['nama_gedung'];
+                        $qrJustEnabled = !$oldData['qr_code_enabled'] && $data['qr_code_enabled'];
+                        
+                        $needRegenerate = $isQrMissing || $locationChanged || $qrJustEnabled;
+                        
+                        \Log::info('QR Regenerate Check:', [
+                            'qr_missing' => $isQrMissing,
+                            'location_changed' => $locationChanged,
+                            'qr_just_enabled' => $qrJustEnabled,
+                            'need_regenerate' => $needRegenerate
+                        ]);
+                    }
+                    
+                    if ($needRegenerate) {
+                        \Log::info('Regenerating QR Code for existing setting...');
+                        $qrResult = $existingSetting->regenerateQrCode();
+                        \Log::info('QR Regenerate result: ' . ($qrResult ? 'SUCCESS' : 'FAILED'));
+                        
+                        if (!$qrResult) {
+                            \Log::error('QR regeneration failed but continuing...');
+                        }
+                    }
+                    
+                    ActivityLogger::log('update', $existingSetting, $oldData);
+
+                    DB::commit();
+
+                    // Refresh to get latest data
+                    $existingSetting->refresh();
+
+                    return response()->json([
+                        'success' => true,
+                        'data' => $this->formatSettingResponse($existingSetting),
+                        'mode' => 'updated',
+                        'message' => 'Setting kehadiran berhasil diperbarui'
+                    ]);
+
+                } else {
+                    // === CREATE NEW ===
+                    \Log::info('Creating new setting, QR enabled: ' . ($data['qr_code_enabled'] ? 'YES' : 'NO'));
+                    
+                    $setting = SimpegSettingKehadiran::create($data);
+                    \Log::info('Setting created with ID: ' . $setting->id);
                 
-                ActivityLogger::log('update', $existingSetting, $oldData);
+                    // Generate QR if enabled
+                    if ($setting->qr_code_enabled) {
+                        \Log::info('Generating QR Code for new setting...');
+                        $qrResult = $setting->regenerateQrCode();
+                        \Log::info('QR Generation result: ' . ($qrResult ? 'SUCCESS' : 'FAILED'));
+                        
+                        if ($qrResult) {
+                            \Log::info('QR Code generated successfully:', [
+                                'token' => $setting->qr_code_token,
+                                'path' => $setting->qr_code_path,
+                                'url' => $setting->getQrCodeUrl()
+                            ]);
+                        } else {
+                            \Log::error('QR Code generation failed for new setting');
+                        }
+                    }
+                    
+                    ActivityLogger::log('create', $setting, $setting->toArray());
 
-                DB::commit();
+                    DB::commit();
 
-                return response()->json([
-                    'success' => true,
-                    'data' => $this->formatSettingResponse($existingSetting->fresh()),
-                    'mode' => 'updated',
-                    'message' => 'Setting kehadiran berhasil diperbarui'
-                ]);
+                    // Refresh to ensure we have latest data
+                    $setting->refresh();
+                    
+                    \Log::info('After refresh - QR Path: ' . ($setting->qr_code_path ?? 'NULL'));
 
-            } else {
-                // CREATE new setting
-                $setting = SimpegSettingKehadiran::create($data);
-                
-                ActivityLogger::log('create', $setting, $setting->toArray());
-
-                DB::commit();
-
-                return response()->json([
-                    'success' => true,
-                    'data' => $this->formatSettingResponse($setting),
-                    'mode' => 'created',
-                    'message' => 'Setting kehadiran berhasil dibuat'
-                ], 201);
+                    return response()->json([
+                        'success' => true,
+                        'data' => $this->formatSettingResponse($setting),
+                        'mode' => 'created',
+                        'message' => 'Setting kehadiran berhasil dibuat'
+                    ], 201);
+                }
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Transaction error in store(): ' . $e->getMessage());
+                \Log::error('Stack trace: ' . $e->getTraceAsString());
+                throw $e;
             }
 
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            \Log::error('Store method error: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
@@ -150,11 +214,180 @@ class SimpegSettingKehadiranController extends Controller
         }
     }
 
-    // Get detail setting
+    // NEW: Download QR Code
+    public function downloadQrCode($id)
+    {
+        try {
+            $setting = SimpegSettingKehadiran::active()->find($id);
+
+            if (!$setting) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Setting kehadiran tidak ditemukan'
+                ], 404);
+            }
+
+            if (!$setting->qr_code_enabled || !$setting->qr_code_path) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'QR Code tidak tersedia'
+                ], 404);
+            }
+
+            $filePath = storage_path('app/public/' . $setting->qr_code_path);
+            
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File QR Code tidak ditemukan'
+                ], 404);
+            }
+
+            $fileName = 'QR_' . str_replace(' ', '_', $setting->nama_gedung) . '_' . date('Ymd') . '.png';
+
+            return response()->download($filePath, $fileName, [
+                'Content-Type' => 'image/png'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal download QR Code: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // NEW: Regenerate QR Code
+    public function regenerateQrCode($id)
+    {
+        try {
+            $setting = SimpegSettingKehadiran::active()->find($id);
+
+            if (!$setting) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Setting kehadiran tidak ditemukan'
+                ], 404);
+            }
+
+            DB::beginTransaction();
+
+            $result = $setting->regenerateQrCode();
+
+            if (!$result) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal regenerate QR Code'
+                ], 500);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'QR Code berhasil digenerate ulang',
+                'data' => [
+                    'qr_code_url' => $setting->getQrCodeUrl(),
+                    'generated_at' => $setting->qr_code_generated_at->format('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal regenerate QR Code: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // NEW: Validate QR Code
+    public function validateQrCode(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'qr_token' => 'required|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Decode QR data
+            $qrData = json_decode($request->qr_token, true);
+            
+            if (!$qrData || !isset($qrData['token'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Format QR Code tidak valid'
+                ], 400);
+            }
+
+            // Find setting by token
+            $setting = SimpegSettingKehadiran::active()
+                ->where('qr_code_token', $qrData['token'])
+                ->first();
+
+            if (!$setting) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'QR Code tidak ditemukan atau sudah tidak berlaku'
+                ], 404);
+            }
+
+            if (!$setting->qr_code_enabled) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'QR Code sudah tidak aktif'
+                ], 400);
+            }
+
+            // Validate location if provided
+            $locationValid = true;
+            $distance = null;
+
+            if ($request->has('latitude') && $request->has('longitude')) {
+                if ($setting->wajib_presensi_dilokasi) {
+                    $locationValid = $setting->isWithinRadius($request->latitude, $request->longitude);
+                    $distance = $setting->calculateDistance($request->latitude, $request->longitude);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'QR Code valid',
+                'data' => [
+                    'setting_id' => $setting->id,
+                    'nama_gedung' => $setting->nama_gedung,
+                    'location_valid' => $locationValid,
+                    'distance' => $distance ? round($distance, 2) : null,
+                    'max_radius' => $setting->radius,
+                    'qr_token' => $qrData['token'],
+                    'requirements' => [
+                        'wajib_foto' => $setting->wajib_foto,
+                        'wajib_lokasi' => $setting->wajib_presensi_dilokasi,
+                        'wajib_rencana_kegiatan' => $setting->wajib_isi_rencana_kegiatan
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal validasi QR Code: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function show($id = null)
     {
         try {
-            // Jika tidak ada ID, ambil setting aktif pertama
             if ($id === null) {
                 $setting = SimpegSettingKehadiran::active()->first();
             } else {
@@ -178,7 +411,8 @@ class SimpegSettingKehadiranController extends Controller
                     'requires_photo' => $setting->wajib_foto,
                     'requires_location' => $setting->wajib_presensi_dilokasi,
                     'requires_activity_plan' => $setting->wajib_isi_rencana_kegiatan,
-                    'requires_activity_report' => $setting->wajib_isi_realisasi_kegiatan
+                    'requires_activity_report' => $setting->wajib_isi_realisasi_kegiatan,
+                    'qr_code_enabled' => $setting->qr_code_enabled
                 ]
             ]);
 
@@ -190,166 +424,6 @@ class SimpegSettingKehadiranController extends Controller
         }
     }
 
-    // Reset setting to default values
-    public function resetToDefault()
-    {
-        try {
-            $defaultData = [
-                'nama_gedung' => 'Kampus Utama',
-                'latitude' => -6.559890,
-                'longitude' => 106.792960,
-                'radius' => 200,
-                'berlaku_keterlambatan' => true,
-                'toleransi_terlambat' => 15,
-                'berlaku_pulang_cepat' => true,
-                'toleransi_pulang_cepat' => 15,
-                'wajib_foto' => true,
-                'wajib_isi_rencana_kegiatan' => false,
-                'wajib_isi_realisasi_kegiatan' => false,
-                'wajib_presensi_dilokasi' => true
-            ];
-
-            DB::beginTransaction();
-
-            $existingSetting = SimpegSettingKehadiran::active()->first();
-
-            if ($existingSetting) {
-                $oldData = $existingSetting->getOriginal();
-                $existingSetting->update($defaultData);
-                ActivityLogger::log('update', $existingSetting, $oldData);
-                $setting = $existingSetting->fresh();
-                $message = 'Setting kehadiran berhasil direset ke nilai default';
-            } else {
-                $setting = SimpegSettingKehadiran::create($defaultData);
-                ActivityLogger::log('create', $setting, $setting->toArray());
-                $message = 'Setting kehadiran default berhasil dibuat';
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'data' => $this->formatSettingResponse($setting),
-                'message' => $message
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mereset setting: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // Test coordinates (check if coordinates are within radius)
-    public function testCoordinates(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $setting = SimpegSettingKehadiran::active()->first();
-
-            if (!$setting) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Setting kehadiran belum dikonfigurasi'
-                ], 404);
-            }
-
-            $testLat = $request->latitude;
-            $testLon = $request->longitude;
-            
-            $distance = $setting->calculateDistance($testLat, $testLon);
-            $isWithinRadius = $setting->isWithinRadius($testLat, $testLon);
-            $maxRadius = $setting->radius ?? 100;
-
-            return response()->json([
-                'success' => true,
-                'test_result' => [
-                    'coordinates' => [
-                        'latitude' => $testLat,
-                        'longitude' => $testLon
-                    ],
-                    'distance_from_center' => round($distance, 2),
-                    'max_radius' => $maxRadius,
-                    'is_within_radius' => $isWithinRadius,
-                    'distance_status' => $isWithinRadius ? 'DALAM RADIUS' : 'DILUAR RADIUS',
-                    'maps_url' => "https://maps.google.com/?q={$testLat},{$testLon}"
-                ],
-                'center_location' => [
-                    'nama_gedung' => $setting->nama_gedung,
-                    'latitude' => $setting->latitude,
-                    'longitude' => $setting->longitude,
-                    'maps_url' => $setting->maps_url
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengecek koordinat: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // Get system info for attendance
-    public function getSystemInfo()
-    {
-        try {
-            $setting = SimpegSettingKehadiran::active()->first();
-
-            if (!$setting) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Setting kehadiran belum dikonfigurasi',
-                    'configured' => false
-                ], 404);
-            }
-
-            return response()->json([
-                'success' => true,
-                'configured' => true,
-                'system_info' => [
-                    'attendance_rules' => $setting->getLocationInfo()['rules'],
-                    'tolerance_settings' => $setting->getLocationInfo()['toleransi'],
-                    'location_info' => [
-                        'nama_gedung' => $setting->nama_gedung,
-                        'coordinates' => $setting->getLocationInfo()['koordinat'],
-                        'radius_meter' => $setting->radius,
-                        'maps_url' => $setting->maps_url
-                    ]
-                ],
-                'validation_functions' => [
-                    'can_check_late' => $setting->berlaku_keterlambatan,
-                    'can_check_early_leave' => $setting->berlaku_pulang_cepat,
-                    'location_validation_required' => $setting->wajib_presensi_dilokasi,
-                    'photo_required' => $setting->wajib_foto,
-                    'activity_plan_required' => $setting->wajib_isi_rencana_kegiatan,
-                    'activity_report_required' => $setting->wajib_isi_realisasi_kegiatan
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil info sistem: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // Helper: Format setting response
     private function formatSettingResponse($setting)
     {
         if (!$setting) {
@@ -364,6 +438,12 @@ class SimpegSettingKehadiranController extends Controller
                 'longitude' => $setting->longitude
             ],
             'radius' => $setting->radius,
+            'qr_code' => [
+                'enabled' => $setting->qr_code_enabled,
+                'url' => $setting->getQrCodeUrl(),
+                'generated_at' => $setting->qr_code_generated_at?->format('Y-m-d H:i:s'),
+                'download_url' => $setting->qr_code_enabled ? route('api.setting-kehadiran.download-qr', $setting->id) : null
+            ],
             'late_rules' => [
                 'berlaku_keterlambatan' => $setting->berlaku_keterlambatan,
                 'toleransi_terlambat' => $setting->toleransi_terlambat
@@ -384,7 +464,6 @@ class SimpegSettingKehadiranController extends Controller
         ];
     }
 
-    // Helper: Get form template
     private function getFormTemplate()
     {
         return [
@@ -419,6 +498,12 @@ class SimpegSettingKehadiranController extends Controller
                 'max' => 5000,
                 'required' => true,
                 'default' => 200
+            ],
+            'qr_code_enabled' => [
+                'type' => 'checkbox',
+                'label' => 'Aktifkan QR Code',
+                'description' => 'Gunakan QR Code untuk presensi',
+                'default' => false
             ],
             'berlaku_keterlambatan' => [
                 'type' => 'checkbox',
@@ -477,7 +562,6 @@ class SimpegSettingKehadiranController extends Controller
         ];
     }
 
-    // Helper: Get validation rules
     private function getValidationRules()
     {
         return [
@@ -492,7 +576,8 @@ class SimpegSettingKehadiranController extends Controller
             'wajib_foto' => 'boolean',
             'wajib_isi_rencana_kegiatan' => 'boolean',
             'wajib_isi_realisasi_kegiatan' => 'boolean',
-            'wajib_presensi_dilokasi' => 'boolean'
+            'wajib_presensi_dilokasi' => 'boolean',
+            'qr_code_enabled' => 'boolean'
         ];
     }
 }
