@@ -176,6 +176,7 @@ Route::get('/test-sso', function(){
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::get('captcha', [AuthController::class, 'generateCaptcha']);
+    Route::post('reset', [AuthController::class, 'resetDevice']);
 
     Route::middleware('auth:api')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
@@ -977,6 +978,8 @@ Route::prefix('validasi-cuti')->middleware('auth:api')->group(function () {
             Route::get('/{id}/download-qr', [SimpegSettingKehadiranController::class, 'downloadQrCode'])->name('api.setting-kehadiran.download-qr');
             Route::post('/{id}/regenerate-qr', [SimpegSettingKehadiranController::class, 'regenerateQrCode'])->name('api.setting-kehadiran.regenerate-qr');
             Route::post('/validate-qr', [SimpegSettingKehadiranController::class, 'validateQrCode'])->name('api.setting-kehadiran.validate-qr');
+            Route::post('validate-qr', [SimpegSettingKehadiranController::class, 'validateQrCode'])
+            ->name('api.validate-qr');
 
         });
 
@@ -1524,6 +1527,8 @@ Route::apiResource('univ-luar', SimpegUnivLuarController::class);
             Route::delete('/{id}', [EvaluasiKinerjaController::class, 'destroy']);
         });
         Route::prefix('absensi')->group(function () {
+            Route::post('validate-qr', [SimpegSettingKehadiranController::class, 'validateQrCode'])
+            ->name('api.validate-qr');
 
             // Get status absensi hari ini
             Route::get('/status', [AbsensiController::class, 'getAbsensiStatus'])

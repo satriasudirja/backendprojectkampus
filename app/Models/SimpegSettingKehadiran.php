@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Illuminate\Support\Str;
+use App\Services\QrPinBundleGenerator;
+use Carbon\Carbon;
 
 class SimpegSettingKehadiran extends Model
 {
@@ -33,7 +33,10 @@ class SimpegSettingKehadiran extends Model
         'qr_code_token',
         'qr_code_path',
         'qr_code_generated_at',
-        'qr_code_enabled'
+        'qr_code_enabled',
+        'qr_pin_code',           // ADDED
+        'qr_pin_expires_at',     // ADDED
+        'qr_pin_enabled'         // ADDED
     ];
 
     protected $casts = [
@@ -49,138 +52,121 @@ class SimpegSettingKehadiran extends Model
         'wajib_isi_realisasi_kegiatan' => 'boolean',
         'wajib_presensi_dilokasi' => 'boolean',
         'qr_code_enabled' => 'boolean',
+        'qr_pin_enabled' => 'boolean',          // ADDED
         'qr_code_generated_at' => 'datetime',
+        'qr_pin_expires_at' => 'datetime',      // ADDED
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime'
     ];
 
-    // Event untuk auto-generate QR Code saat create/update
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($model) {
-            $model->generateQrCode();
+            // Only generate bundle if QR or PIN is enabled
+            if ($model->qr_code_enabled || $model->qr_pin_enabled) {
+                $model->generateQrPinBundle();
+            }
         });
 
         static::deleting(function ($model) {
-            $model->deleteQrCodeFile();
+            $model->deleteBundleFile();
         });
     }
 
-    // Relasi ke model AbsensiRecord
     public function absensiRecords()
     {
         return $this->hasMany(SimpegAbsensiRecord::class, 'setting_kehadiran_id');
     }
 
-    // Scope untuk setting aktif
     public function scopeActive($query)
     {
         return $query->whereNull('deleted_at');
     }
 
-    // Method untuk mendapatkan setting default
     public static function getDefault()
     {
         return self::active()->first();
     }
 
-    // Method untuk generate QR Code
+    /**
+     * Generate QR + PIN Bundle (Main Method)
+     */
+    public function generateQrPinBundle()
+    {
+        $generator = new QrPinBundleGenerator();
+        $result = $generator->generateBundle($this);
+        
+        if ($result['success']) {
+            $this->qr_code_path = $result['path'];
+            $this->qr_code_generated_at = now();
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Regenerate QR + PIN Bundle
+     */
+    public function regenerateQrPinBundle()
+    {
+        $generator = new QrPinBundleGenerator();
+        $result = $generator->regenerateBundle($this);
+        
+        return $result['success'];
+    }
+
+    /**
+     * Legacy method - now uses bundle generator
+     */
     public function generateQrCode()
     {
-        try {
-            \Log::info('Starting QR Code generation for setting: ' . $this->id);
-            
-            // LANGSUNG GUNAKAN FALLBACK METHOD (Google Charts API)
-            // Karena SimpleSoftwareIO butuh Imagick yang susah di Windows
-            \Log::info('Using Google Charts API for QR generation (no extension required)');
-            return $this->generateQrCodeFallback();
-            
-        } catch (\Exception $e) {
-            \Log::error('Failed to generate QR Code: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            return false;
-        }
+        return $this->generateQrPinBundle();
     }
 
-    // Fallback method menggunakan Google Charts API
-    private function generateQrCodeFallback()
-    {
-        try {
-            \Log::info('Using Google Charts API fallback for QR generation');
-            
-            $this->qr_code_token = Str::random(32) . '_' . uniqid();
-            
-            $qrData = json_encode([
-                'type' => 'attendance',
-                'setting_id' => $this->id ?? 'pending',
-                'token' => $this->qr_code_token,
-                'timestamp' => now()->timestamp,
-                'location' => [
-                    'name' => $this->nama_gedung,
-                    'lat' => $this->latitude,
-                    'lng' => $this->longitude
-                ]
-            ]);
-
-            // Use Google Charts API
-            $size = '400x400';
-            $qrUrl = 'https://chart.googleapis.com/chart?chs=' . $size . '&cht=qr&chl=' . urlencode($qrData) . '&choe=UTF-8';
-            
-            \Log::info('Fetching QR from Google API: ' . $qrUrl);
-            $qrImage = @file_get_contents($qrUrl);
-            
-            if ($qrImage === false) {
-                throw new \Exception('Failed to generate QR code from Google API');
-            }
-
-            // Ensure directory exists
-            $directory = storage_path('app/public/qr_codes');
-            if (!is_dir($directory)) {
-                mkdir($directory, 0755, true);
-            }
-
-            $fileName = 'qr_' . ($this->id ?? uniqid()) . '_' . time() . '.png';
-            $path = 'qr_codes/' . $fileName;
-            
-            Storage::disk('public')->put($path, $qrImage);
-            
-            if (!Storage::disk('public')->exists($path)) {
-                throw new \Exception('QR Code file was not saved via fallback');
-            }
-            
-            $this->qr_code_path = $path;
-            $this->qr_code_generated_at = now();
-
-            \Log::info('Fallback QR generation successful');
-            return true;
-        } catch (\Exception $e) {
-            \Log::error('Fallback QR generation also failed: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    // Method untuk regenerate QR Code
+    /**
+     * Legacy method - now uses bundle generator
+     */
     public function regenerateQrCode()
     {
-        // Delete old QR code file
-        $this->deleteQrCodeFile();
-        
-        // Generate new QR code
-        return $this->generateQrCode() && $this->save();
+        return $this->regenerateQrPinBundle() && $this->save();
     }
 
-    // Method untuk delete QR Code file
-    public function deleteQrCodeFile()
+    /**
+     * Regenerate PIN only (keep same QR)
+     */
+    public function regeneratePinCode()
+    {
+        $generator = new QrPinBundleGenerator();
+        
+        // Just regenerate PIN, not full bundle
+        do {
+            $pin = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+            $exists = self::where('qr_pin_code', $pin)
+                ->where('id', '!=', $this->id)
+                ->exists();
+        } while ($exists);
+        
+        $this->qr_pin_code = $pin;
+        
+        return $this->save();
+    }
+
+    public function deleteBundleFile()
     {
         if ($this->qr_code_path && Storage::disk('public')->exists($this->qr_code_path)) {
             Storage::disk('public')->delete($this->qr_code_path);
         }
     }
 
-    // Method untuk mendapatkan URL QR Code
+    public function deleteQrCodeFile()
+    {
+        return $this->deleteBundleFile();
+    }
+
     public function getQrCodeUrl()
     {
         if (!$this->qr_code_path) {
@@ -190,7 +176,15 @@ class SimpegSettingKehadiran extends Model
         return Storage::disk('public')->url($this->qr_code_path);
     }
 
-    // Method untuk validasi QR Code token
+    public function getBundleDownloadUrl()
+    {
+        if (!$this->qr_code_path) {
+            return null;
+        }
+        
+        return route('api.setting-kehadiran.download-qr', $this->id);
+    }
+
     public function validateQrToken($token)
     {
         if (!$this->qr_code_enabled) {
@@ -200,7 +194,39 @@ class SimpegSettingKehadiran extends Model
         return $this->qr_code_token === $token;
     }
 
-    // Method untuk validasi koordinat dalam radius
+    /**
+     * Validate PIN code
+     */
+    public function validatePinCode($pin)
+    {
+        if (!$this->qr_pin_enabled) {
+            return false;
+        }
+
+        if ($this->qr_pin_code !== $pin) {
+            return false;
+        }
+
+        if ($this->qr_pin_expires_at && now()->isAfter($this->qr_pin_expires_at)) {
+            \Log::warning('PIN code expired: ' . $pin);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if PIN is expired
+     */
+    public function isPinExpired()
+    {
+        if (!$this->qr_pin_expires_at) {
+            return false;
+        }
+
+        return now()->isAfter($this->qr_pin_expires_at);
+    }
+
     public function isWithinRadius($latitude, $longitude)
     {
         if (!$this->wajib_presensi_dilokasi) {
@@ -213,7 +239,6 @@ class SimpegSettingKehadiran extends Model
         return $distance <= $maxRadius;
     }
 
-    // Method untuk menghitung jarak dari koordinat ke lokasi setting
     public function calculateDistance($latitude, $longitude)
     {
         $earthRadius = 6371000;
@@ -230,7 +255,15 @@ class SimpegSettingKehadiran extends Model
         return $earthRadius * $c;
     }
 
-    // Method untuk mendapatkan info lokasi lengkap
+    /**
+     * Get complete bundle information
+     */
+    public function getBundleInfo()
+    {
+        $generator = new QrPinBundleGenerator();
+        return $generator->getBundleInfo($this);
+    }
+
     public function getLocationInfo()
     {
         return [
@@ -241,17 +274,21 @@ class SimpegSettingKehadiran extends Model
             ],
             'radius_meter' => $this->radius ?? 100,
             'alamat_maps' => "https://maps.google.com/?q={$this->latitude},{$this->longitude}",
-            'qr_code' => [
-                'enabled' => $this->qr_code_enabled,
-                'url' => $this->getQrCodeUrl(),
-                'generated_at' => $this->qr_code_generated_at?->format('Y-m-d H:i:s')
+            'qr_pin_bundle' => [
+                'enabled' => $this->qr_code_enabled || $this->qr_pin_enabled,
+                'bundle_url' => $this->getQrCodeUrl(),
+                'download_url' => $this->getBundleDownloadUrl(),
+                'qr_enabled' => $this->qr_code_enabled,
+                'pin_enabled' => $this->qr_pin_enabled,
+                'pin_code' => $this->qr_pin_enabled ? $this->qr_pin_code : null,
+                'generated_at' => $this->qr_code_generated_at?->format('Y-m-d H:i:s'),
+                'pin_expired' => $this->isPinExpired()
             ],
             'rules' => [
                 'wajib_foto' => $this->wajib_foto ?? true,
                 'wajib_dilokasi' => $this->wajib_presensi_dilokasi ?? true,
                 'wajib_rencana_kegiatan' => $this->wajib_isi_rencana_kegiatan ?? false,
-                'wajib_realisasi_kegiatan' => $this->wajib_isi_realisasi_kegiatan ?? false,
-                'qr_code_enabled' => $this->qr_code_enabled ?? false
+                'wajib_realisasi_kegiatan' => $this->wajib_isi_realisasi_kegiatan ?? false
             ],
             'toleransi' => [
                 'terlambat_menit' => $this->berlaku_keterlambatan ? ($this->toleransi_terlambat ?? 15) : 0,
@@ -260,26 +297,28 @@ class SimpegSettingKehadiran extends Model
         ];
     }
 
-    // Method untuk validasi absensi berdasarkan setting
     public function validateAttendance($data)
     {
         $errors = [];
 
-        // Validasi QR Code jika enabled
-        if ($this->qr_code_enabled) {
-            if (empty($data['qr_token'])) {
-                $errors[] = 'QR Code token diperlukan';
-            } elseif (!$this->validateQrToken($data['qr_token'])) {
-                $errors[] = 'QR Code tidak valid atau sudah kadaluarsa';
+        if ($this->qr_code_enabled || $this->qr_pin_enabled) {
+            if (empty($data['qr_token']) && empty($data['pin_code'])) {
+                $errors[] = 'QR Code atau PIN diperlukan';
+            } elseif (!empty($data['qr_token'])) {
+                if (!$this->validateQrToken($data['qr_token'])) {
+                    $errors[] = 'QR Code tidak valid';
+                }
+            } elseif (!empty($data['pin_code'])) {
+                if (!$this->validatePinCode($data['pin_code'])) {
+                    $errors[] = 'PIN tidak valid atau sudah kadaluarsa';
+                }
             }
         }
 
-        // Validasi foto wajib (hanya jika QR tidak digunakan atau tetap wajib)
         if ($this->wajib_foto && empty($data['foto'])) {
             $errors[] = 'Foto wajib diupload';
         }
 
-        // Validasi lokasi
         if ($this->wajib_presensi_dilokasi) {
             if (empty($data['latitude']) || empty($data['longitude'])) {
                 $errors[] = 'Koordinat GPS diperlukan';
@@ -292,12 +331,10 @@ class SimpegSettingKehadiran extends Model
             }
         }
 
-        // Validasi rencana kegiatan
         if ($this->wajib_isi_rencana_kegiatan && empty($data['rencana_kegiatan'])) {
             $errors[] = 'Rencana kegiatan wajib diisi';
         }
 
-        // Validasi realisasi kegiatan (untuk absen keluar)
         if (isset($data['type']) && $data['type'] === 'keluar') {
             if ($this->wajib_isi_realisasi_kegiatan && empty($data['realisasi_kegiatan'])) {
                 $errors[] = 'Realisasi kegiatan wajib diisi';
@@ -310,13 +347,11 @@ class SimpegSettingKehadiran extends Model
         ];
     }
 
-    // Accessor untuk maps URL
     public function getMapsUrlAttribute()
     {
         return "https://maps.google.com/?q={$this->latitude},{$this->longitude}";
     }
 
-    // Method untuk export setting ke array
     public function toSettingArray()
     {
         return [
@@ -325,10 +360,13 @@ class SimpegSettingKehadiran extends Model
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'radius' => $this->radius ?? 100,
-            'qr_code' => [
-                'enabled' => $this->qr_code_enabled,
-                'url' => $this->getQrCodeUrl(),
-                'token' => $this->qr_code_token,
+            'qr_pin_bundle' => [
+                'enabled' => $this->qr_code_enabled || $this->qr_pin_enabled,
+                'bundle_url' => $this->getQrCodeUrl(),
+                'download_url' => $this->getBundleDownloadUrl(),
+                'qr_enabled' => $this->qr_code_enabled,
+                'pin_enabled' => $this->qr_pin_enabled,
+                'pin_code' => $this->qr_pin_code,
                 'generated_at' => $this->qr_code_generated_at
             ],
             'rules' => [
@@ -339,8 +377,7 @@ class SimpegSettingKehadiran extends Model
                 'wajib_foto' => $this->wajib_foto ?? true,
                 'wajib_isi_rencana_kegiatan' => $this->wajib_isi_rencana_kegiatan ?? false,
                 'wajib_isi_realisasi_kegiatan' => $this->wajib_isi_realisasi_kegiatan ?? false,
-                'wajib_presensi_dilokasi' => $this->wajib_presensi_dilokasi ?? true,
-                'qr_code_enabled' => $this->qr_code_enabled ?? false
+                'wajib_presensi_dilokasi' => $this->wajib_presensi_dilokasi ?? true
             ],
             'maps_url' => $this->maps_url,
             'created_at' => $this->created_at,

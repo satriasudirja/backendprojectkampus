@@ -8,6 +8,7 @@ use App\Models\SimpegSettingKehadiran;
 use App\Models\SimpegJamKerja;
 use App\Models\SimpegJenisKehadiran;
 use App\Services\HolidayService;
+use App\Services\QrPinBundleGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -89,26 +90,34 @@ class AbsensiController extends Controller
             ], 422);
         }
 
-        // Tentukan metode absensi berdasarkan request
+        // Determine method
         $metodeAbsensi = 'manual';
-        $usingQrCode = $request->has('qr_token') && !empty($request->qr_token);
+        $pinCode = null;
+        $usingQrScan = false;
+        $usingManualPin = false;
 
-        // VALIDASI DINAMIS BERDASARKAN METODE
+        // VALIDATION RULES
         $validationRules = [
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'rencana_kegiatan' => 'nullable|string|max:1000'
         ];
 
-        if ($usingQrCode) {
-            // QR Code Mode - QR Token wajib, foto opsional
-            $validationRules['qr_token'] = 'required|string';
+        // Check if QR was scanned (contains qr_data field)
+        if ($request->has('qr_data') && !empty($request->qr_data)) {
+            $validationRules['qr_data'] = 'required|string';
             $validationRules['foto'] = 'nullable|image|mimes:jpeg,png,jpg|max:5120';
-            $metodeAbsensi = 'qr_code';
-        } else {
-            // Manual Mode - Foto wajib
+            $usingQrScan = true;
+        }
+        // Check if PIN was manually entered
+        elseif ($request->has('pin_code') && !empty($request->pin_code)) {
+            $validationRules['pin_code'] = 'required|string|min:6|max:8';
+            $validationRules['foto'] = 'nullable|image|mimes:jpeg,png,jpg|max:5120';
+            $usingManualPin = true;
+        }
+        // Manual/Photo mode
+        else {
             $validationRules['foto'] = 'required|image|mimes:jpeg,png,jpg|max:5120';
-            $metodeAbsensi = 'foto';
         }
         
         $validator = Validator::make($request->all(), $validationRules);
@@ -120,75 +129,94 @@ class AbsensiController extends Controller
             ], 422);
         }
 
-        // VALIDASI QR CODE
+        // PROCESS QR SCAN OR PIN
         $settingKehadiran = null;
         
-        if ($usingQrCode) {
-            try {
-                $qrData = json_decode($request->qr_token, true);
+        try {
+            if ($usingQrScan) {
+                // Decode PIN from QR scan
+                $decoded = QrPinBundleGenerator::decodePinFromQr($request->qr_data);
                 
-                if (!$qrData || !isset($qrData['token'])) {
+                if (!$decoded['success']) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Format QR Code tidak valid. Silakan scan ulang QR Code.'
+                        'message' => 'QR Code tidak valid. Silakan scan ulang atau masukkan PIN manual.'
                     ], 400);
                 }
-
-                // Validasi token QR
-                $settingKehadiran = SimpegSettingKehadiran::where('qr_code_token', $qrData['token'])->first();
+                
+                $pinCode = $decoded['pin'];
+                $metodeAbsensi = 'qr_scan';
+                
+                \Log::info('QR scanned, extracted PIN: ' . $pinCode);
+                
+            } elseif ($usingManualPin) {
+                // Use manually entered PIN
+                $pinCode = $request->pin_code;
+                $metodeAbsensi = 'pin_manual';
+                
+                \Log::info('Manual PIN entered: ' . $pinCode);
+            } else {
+                // Manual photo mode
+                $metodeAbsensi = 'foto';
+            }
+            
+            // Validate PIN if provided (from QR or manual)
+            if ($pinCode) {
+                $settingKehadiran = SimpegSettingKehadiran::where('qr_pin_code', $pinCode)
+                    ->where('qr_pin_enabled', true)
+                    ->first();
                 
                 if (!$settingKehadiran) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'QR Code tidak ditemukan dalam sistem. Pastikan QR Code masih valid.'
+                        'message' => 'PIN tidak valid atau sudah tidak aktif. PIN: ' . $pinCode
                     ], 404);
                 }
 
-                if (!$settingKehadiran->qr_code_enabled) {
+                // Check PIN expiration
+                if ($settingKehadiran->isPinExpired()) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'QR Code sudah tidak aktif. Silakan hubungi admin untuk mendapatkan QR Code baru.'
+                        'message' => 'PIN sudah kadaluarsa. Silakan hubungi admin untuk PIN baru.'
                     ], 400);
                 }
-
-                // QR Code valid, setting sudah didapat
                 
-            } catch (\Exception $e) {
-                Log::error('QR Code validation error: ' . $e->getMessage());
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Terjadi kesalahan saat memvalidasi QR Code. Silakan coba lagi.'
-                ], 500);
+                \Log::info('PIN validated successfully for setting: ' . $settingKehadiran->nama_gedung);
+            } else {
+                // No PIN, use default setting
+                $settingKehadiran = SimpegSettingKehadiran::first();
             }
-        } else {
-            // Mode manual/foto, ambil setting default
-            $settingKehadiran = SimpegSettingKehadiran::first();
+            
+        } catch (\Exception $e) {
+            Log::error('QR/PIN processing error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memproses. Silakan coba lagi.'
+            ], 500);
         }
 
-        // VALIDASI LOKASI (Wajib untuk semua metode)
+        // VALIDATE LOCATION
         if ($settingKehadiran && $settingKehadiran->wajib_presensi_dilokasi) {
-            if (method_exists($settingKehadiran, 'isWithinRadius')) {
-                $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
-                
-                if (!$isWithinRadius) {
-                    $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
-                    return response()->json([
-                        'success' => false, 
-                        'message' => "Anda berada di luar radius presensi yang diizinkan. Jarak Anda dari lokasi: {$distance} meter, Maksimal: {$settingKehadiran->radius} meter."
-                    ], 422);
-                }
+            $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
+            
+            if (!$isWithinRadius) {
+                $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
+                return response()->json([
+                    'success' => false, 
+                    'message' => "Anda berada di luar radius presensi. Jarak: {$distance}m, Maksimal: {$settingKehadiran->radius}m"
+                ], 422);
             }
         }
         
         $jamKerja = SimpegJamKerja::where('is_default', true)->first();
         
-        // Handle foto upload (opsional untuk QR Code)
+        // Handle photo upload
         $fotoPath = null;
         if ($request->hasFile('foto')) {
             $fotoPath = $request->file('foto')->store('absensi/masuk', 'public');
         }
 
-        // Hitung keterlambatan
+        // Calculate lateness
         $isTerlambat = false;
         $durasiTerlambat = 0;
         if ($jamKerja) {
@@ -208,7 +236,7 @@ class AbsensiController extends Controller
         if (!$jenisKehadiran) {
             return response()->json([
                 'success' => false, 
-                'message' => "Konfigurasi sistem untuk Jenis Kehadiran dengan kode '{$kodeJenisKehadiran}' tidak ditemukan. Harap hubungi administrator."
+                'message' => "Konfigurasi Jenis Kehadiran '{$kodeJenisKehadiran}' tidak ditemukan."
             ], 500);
         }
 
@@ -232,9 +260,11 @@ class AbsensiController extends Controller
                 'check_sum_absensi' => md5($pegawai->id . $today . $waktuSekarang->timestamp)
             ];
 
-            // Tambah keterangan metode
-            if ($usingQrCode) {
-                $absensiData['keterangan'] = 'Absensi menggunakan QR Code' . ($fotoPath ? ' dengan foto' : ' tanpa foto');
+            // Add description
+            if ($usingQrScan) {
+                $absensiData['keterangan'] = 'Scan QR (PIN auto-extracted)' . ($fotoPath ? ' + foto' : '');
+            } elseif ($usingManualPin) {
+                $absensiData['keterangan'] = 'Manual PIN entry' . ($fotoPath ? ' + foto' : '');
             } else {
                 $absensiData['keterangan'] = 'Absensi manual dengan foto';
             }
@@ -247,11 +277,13 @@ class AbsensiController extends Controller
             DB::commit();
             
             $message = "Absen masuk berhasil";
-            if ($usingQrCode) {
-                $message .= " menggunakan QR Code";
+            if ($usingQrScan) {
+                $message .= " (QR Scan)";
+            } elseif ($usingManualPin) {
+                $message .= " (PIN Manual)";
             }
             if ($isTerlambat) {
-                $message .= ". Anda terlambat {$durasiTerlambat} menit";
+                $message .= ". Terlambat {$durasiTerlambat} menit";
             }
             
             return response()->json([
@@ -262,6 +294,7 @@ class AbsensiController extends Controller
                     'jam_masuk' => $absensi->jam_masuk->format('H:i:s'),
                     'lokasi' => $absensi->lokasi_masuk,
                     'metode' => $metodeAbsensi,
+                    'pin_used' => $pinCode,
                     'terlambat' => $isTerlambat,
                     'durasi_terlambat' => $durasiTerlambat,
                     'dengan_foto' => $fotoPath !== null
@@ -273,7 +306,7 @@ class AbsensiController extends Controller
             if (isset($fotoPath) && $fotoPath && Storage::disk('public')->exists($fotoPath)) {
                 Storage::disk('public')->delete($fotoPath);
             }
-            Log::error("Absen Masuk Gagal untuk pegawai ID {$pegawai->id}: " . $e->getMessage());
+            Log::error("Absen Masuk Gagal: " . $e->getMessage());
             return response()->json([
                 'success' => false, 
                 'message' => 'Gagal menyimpan absensi: ' . $e->getMessage()
@@ -281,6 +314,7 @@ class AbsensiController extends Controller
         }
     }
 
+  
     /**
      * ABSEN KELUAR - QR CODE SEBAGAI METODE UTAMA
      */
@@ -309,20 +343,26 @@ class AbsensiController extends Controller
             ], 422);
         }
 
-        // Tentukan metode
-        $usingQrCode = $request->has('qr_token') && !empty($request->qr_token);
-        $metodeAbsensi = $usingQrCode ? 'qr_code' : 'foto';
+        // Determine method
+        $metodeAbsensi = 'manual';
+        $pinCode = null;
+        $usingQrScan = false;
+        $usingManualPin = false;
 
-        // Validation rules
         $validationRules = [
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'realisasi_kegiatan' => 'nullable|string|max:1000'
         ];
 
-        if ($usingQrCode) {
-            $validationRules['qr_token'] = 'required|string';
+        if ($request->has('qr_data') && !empty($request->qr_data)) {
+            $validationRules['qr_data'] = 'required|string';
             $validationRules['foto'] = 'nullable|image|mimes:jpeg,png,jpg|max:5120';
+            $usingQrScan = true;
+        } elseif ($request->has('pin_code') && !empty($request->pin_code)) {
+            $validationRules['pin_code'] = 'required|string|min:6|max:8';
+            $validationRules['foto'] = 'nullable|image|mimes:jpeg,png,jpg|max:5120';
+            $usingManualPin = true;
         } else {
             $validationRules['foto'] = 'required|image|mimes:jpeg,png,jpg|max:5120';
         }
@@ -336,54 +376,60 @@ class AbsensiController extends Controller
             ], 422);
         }
 
-        // Validate QR Code
+        // Process QR or PIN
         $settingKehadiran = null;
         
-        if ($usingQrCode) {
-            try {
-                $qrData = json_decode($request->qr_token, true);
-                
-                if (!$qrData || !isset($qrData['token'])) {
+        try {
+            if ($usingQrScan) {
+                $decoded = QrPinBundleGenerator::decodePinFromQr($request->qr_data);
+                if (!$decoded['success']) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Format QR Code tidak valid'
+                        'message' => 'QR Code tidak valid'
                     ], 400);
                 }
-
-                $settingKehadiran = SimpegSettingKehadiran::where('qr_code_token', $qrData['token'])->first();
-                
-                if (!$settingKehadiran || !$settingKehadiran->qr_code_enabled) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'QR Code tidak valid atau sudah tidak aktif'
-                    ], 400);
-                }
-            } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'QR Code tidak valid'
-                ], 400);
+                $pinCode = $decoded['pin'];
+                $metodeAbsensi = 'qr_scan';
+            } elseif ($usingManualPin) {
+                $pinCode = $request->pin_code;
+                $metodeAbsensi = 'pin_manual';
             }
-        } else {
-            $settingKehadiran = SimpegSettingKehadiran::first();
+            
+            if ($pinCode) {
+                $settingKehadiran = SimpegSettingKehadiran::where('qr_pin_code', $pinCode)
+                    ->where('qr_pin_enabled', true)
+                    ->first();
+                
+                if (!$settingKehadiran || $settingKehadiran->isPinExpired()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'PIN tidak valid atau sudah kadaluarsa'
+                    ], 400);
+                }
+            } else {
+                $settingKehadiran = SimpegSettingKehadiran::first();
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses QR/PIN'
+            ], 400);
         }
 
         // Validate location
         if ($settingKehadiran && $settingKehadiran->wajib_presensi_dilokasi) {
-            if (method_exists($settingKehadiran, 'isWithinRadius')) {
-                $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
-                
-                if (!$isWithinRadius) {
-                    $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
-                    return response()->json([
-                        'success' => false, 
-                        'message' => "Anda berada di luar radius presensi yang diizinkan. Jarak Anda: {$distance} meter."
-                    ], 422);
-                }
+            $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
+            
+            if (!$isWithinRadius) {
+                $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
+                return response()->json([
+                    'success' => false, 
+                    'message' => "Anda berada di luar radius. Jarak: {$distance}m"
+                ], 422);
             }
         }
 
-        // Handle foto
+        // Handle photo
         $fotoPath = null;
         if ($request->hasFile('foto')) {
             $fotoPath = $request->file('foto')->store('absensi/keluar', 'public');
@@ -396,8 +442,8 @@ class AbsensiController extends Controller
         $isPulangAwal = false;
         $durasiPulangAwal = 0;
         if ($absensiHariIni->jamKerja) {
-            $jamPulangString = $absensiHariIni->jamKerja->jam_pulang;
-            if ($jamPulangString === '00:00:00' || $jamPulangString === '00:00' || !$jamPulangString) {
+            $jamPulangString = $absensiHariIni->jamKerja->jam_pulang ?? '17:00:00';
+            if ($jamPulangString === '00:00:00' || $jamPulangString === '00:00') {
                 $jamPulangString = '17:00:00';
             }
             $jamPulangStandar = Carbon::parse($today . ' ' . $jamPulangString);
@@ -422,12 +468,13 @@ class AbsensiController extends Controller
                 'durasi_pulang_awal' => $durasiPulangAwal
             ];
 
-            // Update keterangan
             $keterangan = $absensiHariIni->keterangan ?? '';
-            if ($usingQrCode) {
-                $keterangan .= ' | Absen keluar menggunakan QR Code' . ($fotoPath ? ' dengan foto' : ' tanpa foto');
+            if ($usingQrScan) {
+                $keterangan .= ' | Keluar: QR Scan' . ($fotoPath ? ' + foto' : '');
+            } elseif ($usingManualPin) {
+                $keterangan .= ' | Keluar: PIN Manual' . ($fotoPath ? ' + foto' : '');
             } else {
-                $keterangan .= ' | Absen keluar manual dengan foto';
+                $keterangan .= ' | Keluar: Manual + foto';
             }
             $updateData['keterangan'] = $keterangan;
 
@@ -435,9 +482,11 @@ class AbsensiController extends Controller
             
             DB::commit();
             
-            $message = "Absen keluar berhasil. Durasi kerja: {$durasiKerjaFormatted}";
-            if ($usingQrCode) {
-                $message .= " (via QR Code)";
+            $message = "Absen keluar berhasil. Durasi: {$durasiKerjaFormatted}";
+            if ($usingQrScan) {
+                $message .= " (QR)";
+            } elseif ($usingManualPin) {
+                $message .= " (PIN)";
             }
             
             return response()->json([
@@ -459,14 +508,13 @@ class AbsensiController extends Controller
             if (isset($fotoPath) && $fotoPath && Storage::disk('public')->exists($fotoPath)) {
                 Storage::disk('public')->delete($fotoPath);
             }
-            Log::error("Absen Keluar Gagal untuk pegawai ID {$pegawai->id}: " . $e->getMessage());
+            Log::error("Absen Keluar Gagal: " . $e->getMessage());
             return response()->json([
                 'success' => false, 
                 'message' => 'Gagal menyimpan absensi keluar: ' . $e->getMessage()
             ], 500);
         }
     }
-
     // Keep other existing methods...
     public function getHistory(Request $request)
     {
