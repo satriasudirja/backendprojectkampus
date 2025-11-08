@@ -176,13 +176,14 @@ Route::get('/test-sso', function(){
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::get('captcha', [AuthController::class, 'generateCaptcha']);
-    Route::post('reset', [AuthController::class, 'resetDevice']);
+    
 
     Route::middleware('auth:api')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::post('refresh', [AuthController::class, 'refresh']);
         Route::get('me', [AuthController::class, 'me']);
         Route::get('menu', [AuthController::class, 'getMenu']);
+        Route::post('reset', [AuthController::class, 'resetDevice']);
     });
 });
 
@@ -967,7 +968,8 @@ Route::prefix('validasi-cuti')->middleware('auth:api')->group(function () {
         Route::prefix('setting-kehadiran')->group(function () {
             // Main routes
             Route::get('/', [SimpegSettingKehadiranController::class, 'index']); // Get setting / show form
-            Route::post('/', [SimpegSettingKehadiranController::class, 'store']); // Save setting (auto create/update)
+            Route::post('/', [SimpegSettingKehadiranController::class, 'store']); // Create setting (auto create/update)
+            Route::post('/{id}', [SimpegSettingKehadiranController::class, 'update']); // Update setting (auto create/update)
             Route::get('/detail', [SimpegSettingKehadiranController::class, 'show']); // Get detail setting
             Route::get('/detail/{id}', [SimpegSettingKehadiranController::class, 'show']); // Get detail by ID
 
