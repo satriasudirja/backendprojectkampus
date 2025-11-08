@@ -171,8 +171,8 @@ class AuthController extends Controller
         $user = SimpegUser::findOrFail($request->user_id);
         
         // Check if requester is admin
-        $currentUser = Auth::user();
-        if (!$currentUser->pegawai->is_admin) {
+        $currentUser = Auth::user()->pegawai;
+        if (!$currentUser->is_admin) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hanya admin yang dapat mereset perangkat'
@@ -218,6 +218,7 @@ class AuthController extends Controller
                 'nama' => $pegawai->nama,
                 'email' => $pegawai->email_pribadi,
                 'username' => $user->username,
+                'device_id' => $user->device_id,
             ],
             'role' => $roleName,
             'jabatan' => $pegawai->jabatanFungsional->nama_jabatan_fungsional ?? '-',

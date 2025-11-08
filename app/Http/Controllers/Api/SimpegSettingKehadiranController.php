@@ -46,152 +46,226 @@ class SimpegSettingKehadiranController extends Controller
     }
 
 
+  
     public function store(Request $request)
     {
-        try {
-            $validator = Validator::make($request->all(), [
-                'nama_gedung' => 'required|string|max:255',
-                'latitude' => 'required|numeric|between:-90,90',
-                'longitude' => 'required|numeric|between:-180,180',
-                'radius' => 'required|numeric|min:1|max:5000',
-                'berlaku_keterlambatan' => 'boolean',
-                'toleransi_terlambat' => 'nullable|integer|min:0|max:120',
-                'berlaku_pulang_cepat' => 'boolean',
-                'toleransi_pulang_cepat' => 'nullable|integer|min:0|max:120',
-                'wajib_foto' => 'boolean',
-                'wajib_isi_rencana_kegiatan' => 'boolean',
-                'wajib_isi_realisasi_kegiatan' => 'boolean',
-                'wajib_presensi_dilokasi' => 'boolean',
-                'qr_code_enabled' => 'boolean',
-                'qr_pin_enabled' => 'boolean'
-            ]);
+        // 1. Validasi di luar try-catch (Best Practice)
+        // Jika validasi gagal, kita tidak perlu membatalkan transaksi DB.
+        $validator = Validator::make($request->all(), [
+            'nama_gedung' => 'required|string|max:255',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'radius' => 'required|numeric|min:1|max:5000',
+            'berlaku_keterlambatan' => 'boolean',
+            'toleransi_terlambat' => 'nullable|integer|min:0|max:120',
+            'berlaku_pulang_cepat' => 'boolean',
+            'toleransi_pulang_cepat' => 'nullable|integer|min:0|max:120',
+            'wajib_foto' => 'boolean',
+            'wajib_isi_rencana_kegiatan' => 'boolean',
+            'wajib_isi_realisasi_kegiatan' => 'boolean',
+            'wajib_presensi_dilokasi' => 'boolean',
+            'qr_code_enabled' => 'boolean',
+            'qr_pin_enabled' => 'boolean'
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $validator->errors(),
-                    'message' => 'Validasi gagal'
-                ], 422);
-            }
-
-            $data = $request->all();
-            
-            $booleanFields = [
-                'berlaku_keterlambatan',
-                'berlaku_pulang_cepat', 
-                'wajib_foto',
-                'wajib_isi_rencana_kegiatan',
-                'wajib_isi_realisasi_kegiatan',
-                'wajib_presensi_dilokasi',
-                'qr_code_enabled',
-                'qr_pin_enabled'
-            ];
-
-            foreach ($booleanFields as $field) {
-                if (!isset($data[$field])) {
-                    $data[$field] = false;
-                }
-            }
-
-            if (!isset($data['toleransi_terlambat'])) {
-                $data['toleransi_terlambat'] = 15;
-            }
-            
-            if (!isset($data['toleransi_pulang_cepat'])) {
-                $data['toleransi_pulang_cepat'] = 15;
-            }
-
-            $existingSetting = SimpegSettingKehadiran::active()->first();
-
-            DB::beginTransaction();
-
-            try {
-                if ($existingSetting) {
-                    $oldData = $existingSetting->getOriginal();
-                    $existingSetting->update($data);
-
-                    \Log::info('Updating existing setting, QR enabled: ' . ($data['qr_code_enabled'] ? 'YES' : 'NO'));
-                    \Log::info('PIN enabled: ' . ($data['qr_pin_enabled'] ? 'YES' : 'NO'));
-
-                    $needRegenerate = false;
-                    
-                    if ($data['qr_code_enabled'] || $data['qr_pin_enabled']) {
-                        $isQrMissing = is_null($existingSetting->qr_code_path) || is_null($existingSetting->qr_code_token);
-                        $isPinMissing = $data['qr_pin_enabled'] && is_null($existingSetting->qr_pin_code);
-                        $locationChanged = $oldData['latitude'] != $data['latitude'] || 
-                                        $oldData['longitude'] != $data['longitude'] ||
-                                        $oldData['nama_gedung'] != $data['nama_gedung'];
-                        $qrJustEnabled = !$oldData['qr_code_enabled'] && $data['qr_code_enabled'];
-                        $pinJustEnabled = !$oldData['qr_pin_enabled'] && $data['qr_pin_enabled'];
-                        
-                        $needRegenerate = $isQrMissing || $isPinMissing || $locationChanged || $qrJustEnabled || $pinJustEnabled;
-                        
-                        \Log::info('Regenerate Check:', [
-                            'qr_missing' => $isQrMissing,
-                            'pin_missing' => $isPinMissing,
-                            'location_changed' => $locationChanged,
-                            'qr_just_enabled' => $qrJustEnabled,
-                            'pin_just_enabled' => $pinJustEnabled,
-                            'need_regenerate' => $needRegenerate
-                        ]);
-                    }
-                    
-                    if ($needRegenerate) {
-                        \Log::info('Regenerating QR Code and PIN...');
-                        $qrResult = $existingSetting->regenerateQrCode();
-                        \Log::info('Regenerate result: ' . ($qrResult ? 'SUCCESS' : 'FAILED'));
-                    }
-                    
-                    ActivityLogger::log('update', $existingSetting, $oldData);
-
-                    DB::commit();
-                    $existingSetting->refresh();
-
-                    return response()->json([
-                        'success' => true,
-                        'data' => $this->formatSettingResponse($existingSetting),
-                        'mode' => 'updated',
-                        'message' => 'Setting kehadiran berhasil diperbarui'
-                    ]);
-
-                } else {
-                    \Log::info('Creating new setting');
-                    
-                    $setting = SimpegSettingKehadiran::create($data);
-                    \Log::info('Setting created with ID: ' . $setting->id);
-                
-                    if ($setting->qr_code_enabled || $setting->qr_pin_enabled) {
-                        \Log::info('Generating QR Code and PIN...');
-                        $qrResult = $setting->regenerateQrCode();
-                        \Log::info('Generation result: ' . ($qrResult ? 'SUCCESS' : 'FAILED'));
-                    }
-                    
-                    ActivityLogger::log('create', $setting, $setting->toArray());
-
-                    DB::commit();
-                    $setting->refresh();
-
-                    return response()->json([
-                        'success' => true,
-                        'data' => $this->formatSettingResponse($setting),
-                        'mode' => 'created',
-                        'message' => 'Setting kehadiran berhasil dibuat'
-                    ], 201);
-                }
-            } catch (\Exception $e) {
-                DB::rollBack();
-                \Log::error('Transaction error: ' . $e->getMessage());
-                throw $e;
-            }
-
-        } catch (\Exception $e) {
-            DB::rollBack();
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menyimpan setting kehadiran: ' . $e->getMessage()
+                'errors' => $validator->errors(),
+                'message' => 'Validasi gagal'
+            ], 422);
+        }
+
+        // 2. Gunakan SATU blok try-catch untuk semua operasi database
+        try {
+            $data = $request->all();
+            
+            // Logika untuk menangani boolean (checkbox)
+            $booleanFields = [
+                'berlaku_keterlambatan', 'berlaku_pulang_cepat', 'wajib_foto',
+                'wajib_isi_rencana_kegiatan', 'wajib_isi_realisasi_kegiatan',
+                'wajib_presensi_dilokasi', 'qr_code_enabled', 'qr_pin_enabled'
+            ];
+
+            // Cara yang lebih bersih untuk mengatur default 'false' jika tidak ada
+            foreach ($booleanFields as $field) {
+                $data[$field] = $request->input($field, false); 
+            }
+
+            // Cara yang lebih bersih untuk mengatur default '15'
+            $data['toleransi_terlambat'] = $request->input('toleransi_terlambat', 15);
+            $data['toleransi_pulang_cepat'] = $request->input('toleransi_pulang_cepat', 15);
+
+            // Mulai Transaksi Database
+            DB::beginTransaction();
+            
+            \Log::info('Creating new setting...');
+                    
+            $setting = SimpegSettingKehadiran::create($data);
+            \Log::info('Setting created with ID: ' . $setting->id);
+        
+            // Logika generate QR/PIN Anda sudah benar
+            if ($setting->qr_code_enabled || $setting->qr_pin_enabled) {
+                \Log::info('Generating QR Code and PIN...');
+                $qrResult = $setting->regenerateQrCode(); // Diasumsikan method ini ada di model
+                \Log::info('Generation result: ' . ($qrResult ? 'SUCCESS' : 'FAILED'));
+            }
+            
+            ActivityLogger::log('create', $setting, $setting->toArray());
+
+            // Jika semua berhasil, simpan permanen
+            DB::commit();
+            
+            // Refresh model untuk mendapatkan data terbaru (terutama QR path setelah save)
+            $setting->refresh(); 
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->formatSettingResponse($setting),
+                'mode' => 'created',
+                'message' => 'Setting kehadiran berhasil dibuat'
+            ], 201); // 201 adalah status code yang tepat untuk 'Created'
+
+        } catch (\Exception $e) {
+            // Jika ada error di mana saja di dalam 'try', batalkan semua perubahan DB
+            DB::rollBack();
+
+            // Catat error dengan detail lengkap untuk debugging
+            \Log::error('Gagal menyimpan setting kehadiran:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString() // Ini sangat penting untuk debug
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan setting kehadiran: Terjadi kesalahan pada server.'
+                // 'message' => 'Gagal menyimpan setting kehadiran: ' . $e->getMessage() // (Hanya untuk mode debug)
             ], 500);
         }
     }
+    
+    /**
+     * Memperbarui setting kehadiran yang sudah ada.
+     * * @param  \Illuminate\Http\Request  $request
+     * @param  string  $id  (ID dari setting yang akan di-update)
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function update(Request $request, $id)
+    {
+        // 1. Validasi
+        // Menggunakan rules yang sama dengan 'store'
+        $validator = Validator::make($request->all(), [
+            'nama_gedung' => 'required|string|max:255',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'radius' => 'required|numeric|min:1|max:5000',
+            'berlaku_keterlambatan' => 'boolean',
+            'toleransi_terlambat' => 'nullable|integer|min:0|max:120',
+            'berlaku_pulang_cepat' => 'boolean',
+            'toleransi_pulang_cepat' => 'nullable|integer|min:0|max:120',
+            'wajib_foto' => 'boolean',
+            'wajib_isi_rencana_kegiatan' => 'boolean',
+            'wajib_isi_realisasi_kegiatan' => 'boolean',
+            'wajib_presensi_dilokasi' => 'boolean',
+            'qr_code_enabled' => 'boolean',
+            'qr_pin_enabled' => 'boolean'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+                'message' => 'Validasi gagal'
+            ], 422);
+        }
+
+        // 2. Cari Model
+        $setting = SimpegSettingKehadiran::active()->find($id);
+
+        if (!$setting) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Setting kehadiran dengan ID ' . $id . ' tidak ditemukan'
+            ], 404); // 404 Not Found
+        }
+
+        // 3. Transaksi Database
+        try {
+            $data = $request->all();
+            
+            // Logika untuk menangani boolean (checkbox)
+            $booleanFields = [
+                'berlaku_keterlambatan', 'berlaku_pulang_cepat', 'wajib_foto',
+                'wajib_isi_rencana_kegiatan', 'wajib_isi_realisasi_kegiatan',
+                'wajib_presensi_dilokasi', 'qr_code_enabled', 'qr_pin_enabled'
+            ];
+            foreach ($booleanFields as $field) {
+                $data[$field] = $request->input($field, false);
+            }
+            
+            // Logika untuk menangani default '15'
+            $data['toleransi_terlambat'] = $request->input('toleransi_terlambat', 15);
+            $data['toleransi_pulang_cepat'] = $request->input('toleransi_pulang_cepat', 15);
+
+            // Mulai Transaksi
+            DB::beginTransaction();
+            
+            // Simpan data lama untuk logging
+            $oldData = $setting->getOriginal();
+            
+            // Update data setting
+            $setting->update($data);
+            \Log::info('Setting updated for ID: ' . $setting->id);
+
+            // Cek kondisi untuk regenerate QR/PIN
+            $isQrMissing = is_null($oldData['qr_code_path']);
+            $qrToggledOn = !$oldData['qr_code_enabled'] && $setting->qr_code_enabled;
+            $pinToggledOn = !$oldData['qr_pin_enabled'] && $setting->qr_pin_enabled;
+            $locationChanged = $oldData['latitude'] != $data['latitude'] ||
+                               $oldData['longitude'] != $data['longitude'] ||
+                               $oldData['nama_gedung'] != $data['nama_gedung'];
+
+            // Regenerate jika:
+            // 1. QR atau PIN diaktifkan DAN
+            // 2. (File QR-nya hilang ATAU lokasinya berubah ATAU QR-nya baru dinyalakan ATAU PIN-nya baru dinyalakan)
+            if (($setting->qr_code_enabled || $setting->qr_pin_enabled) && 
+                ($isQrMissing || $locationChanged || $qrToggledOn || $pinToggledOn)) 
+            {
+                \Log::info('Regenerating QR Code/PIN for update...', ['id' => $setting->id]);
+                $qrResult = $setting->regenerateQrCode();
+                \Log::info('Generation result: ' . ($qrResult ? 'SUCCESS' : 'FAILED'));
+            }
+
+            ActivityLogger::log('update', $setting, $oldData);
+
+            // Jika semua berhasil, simpan permanen
+            DB::commit();
+            
+            // Kembalikan data yang sudah fresh (terbaru)
+            return response()->json([
+                'success' => true,
+                'data' => $this->formatSettingResponse($setting->fresh()),
+                'mode' => 'updated',
+                'message' => 'Setting kehadiran berhasil diperbarui'
+            ]);
+
+        } catch (\Exception $e) {
+            // Jika ada error, batalkan semua perubahan DB
+            DB::rollBack();
+
+            \Log::error('Gagal memperbarui setting kehadiran:', [
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui setting: Terjadi kesalahan pada server.'
+            ], 500);
+        }
+    }
+
     // NEW: Download QR Code
     public function downloadQrCode($id)
     {
