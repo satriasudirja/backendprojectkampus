@@ -218,15 +218,31 @@ class AbsensiController extends Controller
 
         // Calculate lateness
         $isTerlambat = false;
-        $durasiTerlambat = 0;
+        $durasiTerlambat = 0; // Integer untuk Database
+        $durasiTerlambatFormatted = ""; // String untuk Response
+
         if ($jamKerja) {
-            $jamMasukStandar = Carbon::parse($today . ' ' . $jamKerja->jam_datang);
+            $jamDatangOnly = Carbon::parse($jamKerja->jam_datang)->format('H:i:s');
+            $jamMasukStandar = Carbon::parse($today . ' ' . $jamDatangOnly);
             $toleransi = $jamKerja->toleransi_terlambat ?? 0;
-            $batasWaktuMasuk = $jamMasukStandar->addMinutes($toleransi);
+            $batasWaktuMasuk = $jamMasukStandar->copy()->addMinutes($toleransi);
 
             if ($waktuSekarang->isAfter($batasWaktuMasuk)) {
                 $isTerlambat = true;
-                $durasiTerlambat = $waktuSekarang->diffInMinutes($batasWaktuMasuk);
+                
+                // 1. Hitung Total Menit (Integer Murni) -> Untuk disimpan ke Database
+                // Menggunakan round dan casting int agar database tidak error
+                $durasiTerlambat = (int) round(abs($waktuSekarang->diffInMinutes($batasWaktuMasuk)));
+
+                // 2. Hitung Format String "X jam Y menit" -> Untuk ditampilkan di JSON
+                $jam = floor($durasiTerlambat / 60);
+                $menit = $durasiTerlambat % 60;
+                
+                if ($jam > 0) {
+                    $durasiTerlambatFormatted = "{$jam} jam {$menit} menit";
+                } else {
+                    $durasiTerlambatFormatted = "{$menit} menit";
+                }
             }
         }
 
@@ -320,10 +336,14 @@ class AbsensiController extends Controller
      */
     public function absenKeluar(Request $request)
     {
+        // Set locale ke Indonesia untuk format hari/tanggal
+        Carbon::setLocale('id');
+        
         $pegawai = Auth::user()->pegawai;
         $waktuSekarang = Carbon::now();
         $today = $waktuSekarang->toDateString();
 
+        // 1. Cek apakah sudah absen masuk
         $absensiHariIni = SimpegAbsensiRecord::with('jamKerja')
             ->where('pegawai_id', $pegawai->id)
             ->where('tanggal_absensi', $today)
@@ -336,6 +356,7 @@ class AbsensiController extends Controller
             ], 422);
         }
         
+        // 2. Cek apakah sudah absen keluar sebelumnya
         if ($absensiHariIni->jam_keluar) {
             return response()->json([
                 'success' => false, 
@@ -343,171 +364,116 @@ class AbsensiController extends Controller
             ], 422);
         }
 
-        // Determine method
-        $metodeAbsensi = 'manual';
-        $pinCode = null;
-        $usingQrScan = false;
-        $usingManualPin = false;
-
-        $validationRules = [
+        // [PERUBAHAN 1 & 2] Validasi disederhanakan (Hapus QR, PIN, dan Foto)
+        $validator = Validator::make($request->all(), [
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'realisasi_kegiatan' => 'nullable|string|max:1000'
-        ];
+        ]);
 
-        if ($request->has('qr_data') && !empty($request->qr_data)) {
-            $validationRules['qr_data'] = 'required|string';
-            $validationRules['foto'] = 'nullable|image|mimes:jpeg,png,jpg|max:5120';
-            $usingQrScan = true;
-        } elseif ($request->has('pin_code') && !empty($request->pin_code)) {
-            $validationRules['pin_code'] = 'required|string|min:6|max:8';
-            $validationRules['foto'] = 'nullable|image|mimes:jpeg,png,jpg|max:5120';
-            $usingManualPin = true;
-        } else {
-            $validationRules['foto'] = 'required|image|mimes:jpeg,png,jpg|max:5120';
-        }
-        
-        $validator = Validator::make($request->all(), $validationRules);
         if ($validator->fails()) {
             return response()->json([
                 'success' => false, 
-                'message' => 'Validasi gagal.', 
+                'message' => 'Validasi lokasi gagal.', 
                 'errors' => $validator->errors()
             ], 422);
         }
 
-        // Process QR or PIN
-        $settingKehadiran = null;
-        
-        try {
-            if ($usingQrScan) {
-                $decoded = QrPinBundleGenerator::decodePinFromQr($request->qr_data);
-                if (!$decoded['success']) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'QR Code tidak valid'
-                    ], 400);
-                }
-                $pinCode = $decoded['pin'];
-                $metodeAbsensi = 'qr_scan';
-            } elseif ($usingManualPin) {
-                $pinCode = $request->pin_code;
-                $metodeAbsensi = 'pin_manual';
-            }
-            
-            if ($pinCode) {
-                $settingKehadiran = SimpegSettingKehadiran::where('qr_pin_code', $pinCode)
-                    ->where('qr_pin_enabled', true)
-                    ->first();
-                
-                if (!$settingKehadiran || $settingKehadiran->isPinExpired()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'PIN tidak valid atau sudah kadaluarsa'
-                    ], 400);
-                }
-            } else {
-                $settingKehadiran = SimpegSettingKehadiran::first();
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memproses QR/PIN'
-            ], 400);
-        }
+        // [PERUBAHAN 3] Hapus logika decode QR/PIN. Langsung ambil setting global/default
+        $settingKehadiran = SimpegSettingKehadiran::first(); 
 
-        // Validate location
-        if ($settingKehadiran && $settingKehadiran->wajib_presensi_dilokasi) {
-            $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
+        // 3. Validasi Radius (Tetap dipertahankan agar absen valid secara lokasi)
+        // if ($settingKehadiran && $settingKehadiran->wajib_presensi_dilokasi) {
+        //     $isWithinRadius = $settingKehadiran->isWithinRadius($request->latitude, $request->longitude);
             
-            if (!$isWithinRadius) {
-                $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
-                return response()->json([
-                    'success' => false, 
-                    'message' => "Anda berada di luar radius. Jarak: {$distance}m"
-                ], 422);
-            }
-        }
+        //     if (!$isWithinRadius) {
+        //         $distance = round($settingKehadiran->calculateDistance($request->latitude, $request->longitude), 2);
+        //         return response()->json([
+        //             'success' => false, 
+        //             'message' => "Anda berada di luar radius kantor. Jarak: {$distance}m"
+        //         ], 422);
+        //     }
+        // }
 
-        // Handle photo
-        $fotoPath = null;
-        if ($request->hasFile('foto')) {
-            $fotoPath = $request->file('foto')->store('absensi/keluar', 'public');
-        }
+        // [PERUBAHAN 4] Hapus logika upload foto ($request->hasFile('foto'))
         
+        // 4. Hitung Durasi Kerja
         $jamMasuk = Carbon::parse($absensiHariIni->jam_masuk);
+        $diffDurasiKerja = $jamMasuk->diff($waktuSekarang);
         $durasi_kerja = (int) round($waktuSekarang->diffInMinutes($jamMasuk));
-        $durasiKerjaFormatted = floor($durasi_kerja / 60) . ' jam ' . ($durasi_kerja % 60) . ' menit';
+        
+        // Format X jam Y menit untuk response
+        $durasiKerjaFormatted = $diffDurasiKerja->format('%h jam %i menit');
 
+        // --- FIX: LOGIKA CEK PULANG AWAL ---
         $isPulangAwal = false;
         $durasiPulangAwal = 0;
+        
         if ($absensiHariIni->jamKerja) {
-            $jamPulangString = $absensiHariIni->jamKerja->jam_pulang ?? '17:00:00';
-            if ($jamPulangString === '00:00:00' || $jamPulangString === '00:00') {
-                $jamPulangString = '17:00:00';
+            // 1. Ambil raw string dari DB
+            $jamPulangRaw = $absensiHariIni->jamKerja->jam_pulang ?? '17:00:00';
+            
+            if ($jamPulangRaw === '00:00:00' || $jamPulangRaw === '00:00') {
+                $jamPulangRaw = '17:00:00';
             }
-            $jamPulangStandar = Carbon::parse($today . ' ' . $jamPulangString);
+            
+            // 2. FIX UTAMA: Ambil hanya H:i:s untuk mencegah double date error
+            $jamPulangOnly = Carbon::parse($jamPulangRaw)->format('H:i:s');
+            
+            // 3. Gabungkan dengan tanggal hari ini
+            $jamPulangStandar = Carbon::parse($today . ' ' . $jamPulangOnly);
+            
             if ($waktuSekarang->isBefore($jamPulangStandar)) {
                 $isPulangAwal = true;
-                $durasiPulangAwal = $jamPulangStandar->diffInMinutes($waktuSekarang);
+                // 4. FIX KEDUA: Pastikan hasil positif (abs) dan Integer (int)
+                $durasiPulangAwal = (int) round(abs($jamPulangStandar->diffInMinutes($waktuSekarang)));
             }
         }
 
         try {
             DB::beginTransaction();
             
+            // [PERUBAHAN 5] Update data ke database tanpa kolom foto
             $updateData = [
                 'jam_keluar' => $waktuSekarang,
                 'latitude_keluar' => $request->latitude,
                 'longitude_keluar' => $request->longitude,
-                'lokasi_keluar' => optional($settingKehadiran)->nama_gedung ?? 'Lokasi Tidak Diketahui',
-                'foto_keluar' => $fotoPath,
+                'lokasi_keluar' => optional($settingKehadiran)->nama_gedung ?? 'Lokasi GPS',
+                // 'foto_keluar' => $fotoPath, // Dihapus
                 'durasi_kerja' => $durasi_kerja,
                 'realisasi_kegiatan' => $request->realisasi_kegiatan,
                 'pulang_awal' => $isPulangAwal,
                 'durasi_pulang_awal' => $durasiPulangAwal
             ];
 
+            // Update Keterangan (Simplified)
             $keterangan = $absensiHariIni->keterangan ?? '';
-            if ($usingQrScan) {
-                $keterangan .= ' | Keluar: QR Scan' . ($fotoPath ? ' + foto' : '');
-            } elseif ($usingManualPin) {
-                $keterangan .= ' | Keluar: PIN Manual' . ($fotoPath ? ' + foto' : '');
-            } else {
-                $keterangan .= ' | Keluar: Manual + foto';
-            }
+            $keterangan .= ' | Keluar: GPS Checkpoint';
             $updateData['keterangan'] = $keterangan;
 
             $absensiHariIni->update($updateData);
             
             DB::commit();
             
-            $message = "Absen keluar berhasil. Durasi: {$durasiKerjaFormatted}";
-            if ($usingQrScan) {
-                $message .= " (QR)";
-            } elseif ($usingManualPin) {
-                $message .= " (PIN)";
-            }
-            
+            // [PERUBAHAN 6] Format Waktu Concatenated (Hari, Tanggal Bulan Tahun Jam:Menit)
+            // Contoh: "Jumat, 21 November 2025 17:30:00"
+            $waktuLengkap = $waktuSekarang->isoFormat('dddd, D MMMM Y HH:mm:ss');
+
             return response()->json([
                 'success' => true, 
-                'message' => $message, 
+                'message' => "Absen keluar berhasil pada {$waktuLengkap}", 
                 'data' => [
                     'id' => $absensiHariIni->id,
-                    'jam_keluar' => $absensiHariIni->jam_keluar->format('H:i:s'),
+                    'waktu_keluar_lengkap' => $waktuLengkap, // Data baru yg diminta
+                    'jam_keluar' => $waktuSekarang->format('H:i:s'),
                     'durasi_kerja' => $durasiKerjaFormatted,
                     'lokasi' => $absensiHariIni->lokasi_keluar,
-                    'metode' => $metodeAbsensi,
                     'pulang_awal' => $isPulangAwal,
-                    'dengan_foto' => $fotoPath !== null
                 ]
             ]);
             
         } catch (\Exception $e) {
             DB::rollBack();
-            if (isset($fotoPath) && $fotoPath && Storage::disk('public')->exists($fotoPath)) {
-                Storage::disk('public')->delete($fotoPath);
-            }
             Log::error("Absen Keluar Gagal: " . $e->getMessage());
             return response()->json([
                 'success' => false, 
@@ -515,6 +481,8 @@ class AbsensiController extends Controller
             ], 500);
         }
     }
+
+
     // Keep other existing methods...
     public function getHistory(Request $request)
     {

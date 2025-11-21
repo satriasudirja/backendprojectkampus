@@ -8,7 +8,7 @@ use App\Models\SimpegPegawai;
 use App\Models\SimpegUser;
 use App\Models\SimpegDataJabatanAkademik;  
 use App\Models\SimpegJabatanAkademik;  
-use App\Models\SimpegJabatanFungsional;  // ADDED: Import model jabatan fungsional
+use App\Models\SimpegJabatanFungsional;  
 use App\Models\SimpegUnitKerja;
 use App\Models\SimpegStatusAktif;
 use App\Models\HubunganKerja;

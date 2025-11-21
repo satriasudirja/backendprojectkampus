@@ -15,12 +15,13 @@ class SimpegSettingKehadiranController extends Controller
     public function index()
     {
         try {
-            $setting = SimpegSettingKehadiran::active()->first();
+            $setting = SimpegSettingKehadiran::active()->get();
             
-            if (!$setting) {
+            // Cek apakah collection kosong menggunakan isEmpty()
+            if ($setting->isEmpty()) {
                 return response()->json([
                     'success' => true,
-                    'data' => null,
+                    'data' => [], // Data kosong array
                     'mode' => 'create',
                     'message' => 'Belum ada setting kehadiran. Silakan buat setting baru.',
                     'form_template' => $this->getFormTemplate(),
@@ -28,11 +29,16 @@ class SimpegSettingKehadiranController extends Controller
                 ]);
             }
 
+            // SOLUSI: Lakukan mapping agar setiap item diformat satu per satu
+            $formattedData = $setting->map(function ($item) {
+                return $this->formatSettingResponse($item);
+            });
+
             return response()->json([
                 'success' => true,
-                'data' => $this->formatSettingResponse($setting),
+                'data' => $formattedData, // Kirim hasil mapping (Array of Objects)
                 'mode' => 'edit',
-                'message' => 'Setting kehadiran ditemukan',
+                'message' => 'List setting kehadiran ditemukan',
                 'form_template' => $this->getFormTemplate(),
                 'validation_rules' => $this->getValidationRules()
             ]);
