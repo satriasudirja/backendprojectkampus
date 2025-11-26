@@ -173,6 +173,11 @@ Route::get('/test-sso', function(){
     return "success";
 })->middleware('auth:sso');
 
+Route::prefix('admin/setting-kehadiran')->group(function(){
+    Route::get('/{id}/download-qr', [SimpegSettingKehadiranController::class, 'downloadQrCode'])->name('api.setting-kehadiran.download-qr');
+});
+
+
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::get('captcha', [AuthController::class, 'generateCaptcha']);
@@ -977,7 +982,7 @@ Route::prefix('validasi-cuti')->middleware('auth:api')->group(function () {
             Route::post('/reset-default', [SimpegSettingKehadiranController::class, 'resetToDefault']); // Reset to default
             Route::post('/test-coordinates', [SimpegSettingKehadiranController::class, 'testCoordinates']); // Test coordinates
             Route::get('/system-info', [SimpegSettingKehadiranController::class, 'getSystemInfo']); // Get system info
-            Route::get('/{id}/download-qr', [SimpegSettingKehadiranController::class, 'downloadQrCode'])->name('api.setting-kehadiran.download-qr');
+            
             Route::post('/{id}/regenerate-qr', [SimpegSettingKehadiranController::class, 'regenerateQrCode'])->name('api.setting-kehadiran.regenerate-qr');
             Route::post('/validate-qr', [SimpegSettingKehadiranController::class, 'validateQrCode'])->name('api.setting-kehadiran.validate-qr');
             Route::post('validate-qr', [SimpegSettingKehadiranController::class, 'validateQrCode'])
